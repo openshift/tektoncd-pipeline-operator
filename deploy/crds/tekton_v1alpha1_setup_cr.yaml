@@ -1,0 +1,7 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Setup
+metadata:
+  name: example-setup
+spec:
+  # Add fields here
+  size: 3
