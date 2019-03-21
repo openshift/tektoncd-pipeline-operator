@@ -4,7 +4,7 @@ metadata:
   annotations:
     capabilities: Basic Install
   name: tektoncd-operator.v0.0.1
-  namespace: default
+  namespace: tekton-pipelines
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
