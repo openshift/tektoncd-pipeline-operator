@@ -6,7 +6,7 @@ subjects:
 - kind: ServiceAccount
   name: tektoncd-operator
   # Replace this with the namespace the operator is deployed in.
-  namespace: default
+  namespace: tekton-pipelines
 roleRef:
   kind: ClusterRole
   name: tektoncd-operator
