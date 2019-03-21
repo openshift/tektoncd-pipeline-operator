@@ -40,5 +40,18 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
 ### Deploy tekton-operator
 
-**TBD
+#### On minikube for testing
+
+1. apply the operator `crd`
+1. create `tekton-pipelines` namespace
+1. apply the `deploy/` yaml
+1. apply the `olm-catalog`
+
+```
+  kubectl apply deploy/crds/*_crd.yaml
+
+  kubectl create namespace tekton-pipelines
+  kubectl -n tekton-pipelines apply -f deploy/
+  kubectl -n tekton-pipelines apply -f deploy/olm-catalog/tektoncd-operator/0.0.1/
+```
 
