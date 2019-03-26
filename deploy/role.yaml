@@ -42,5 +42,6 @@ rules:
   - tekton.dev
   resources:
   - '*'
+  - installs
   verbs:
   - '*'
