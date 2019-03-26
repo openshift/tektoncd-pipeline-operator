@@ -5,10 +5,12 @@ import (
 
 	tektonv1alpha1 "github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1"
 	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/manifest"
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/spf13/pflag"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -22,7 +24,7 @@ import (
 var (
 	log      = logf.Log.WithName("controller_install")
 	filename = pflag.String("manifest", "deploy/resources",
-		"The filename containing the YAML resources to apply")
+		"The filename containing the tekton-cd pipeline release resources")
 	autoInstall = pflag.Bool("auto-install", false,
 		"Automatically install pipeline if none exist")
 )
@@ -71,6 +73,9 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	if *autoInstall {
+		go createInstallCR(mgr.GetClient())
+	}
 	return nil
 }
 
@@ -104,6 +109,7 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+			r.config.Delete()
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -121,4 +127,35 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 	return reconcile.Result{}, nil
 
+}
+
+func createInstallCR(c client.Client) error {
+	installLog := log.WithValues("sub", "auto-install")
+
+	ns, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return err
+	}
+
+	installList := &tektonv1alpha1.InstallList{}
+	err = c.List(context.TODO(), &client.ListOptions{Namespace: ns}, installList)
+	if err != nil {
+		installLog.Error(err, "Unable to list Installs")
+		return err
+	}
+	if len(installList.Items) >= 1 {
+		return nil
+	}
+
+	install := &tektonv1alpha1.Install{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "auto-install",
+			Namespace: ns,
+		},
+	}
+	if err := c.Create(context.TODO(), install); err != nil {
+		installLog.Error(err, "auto-install: failed to create Install CR")
+		return err
+	}
+	return nil
 }
