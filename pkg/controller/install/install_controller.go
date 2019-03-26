@@ -2,11 +2,11 @@ package install
 
 import (
 	"context"
+	"flag"
 
 	tektonv1alpha1 "github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1"
 	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/manifest"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	"github.com/spf13/pflag"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -22,12 +22,17 @@ import (
 )
 
 var (
-	log      = logf.Log.WithName("controller_install")
-	filename = pflag.String("manifest", "deploy/resources",
-		"The filename containing the tekton-cd pipeline release resources")
-	autoInstall = pflag.Bool("auto-install", false,
-		"Automatically install pipeline if none exist")
+	filename    string
+	autoInstall bool
+	log         = logf.Log.WithName("controller_install")
 )
+
+func init() {
+	flag.StringVar(&filename, "manifest", "deploy/resources",
+		"The filename containing the tekton-cd pipeline release resources")
+	flag.BoolVar(&autoInstall, "auto-install", false,
+		"Automatically install pipeline if none exists")
+}
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
@@ -45,7 +50,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileInstall{
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
-		config: manifest.NewYamlManifest(*filename, mgr.GetConfig()),
+		config: manifest.NewYamlManifest(filename, mgr.GetConfig()),
 	}
 }
 
@@ -73,7 +78,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	if *autoInstall {
+	if autoInstall {
 		go createInstallCR(mgr.GetClient())
 	}
 	return nil
