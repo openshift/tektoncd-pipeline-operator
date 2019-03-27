@@ -47,6 +47,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+
 	return &ReconcileInstall{
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
@@ -105,6 +106,7 @@ type ReconcileInstall struct {
 func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Install")
+	reqLogger.Info("Pipeline Release Path", "path", filename)
 
 	// Fetch the Install instance
 	instance := &tektonv1alpha1.Install{}
