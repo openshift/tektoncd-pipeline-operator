@@ -1,5 +1,8 @@
 apiVersion: operators.coreos.com/v1alpha2
 kind: OperatorGroup
 metadata:
-  name: my-group
-  namespace: tekton-pipelines
+ name: og-tekton-operator
+ namespace: tekton-pipelines
+spec:
+ targetNamespaces:
+ - tekton-pipelines
