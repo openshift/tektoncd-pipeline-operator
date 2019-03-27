@@ -13,17 +13,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.Setup":       schema_pkg_apis_tekton_v1alpha1_Setup(ref),
-		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.SetupSpec":   schema_pkg_apis_tekton_v1alpha1_SetupSpec(ref),
-		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.SetupStatus": schema_pkg_apis_tekton_v1alpha1_SetupStatus(ref),
+		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.Install":       schema_pkg_apis_tekton_v1alpha1_Install(ref),
+		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallSpec":   schema_pkg_apis_tekton_v1alpha1_InstallSpec(ref),
+		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallStatus": schema_pkg_apis_tekton_v1alpha1_InstallStatus(ref),
 	}
 }
 
-func schema_pkg_apis_tekton_v1alpha1_Setup(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_tekton_v1alpha1_Install(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Setup is the Schema for the setups API",
+				Description: "Install is the Schema for the installs API",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -46,27 +46,27 @@ func schema_pkg_apis_tekton_v1alpha1_Setup(ref common.ReferenceCallback) common.
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.SetupSpec"),
+							Ref: ref("github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.SetupStatus"),
+							Ref: ref("github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.SetupSpec", "github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.SetupStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallSpec", "github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_tekton_v1alpha1_SetupSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_tekton_v1alpha1_InstallSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SetupSpec defines the desired state of Setup",
+				Description: "InstallSpec defines the desired state of Install",
 				Properties:  map[string]spec.Schema{},
 			},
 		},
@@ -74,12 +74,34 @@ func schema_pkg_apis_tekton_v1alpha1_SetupSpec(ref common.ReferenceCallback) com
 	}
 }
 
-func schema_pkg_apis_tekton_v1alpha1_SetupStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_tekton_v1alpha1_InstallStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SetupStatus defines the observed state of Setup",
-				Properties:  map[string]spec.Schema{},
+				Description: "InstallStatus defines the observed state of Install",
+				Properties: map[string]spec.Schema{
+					"resources": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The resources applied",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"resources", "version"},
 			},
 		},
 		Dependencies: []string{},

@@ -7,43 +7,47 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// SetupSpec defines the desired state of Setup
+// InstallSpec defines the desired state of Install
 // +k8s:openapi-gen=true
-type SetupSpec struct {
+type InstallSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
-// SetupStatus defines the observed state of Setup
+// InstallStatus defines the observed state of Install
 // +k8s:openapi-gen=true
-type SetupStatus struct {
+type InstallStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	// The resources applied
+	Resources []string `json:"resources"`
+	Version   string   `json:"version"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Setup is the Schema for the setups API
+// Install is the Schema for the installs API
 // +k8s:openapi-gen=true
-type Setup struct {
+type Install struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SetupSpec   `json:"spec,omitempty"`
-	Status SetupStatus `json:"status,omitempty"`
+	Spec   InstallSpec   `json:"spec,omitempty"`
+	Status InstallStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// SetupList contains a list of Setup
-type SetupList struct {
+// InstallList contains a list of Install
+type InstallList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Setup `json:"items"`
+	Items           []Install `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Setup{}, &SetupList{})
+	SchemeBuilder.Register(&Install{}, &InstallList{})
 }
