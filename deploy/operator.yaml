@@ -16,7 +16,7 @@ spec:
       containers:
         - name: tektoncd-operator
           # Replace this with the built image name
-          image: nikhilvep/tektoncd-operator:v0.0.1
+          image: nikhilvep/tektoncd-operator:v0.0.2
           command:
           - tektoncd-operator
           imagePullPolicy: Always
