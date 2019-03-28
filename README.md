@@ -131,4 +131,39 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
           tasks.tekton.dev
           ```
 
+### End to End workflow
+
+This section explains how to test changes to the operator  by executing the entire
+end-to-end workflow of edit, test, build, package etc... It asssumes you have already
+followed install [minikube](#install-minikube) and [OLM](#install-olm).
+
+#### Generate new image, CSV
+
+1. Make changes to the operator
+1. Test operator locally with `operator-sdk up local`
+1. Build operator image `operator-sdk build <imagename:tag>`
+1. Update image reference in `deploy/operator.yaml`
+1. Build csv using `opertor-sdk olm-catalog gen-csv --csv-version 0.0.<x>` **change `<x>`**
+
+#### Update Local CatalogSource
+
+1. clone the fork of [operator-registry fork][or-fork] where we have added tektoncd-pipeline manifests
+    ```shell
+        git clone https://github.com/nikhil-thomas/operator-registry
+        git checkout -b pipeline-operator
+    ```
+1.  Copy csv from *step 5* to `manifests` direcotry in `operator-registry`
+  -  preserve directory structure
+  -  make sure latest crd(s) are also there beside csv
+1. Build and push operator-registry image
+    ```shell
+    docker build -t example-registry:latest -f upstream-example.Dockerfile
+    docker push example-registry:latest
+    ```
+1. Update image reference in catalog-src - `deploy`
+1. `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
+
+
+
 [web console]: http://localhost:9000
+[or-fork]: https://github.com/nikhil-thomas/operator-registry/tree/pipeline-operator
