@@ -46,18 +46,15 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
    `kubectl apply deploy/crds/*_crd.yaml`
 
-1. Apply operator namespace, operatorgroup, serviceaccount, role, and rolebinding
+1. Deploy the operator
 
-  `kubectl -n tekton-pipelines apply -f deploy/ `
+    `kubectl -n tekton-pipelines apply -f deploy/`
 
-1. apply the `olm-catalog`
+1. Install pipeline by creating an `Install` CR
 
-  ` kubectl -n tekton-pipelines apply -f deploy/olm-catalog/tektoncd-operator/0.0.1/`
+    `kubectl apply deploy/crds/*_cr.yaml`
 
-1. once an instance of the cr is created the tekton-operator will launch a pod
-  `kubectl apply deploy/crds/*_cr.yaml`
-
-### Deploy pipeline using OLM
+### Deploy pipeline using CatalogSource on OLM
 
 1. install minikube [see above](#install-minikube)
 1. install olm [see above](#install-olm)
@@ -104,24 +101,24 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 1. Install Tektoncd-Pipeline by creating an `install` CR
     1. Select `Catalog > Developer Catalog`, you should find `TektonCD-Pipeline Install`
     1. Click on it and it should show the Operator Details Panel
-    1. click on `Create` which show an example as below
+    1. Click on `Create` which show an example as below
           <details>
               <summary> example </summary>
               ```yaml
 
-                apiVersion: tekton.dev/v1alpha1
-                kind: Install
-                metadata:
-                  name: example
-                  namespace: tekton-pipelines
-                spec: {}
+              apiVersion: tekton.dev/v1alpha1
+              kind: Install
+              metadata:
+                name: example
+                namespace: tekton-pipelines ### must be this
+              spec: {}
 
               ```
           </details>
     1. Verify that the pipeline is installed
         1. ensure pipeline pods are running
         1. ensure pipeline crds exist e.g. `kubectl get crds | grep tekton` should show
-          ```
+          ```shell
           clustertasks.tekton.dev
           installs.tekton.dev
           pipelineresources.tekton.dev
@@ -133,8 +130,7 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
 ### End to End workflow
 
-This section explains how to test changes to the operator  by executing the entire
-end-to-end workflow of edit, test, build, package etc... It asssumes you have already
+This section explains how to test changes to the operator by executing the entire end-to-end workflow of edit, test, build, package etc... It asssumes you have already
 followed install [minikube](#install-minikube) and [OLM](#install-olm).
 
 #### Generate new image, CSV
@@ -144,13 +140,18 @@ followed install [minikube](#install-minikube) and [OLM](#install-olm).
 1. Build operator image `operator-sdk build <imagename:tag>`
 1. Update image reference in `deploy/operator.yaml`
 1. Build csv using `opertor-sdk olm-catalog gen-csv --csv-version 0.0.<x>` **change `<x>`**
+1. Apply the CSV
+    ```shell
+    kubectl apply -f deploy/olm-catalog/tektoncd-operator/0.0.<x>/*.yaml
+    ```
+1. Verify that the new image is running
 
 #### Update Local CatalogSource
 
 1. clone the fork of [operator-registry fork][or-fork] where we have added tektoncd-pipeline manifests
     ```shell
-        git clone https://github.com/nikhil-thomas/operator-registry
-        git checkout -b pipeline-operator
+    git clone https://github.com/nikhil-thomas/operator-registry
+    git checkout -b pipeline-operator
     ```
 1.  Copy csv from *step 5* to `manifests` direcotry in `operator-registry`
   -  preserve directory structure
@@ -162,7 +163,6 @@ followed install [minikube](#install-minikube) and [OLM](#install-olm).
     ```
 1. Update image reference in catalog-src - `deploy`
 1. `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
-
 
 
 [web console]: http://localhost:9000
