@@ -154,16 +154,19 @@ It asssumes you have already followed install [minikube](#install-minikube) and 
     git clone https://github.com/nikhil-thomas/operator-registry
     git checkout -b pipeline-operator
     ```
-1.  Copy csv from *step 5* to `manifests` direcotry in `operator-registry`
-  -  preserve directory structure
-  -  make sure latest crd(s) are also there beside csv
-1. Build and push operator-registry image
+2.  Copy csv from *step 5* to `manifests` directory in `operator-registry`
+
+     **NOTE:** Be sure to preserve the directory structure
+     
+     **IMPORTANT:** Ensure latest crd(s) are also beside csv
+     
+3. Build and push operator-registry image
     ```shell
     docker build -t example-registry:latest -f upstream-example.Dockerfile
     docker push example-registry:latest
     ```
-1. Update image reference in catalog-src - `deploy`
-1. `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
+4. Update image reference in catalog-src - `deploy`
+   `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
 
 
 [web console]: http://localhost:9000
