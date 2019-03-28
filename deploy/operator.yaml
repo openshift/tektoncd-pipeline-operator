@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tektoncd-operator
+  namespace: tekton-pipelines
 spec:
   replicas: 1
   selector:
@@ -16,13 +17,16 @@ spec:
       containers:
         - name: tektoncd-operator
           # Replace this with the built image name
-          image: nikhilvep/tektoncd-operator:v0.0.1
+          image: nikhilvep/tektoncd-operator:0.0.4
           command:
           - tektoncd-operator
+          - --manifest=/data/resources
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
-              value: ""
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: POD_NAME
               valueFrom:
                 fieldRef:

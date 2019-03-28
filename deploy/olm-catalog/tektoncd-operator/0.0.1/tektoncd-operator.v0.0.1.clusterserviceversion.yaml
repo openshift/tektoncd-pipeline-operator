@@ -9,12 +9,12 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - kind: Setup
-      displayName: setup
-      description: custom resource to trigger install
-      name: setups.tekton.dev
+    - description: CRD to trigger install/delete of TektonCD-Pipeline
+      displayName: TektonCD-Pipeline Install
+      kind: Install
+      name: installs.tekton.dev
       version: v1alpha1
-  description: Placeholder description
+  description: Tektoncd Operator Cluster Service Version
   displayName: Tektoncd Operator
   install:
     spec:
@@ -38,6 +38,12 @@ spec:
           - namespaces
           verbs:
           - get
+          - list
+          - create
+          - update
+          - delete
+          - patch
+          - watch
         - apiGroups:
           - apps
           resources:
@@ -58,8 +64,80 @@ spec:
           - tekton.dev
           resources:
           - '*'
+          - installs
           verbs:
           - '*'
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - ""
+          resources:
+          - serviceaccounts
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - patch
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - apiextensions.k8s.io
+          resources:
+          - customresourcedefinitions
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - mutatingwebhookconfigurations
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - patch
+          - watch
+        - apiGroups:
+          - build.knative.dev
+          resources:
+          - builds
+          - buildtemplates
+          - clusterbuildtemplates
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - patch
+          - watch
+        - apiGroups:
+          - extensions
+          resources:
+          - deployments
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - patch
+          - watch
         serviceAccountName: tektoncd-operator
       deployments:
       - name: tektoncd-operator
@@ -77,15 +155,19 @@ spec:
               containers:
               - command:
                 - tektoncd-operator
+                - --manifest=/data/resources
                 env:
                 - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
                 - name: POD_NAME
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: tektoncd-operator
-                image: nikhilvep/tektoncd-operator:v0.0.1
+                image: nikhilvep/tektoncd-operator:0.0.4
                 imagePullPolicy: Always
                 name: tektoncd-operator
                 resources: {}
