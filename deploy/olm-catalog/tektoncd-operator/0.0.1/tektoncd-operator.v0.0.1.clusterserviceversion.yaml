@@ -168,7 +168,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: tektoncd-operator
-                image: nikhilvep/tektoncd-operator:0.0.4
+                image: sthaha/tektoncd-operator:v0.0.1-2
                 imagePullPolicy: Always
                 name: tektoncd-operator
                 resources: {}

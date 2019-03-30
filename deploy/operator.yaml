@@ -17,7 +17,7 @@ spec:
       containers:
         - name: tektoncd-operator
           # Replace this with the built image name
-          image: nikhilvep/tektoncd-operator:0.0.4
+          image: sthaha/tektoncd-operator:v0.0.1-2
           command:
           - tektoncd-operator
           - --manifest=/data/resources
