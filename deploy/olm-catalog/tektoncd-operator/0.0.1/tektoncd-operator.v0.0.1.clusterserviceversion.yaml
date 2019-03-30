@@ -156,6 +156,7 @@ spec:
               - command:
                 - tektoncd-operator
                 - --manifest=/data/resources
+                - --override-namespace
                 env:
                 - name: WATCH_NAMESPACE
                   valueFrom:

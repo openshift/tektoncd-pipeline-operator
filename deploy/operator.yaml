@@ -21,6 +21,7 @@ spec:
           command:
           - tektoncd-operator
           - --manifest=/data/resources
+          - --override-namespace
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
