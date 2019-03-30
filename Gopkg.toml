@@ -73,3 +73,7 @@ required = [
   [[prune.project]]
     name = "k8s.io/gengo"
     non-go = false
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jcrossley3/manifestival"
