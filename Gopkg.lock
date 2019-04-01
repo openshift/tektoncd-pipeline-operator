@@ -245,6 +245,14 @@
   version = "v0.3.7"
 
 [[projects]]
+  branch = "master"
+  digest = "1:a6bf1689470f489ac0d4109cdaaf421121decaf304ccdc4172afbc326fd65625"
+  name = "github.com/jcrossley3/manifestival"
+  packages = ["yaml"]
+  pruneopts = "NT"
+  revision = "f5dbe9f91641e3a25027414af373b4171bd84f4f"
+
+[[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
   name = "github.com/joho/godotenv"
   packages = ["."]
@@ -852,7 +860,6 @@
     "pkg/client/apiutil",
     "pkg/client/config",
     "pkg/controller",
-    "pkg/controller/controllerutil",
     "pkg/event",
     "pkg/handler",
     "pkg/internal/controller",
@@ -908,6 +915,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/go-openapi/spec",
+    "github.com/jcrossley3/manifestival/yaml",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
@@ -917,10 +925,13 @@
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
-    "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/yaml",
+    "k8s.io/client-go/dynamic",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+    "k8s.io/client-go/rest",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/conversion-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
@@ -933,7 +944,6 @@
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/controller",
-    "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil",
     "sigs.k8s.io/controller-runtime/pkg/handler",
     "sigs.k8s.io/controller-runtime/pkg/manager",
     "sigs.k8s.io/controller-runtime/pkg/reconcile",

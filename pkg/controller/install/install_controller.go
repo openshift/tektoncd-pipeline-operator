@@ -4,8 +4,8 @@ import (
 	"context"
 	"flag"
 
+	"github.com/jcrossley3/manifestival/yaml"
 	tektonv1alpha1 "github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1"
-	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/manifest"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -51,7 +51,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileInstall{
 		client: mgr.GetClient(),
 		scheme: mgr.GetScheme(),
-		config: manifest.NewYamlManifest(filename, mgr.GetConfig()),
+		config: yaml.NewYamlManifest(filename, mgr.GetConfig()),
 	}
 }
 
@@ -93,7 +93,7 @@ type ReconcileInstall struct {
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
-	config *manifest.YamlManifest
+	config *yaml.YamlManifest
 }
 
 // Reconcile reads that state of the cluster for a Install object and makes changes based on the state read
