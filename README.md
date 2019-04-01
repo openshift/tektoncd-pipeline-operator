@@ -63,7 +63,7 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
     `kubectl apply -f https://raw.githubusercontent.com/nikhil-thomas/operator-registry/pipeline-operator/deploy/operator-catalogsource.0.0.1.yaml`
 
     Once the CatalogSource has been applied, you should find it
-    under `Catatog > Operator Management`  of the [web console]
+    under `Catalog > Operator Management`  of the [web console]
 
 1. Subscribe to `Tektoncd Operator`
     1. Open [web console]
@@ -130,8 +130,9 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
 ### End to End workflow
 
-This section explains how to test changes to the operator by executing the entire end-to-end workflow of edit, test, build, package etc... It asssumes you have already
-followed install [minikube](#install-minikube) and [OLM](#install-olm).
+This section explains how to test changes to the operator by executing the entire end-to-end workflow of edit, test, build, package, etc... 
+
+It asssumes you have already followed install [minikube](#install-minikube) and [OLM](#install-olm).
 
 #### Generate new image, CSV
 
@@ -153,16 +154,19 @@ followed install [minikube](#install-minikube) and [OLM](#install-olm).
     git clone https://github.com/nikhil-thomas/operator-registry
     git checkout -b pipeline-operator
     ```
-1.  Copy csv from *step 5* to `manifests` direcotry in `operator-registry`
-  -  preserve directory structure
-  -  make sure latest crd(s) are also there beside csv
-1. Build and push operator-registry image
+2.  Copy csv from *step 5* to `manifests` directory in `operator-registry`
+
+     **NOTE:** Be sure to preserve the directory structure
+     
+     **IMPORTANT:** Ensure latest crd(s) are also beside csv
+     
+3. Build and push operator-registry image
     ```shell
     docker build -t example-registry:latest -f upstream-example.Dockerfile
     docker push example-registry:latest
     ```
-1. Update image reference in catalog-src - `deploy`
-1. `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
+4. Update image reference in catalog-src - `deploy`
+   `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
 
 
 [web console]: http://localhost:9000
