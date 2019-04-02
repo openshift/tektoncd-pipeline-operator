@@ -1,0 +1,277 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: tekton-pipelines
+---
+apiVersion: operators.coreos.com/v1alpha2
+kind: OperatorGroup
+metadata:
+ name: og-tekton-operator
+ namespace: tekton-pipelines
+spec:
+ targetNamespaces:
+ - tekton-pipelines
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: tektoncd-operators
+  namespace: tekton-pipelines
+spec:
+  configMap: tektoncd-operators
+  displayName: Tektoncd Operators
+  publisher: Red Hat
+  sourceType: internal
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tektoncd-operators
+  namespace: tekton-pipelines
+data:
+  customResourceDefinitions: |-
+    - apiVersion: apiextensions.k8s.io/v1beta1
+      kind: CustomResourceDefinition
+      metadata:
+        name: installs.tekton.dev
+      spec:
+        group: tekton.dev
+        names:
+          kind: Install
+          listKind: InstallList
+          plural: installs
+          singular: install
+        scope: Namespaced
+        subresources:
+          status: {}
+        validation:
+          openAPIV3Schema:
+            properties:
+              apiVersion:
+                description: 'APIVersion defines the versioned schema of this representation
+                  of an object. Servers should convert recognized schemas to the latest
+                  internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+                type: string
+              kind:
+                description: 'Kind is a string value representing the REST resource this
+                  object represents. Servers may infer this from the endpoint the client
+                  submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                type: string
+              metadata:
+                type: object
+              spec:
+                type: object
+              status:
+                properties:
+                  resources:
+                    description: The resources applied
+                    items:
+                      type: string
+                    type: array
+                  version:
+                    type: string
+                required:
+                - resources
+                - version
+                type: object
+        version: v1alpha1
+        versions:
+        - name: v1alpha1
+          served: true
+          storage: true
+  clusterServiceVersions: |-
+    - apiVersion: operators.coreos.com/v1alpha1
+      kind: ClusterServiceVersion
+      metadata:
+        annotations:
+          capabilities: Basic Install
+        name: tektoncd-operator.v0.0.1
+        namespace: tekton-pipelines
+      spec:
+        apiservicedefinitions: {}
+        customresourcedefinitions:
+          owned:
+          - description: CRD to trigger install/delete of TektonCD-Pipeline
+            displayName: TektonCD-Pipeline Install
+            kind: Install
+            name: installs.tekton.dev
+            version: v1alpha1
+        description: Tektoncd Operator Cluster Service Version
+        displayName: Tektoncd Operator
+        install:
+          spec:
+            clusterPermissions:
+            - rules:
+              - apiGroups:
+                - ""
+                resources:
+                - pods
+                - services
+                - endpoints
+                - persistentvolumeclaims
+                - events
+                - configmaps
+                - secrets
+                verbs:
+                - '*'
+              - apiGroups:
+                - ""
+                resources:
+                - namespaces
+                verbs:
+                - get
+                - list
+                - create
+                - update
+                - delete
+                - patch
+                - watch
+              - apiGroups:
+                - apps
+                resources:
+                - deployments
+                - daemonsets
+                - replicasets
+                - statefulsets
+                verbs:
+                - '*'
+              - apiGroups:
+                - monitoring.coreos.com
+                resources:
+                - servicemonitors
+                verbs:
+                - get
+                - create
+              - apiGroups:
+                - tekton.dev
+                resources:
+                - '*'
+                - installs
+                verbs:
+                - '*'
+              - apiGroups:
+                - rbac.authorization.k8s.io
+                resources:
+                - clusterroles
+                verbs:
+                - get
+                - create
+              - apiGroups:
+                - ""
+                resources:
+                - serviceaccounts
+                verbs:
+                - get
+                - list
+                - create
+                - update
+                - delete
+                - patch
+                - watch
+              - apiGroups:
+                - rbac.authorization.k8s.io
+                resources:
+                - clusterrolebindings
+                verbs:
+                - get
+                - create
+              - apiGroups:
+                - apiextensions.k8s.io
+                resources:
+                - customresourcedefinitions
+                verbs:
+                - get
+                - create
+              - apiGroups:
+                - admissionregistration.k8s.io
+                resources:
+                - mutatingwebhookconfigurations
+                verbs:
+                - get
+                - list
+                - create
+                - update
+                - delete
+                - patch
+                - watch
+              - apiGroups:
+                - build.knative.dev
+                resources:
+                - builds
+                - buildtemplates
+                - clusterbuildtemplates
+                verbs:
+                - get
+                - list
+                - create
+                - update
+                - delete
+                - patch
+                - watch
+              - apiGroups:
+                - extensions
+                resources:
+                - deployments
+                verbs:
+                - get
+                - list
+                - create
+                - update
+                - delete
+                - patch
+                - watch
+              serviceAccountName: tektoncd-operator
+            deployments:
+            - name: tektoncd-operator
+              spec:
+                replicas: 1
+                selector:
+                  matchLabels:
+                    name: tektoncd-operator
+                strategy: {}
+                template:
+                  metadata:
+                    labels:
+                      name: tektoncd-operator
+                  spec:
+                    containers:
+                    - command:
+                      - tektoncd-operator
+                      - --manifest=/data/resources
+                      - --override-namespace
+                      env:
+                      - name: WATCH_NAMESPACE
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.namespace
+                      - name: POD_NAME
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
+                      - name: OPERATOR_NAME
+                        value: tektoncd-operator
+                      image: sthaha/tektoncd-operator:v0.0.1-2
+                      imagePullPolicy: Always
+                      name: tektoncd-operator
+                      resources: {}
+                    serviceAccountName: tektoncd-operator
+          strategy: deployment
+        installModes:
+        - supported: true
+          type: OwnNamespace
+        - supported: true
+          type: SingleNamespace
+        - supported: false
+          type: MultiNamespace
+        - supported: true
+          type: AllNamespaces
+        maturity: alpha
+        provider: {}
+        version: 0.0.1
+  packages: |-
+    - packageName: tektoncd
+      kind: PackageManifest
+      channels:
+      - name: alpha
+        currentCSV: tektoncd-operator.v0.0.1
