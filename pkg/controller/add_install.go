@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/controller/install"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/install"
 )
 
 func init() {

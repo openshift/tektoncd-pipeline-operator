@@ -7,8 +7,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis"
-	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/controller"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/apis"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"

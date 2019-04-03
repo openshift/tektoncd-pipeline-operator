@@ -13,9 +13,9 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.Install":       schema_pkg_apis_tekton_v1alpha1_Install(ref),
-		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallSpec":   schema_pkg_apis_tekton_v1alpha1_InstallSpec(ref),
-		"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallStatus": schema_pkg_apis_tekton_v1alpha1_InstallStatus(ref),
+		"github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.Install":       schema_pkg_apis_tekton_v1alpha1_Install(ref),
+		"github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.InstallSpec":   schema_pkg_apis_tekton_v1alpha1_InstallSpec(ref),
+		"github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.InstallStatus": schema_pkg_apis_tekton_v1alpha1_InstallStatus(ref),
 	}
 }
 
@@ -46,19 +46,19 @@ func schema_pkg_apis_tekton_v1alpha1_Install(ref common.ReferenceCallback) commo
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallSpec"),
+							Ref: ref("github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.InstallSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallStatus"),
+							Ref: ref("github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.InstallStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallSpec", "github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1.InstallStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.InstallSpec", "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1.InstallStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

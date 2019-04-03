@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/openshift-cloud-functions/tektoncd-operator/pkg/apis/tekton/v1alpha1"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
 )
 
 func init() {
