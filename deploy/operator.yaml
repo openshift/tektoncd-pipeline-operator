@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tektoncd-operator
+  name: tektoncd-pipeline-operator
   namespace: tekton-pipelines
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: tektoncd-operator
+      name: tektoncd-pipeline-operator
   template:
     metadata:
       labels:
-        name: tektoncd-operator
+        name: tektoncd-pipeline-operator
     spec:
-      serviceAccountName: tektoncd-operator
+      serviceAccountName: tektoncd-pipeline-operator
       containers:
-        - name: tektoncd-operator
+        - name: tektoncd-pipeline-operator
           # Replace this with the built image name
-          image: sthaha/tektoncd-operator:v0.0.1-2
+          image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-1
           command:
-          - tektoncd-operator
+          - tektoncd-pipeline-operator
           - --manifest=/data/resources
           - --override-namespace
           imagePullPolicy: Always
@@ -33,4 +33,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "tektoncd-operator"
+              value: "tektoncd-pipeline-operator"
