@@ -3,17 +3,17 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     capabilities: Basic Install
-  name: tektoncd-operator.v0.0.1
+  name: tektoncd-pipeline-operator.v0.0.1
   namespace: tekton-pipelines
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: CRD to trigger install/delete of TektonCD-Pipeline
-      displayName: TektonCD-Pipeline Install
-      kind: Install
+    - kind: Install
       name: installs.tekton.dev
       version: v1alpha1
+      description: CRD to trigger install/delete of TektonCD-Pipeline
+      displayName: TektonCD-Pipeline Install
   description: Tektoncd Operator Cluster Service Version
   displayName: Tektoncd Operator
   install:
@@ -138,23 +138,23 @@ spec:
           - delete
           - patch
           - watch
-        serviceAccountName: tektoncd-operator
+        serviceAccountName: tektoncd-pipeline-operator
       deployments:
-      - name: tektoncd-operator
+      - name: tektoncd-pipeline-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              name: tektoncd-operator
+              name: tektoncd-pipeline-operator
           strategy: {}
           template:
             metadata:
               labels:
-                name: tektoncd-operator
+                name: tektoncd-pipeline-operator
             spec:
               containers:
               - command:
-                - tektoncd-operator
+                - tektoncd-pipeline-operator
                 - --manifest=/data/resources
                 - --override-namespace
                 env:
@@ -167,12 +167,12 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
-                  value: tektoncd-operator
-                image: sthaha/tektoncd-operator:v0.0.1-2
+                  value: tektoncd-pipeline-operator
+                image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-1
                 imagePullPolicy: Always
-                name: tektoncd-operator
+                name: tektoncd-pipeline-operator
                 resources: {}
-              serviceAccountName: tektoncd-operator
+              serviceAccountName: tektoncd-pipeline-operator
     strategy: deployment
   installModes:
   - supported: true
