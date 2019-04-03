@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tektoncd-operator
+  namespace: tekton-pipelines
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: tektoncd-operator
+  template:
+    metadata:
+      labels:
+        name: tektoncd-operator
+    spec:
+      serviceAccountName: tektoncd-operator
+      containers:
+        - name: tektoncd-operator
+          # Replace this with the built image name
+          image: sthaha/tektoncd-operator:v0.0.1-2
+          command:
+          - tektoncd-operator
+          - --manifest=/data/resources
+          - --override-namespace
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "tektoncd-operator"
