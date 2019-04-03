@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tektoncd-pipeline-operator
+  namespace: tekton-pipelines
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: tektoncd-pipeline-operator
+  template:
+    metadata:
+      labels:
+        name: tektoncd-pipeline-operator
+    spec:
+      serviceAccountName: tektoncd-pipeline-operator
+      containers:
+        - name: tektoncd-pipeline-operator
+          # Replace this with the built image name
+          image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-1
+          command:
+          - tektoncd-pipeline-operator
+          - --manifest=/data/resources
+          - --override-namespace
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "tektoncd-pipeline-operator"

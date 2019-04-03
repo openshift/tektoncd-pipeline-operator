@@ -1,0 +1,8 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Install
+metadata:
+  name: example-install
+  namespace: tekton-pipelines
+spec:
+  # Add fields here
+  size: 3
