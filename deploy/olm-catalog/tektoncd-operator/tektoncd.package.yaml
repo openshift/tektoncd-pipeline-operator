@@ -1,0 +1,5 @@
+packageName: tektoncd
+kind: PackageManifest
+channels:
+- name: alpha
+  currentCSV: tektoncd-operator.v0.0.1
