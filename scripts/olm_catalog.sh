@@ -9,7 +9,7 @@ CRDDIR=${DIR:-$(cd $(dirname "$0")/../deploy/crds && pwd)}
 PKGDIR=${DIR:-$(cd $(dirname "$0")/../deploy/olm-catalog/tektoncd-pipeline-operator && pwd)}
 CSVDIR=${DIR:-$(cd ${PKGDIR}/0.0.1 && pwd)}
 
-NAME=${NAME:-tektoncd-pipeline-operators}
+NAME=${NAME:-tektoncd-pipeline-operator-registry}
 x=( $(echo $NAME | tr '-' ' ') )
 DISPLAYNAME=${DISPLAYNAME:=${x[*]^}}
 
