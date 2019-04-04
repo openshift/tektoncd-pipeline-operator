@@ -18,18 +18,18 @@ spec:
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: tektoncd-pipeline-operators
+  name: tektoncd-pipeline-operator-registry
   namespace: tekton-pipelines
 spec:
-  configMap: tektoncd-pipeline-operators
-  displayName: Tektoncd Pipeline Operators
+  configMap: tektoncd-pipeline-operator-registry
+  displayName: Tektoncd Pipeline Operator Registry
   publisher: Red Hat
   sourceType: internal
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: tektoncd-pipeline-operators
+  name: tektoncd-pipeline-operator-registry
   namespace: tekton-pipelines
 data:
   customResourceDefinitions: |-
