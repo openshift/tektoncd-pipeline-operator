@@ -3,6 +3,8 @@ package install
 import (
 	"context"
 	"flag"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/jcrossley3/manifestival/yaml"
 	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
@@ -28,10 +30,35 @@ var (
 )
 
 func init() {
-	flag.StringVar(&filename, "manifest", "deploy/resources",
+	flag.StringVar(&filename, "manifest", latestVersionDir("deploy/resources"),
 		"The filename containing the tekton-cd pipeline release resources")
 	flag.BoolVar(&autoInstall, "auto-install", false,
 		"Automatically install pipeline if none exists")
+}
+
+// finds the directory in path that is latest
+func latestVersionDir(path string) string {
+	entries, err := ioutil.ReadDir(path)
+	if err != nil {
+		return path
+	}
+	// find the latest dir traversing back
+	if len(entries) == 0 {
+		return path
+	}
+
+	latest := ""
+	for i := len(entries) - 1; i >= 0; i-- {
+		f := entries[i]
+		if f.IsDir() {
+			latest = filepath.Join(path, f.Name())
+			break
+		}
+	}
+	if latest == "" {
+		return path
+	}
+	return latest
 }
 
 /**
