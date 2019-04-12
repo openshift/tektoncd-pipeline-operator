@@ -245,7 +245,6 @@
   version = "v0.3.7"
 
 [[projects]]
-  branch = "master"
   digest = "1:33ebb6e7d555376a0df26a576c22b921aed11faa37a23c24436d0fca5112f0e0"
   name = "github.com/jcrossley3/manifestival"
   packages = ["."]
@@ -462,11 +461,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2c0b9b49d155596fecc071bce8db372c193f638265c11ab24914aae99fcfa704"
+  digest = "1:98aa4a4a4f424cde92614ade7dac45f66c898e2acb8973f809cf9a424ec625e9"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NT"
-  revision = "38d8ce5564a5b71b2e3a00553993f1b9a7ae852f"
+  revision = "88737f569e3a9c7ab309cdc09a07fe7fc87233c3"
 
 [[projects]]
   branch = "master"
@@ -499,14 +498,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dce1fe2a2ee4028c0914e78d251d199368b4c7fcccb86bdadcd3e2191a93a63f"
+  digest = "1:c5dad4a628155d4fbcba8f2e93df089fc70dba294495467214a172061710132c"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "NT"
-  revision = "0ad05ae3009d6413d3363aa09b350b2ec37daf09"
+  revision = "b44545bcd369ef9ff9bebcfebf5f3370ef9b1932"
 
 [[projects]]
   digest = "1:8c74f97396ed63cc2ef04ebb5fc37bb032871b8fd890a25991ed40974b00cd2a"
@@ -542,7 +541,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d2e182976cb693e215f0e60768da50faf7e7702bd8b674edd59b9d8244fbd882"
+  digest = "1:a96f32f0fa2fdbaeb48af139dc9c74f7c097e859847716ef5e8e8f5374df5f1c"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -558,7 +557,7 @@
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "2538eef75904eff384a2551359968e40c207d9d2"
+  revision = "681f9ce8ac52c4ba431539a515ecb7f2ab72eca0"
 
 [[projects]]
   digest = "1:711179d92dbef98932acd7afd0dab80b4cf2d97f099f3285c9ba8fa451809fec"
@@ -821,12 +820,12 @@
   revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
-  digest = "1:29f93bb84d907a2c035e729e19d66fe52165d8c905cb3ef1920140d76ae6afaf"
+  digest = "1:300621bb4f98c1440b7298b376058928baf1fceb221a7f4520a92b7b9919bb3d"
   name = "k8s.io/klog"
   packages = ["."]
   pruneopts = "NT"
-  revision = "71442cd4037d612096940ceb0f3fec3f7fff66e0"
-  version = "v0.2.0"
+  revision = "e531227889390a39d9533dde61f590fe9f4b0035"
+  version = "v0.3.0"
 
 [[projects]]
   digest = "1:c48a795cd7048bb1888273bc604b6e69b22f9b8089c3df65f77cc527757b515c"
