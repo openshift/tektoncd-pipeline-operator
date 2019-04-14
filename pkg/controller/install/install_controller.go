@@ -129,7 +129,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	if autoInstall {
-		go createInstallCR(mgr.GetClient())
+		ns, err := k8sutil.GetWatchNamespace()
+		if err != nil {
+			return err
+		}
+		go autoCreateCR(mgr.GetClient(), ns)
 	}
 	return nil
 }
@@ -214,33 +218,31 @@ func isUptodate(instance *tektonv1alpha1.Install) bool {
 	return true
 }
 
-func createInstallCR(c client.Client) error {
-	installLog := log.WithValues("sub", "auto-install")
-
-	ns, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return err
-	}
-
+func autoCreateCR(c client.Client, ns string) error {
 	installList := &tektonv1alpha1.InstallList{}
-	err = c.List(context.TODO(), &client.ListOptions{Namespace: ns}, installList)
+	err := c.List(context.TODO(),
+		&client.ListOptions{Namespace: ns},
+		installList,
+	)
 	if err != nil {
-		installLog.Error(err, "Unable to list Installs")
+		log.Error(err, "unable to list install instances")
 		return err
 	}
-	if len(installList.Items) >= 1 {
+	if len(installList.Items) > 0 {
 		return nil
 	}
 
-	install := &tektonv1alpha1.Install{
+	cr := &tektonv1alpha1.Install{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "auto-install",
 			Namespace: ns,
 		},
 	}
-	if err := c.Create(context.TODO(), install); err != nil {
-		installLog.Error(err, "auto-install: failed to create Install CR")
+	err = c.Create(context.TODO(), cr)
+	if err != nil {
+		log.Error(err, "unable to create install custom resource")
 		return err
 	}
+
 	return nil
 }
