@@ -75,5 +75,5 @@ required = [
     non-go = false
 
 [[constraint]]
-  branch = "master"
   name = "github.com/jcrossley3/manifestival"
+  revision = "8f133cb9c6c9d11ce74eeee056d3fc76d5e756ca"

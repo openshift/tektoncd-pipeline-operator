@@ -3,11 +3,13 @@ package install
 import (
 	"context"
 	"flag"
+	"io/ioutil"
+	"path/filepath"
 
-	"github.com/jcrossley3/manifestival/yaml"
 	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
+	mf "github.com/jcrossley3/manifestival"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,16 +24,54 @@ import (
 )
 
 var (
-	filename    string
-	autoInstall bool
-	log         = logf.Log.WithName("controller_install")
+	resourceDir      string
+	autoInstall      bool
+	disableRecursive bool
+	tektonVersion    string
+	log              = logf.Log.WithName("controller_install")
 )
 
 func init() {
-	flag.StringVar(&filename, "manifest", "deploy/resources",
-		"The filename containing the tekton-cd pipeline release resources")
-	flag.BoolVar(&autoInstall, "auto-install", false,
-		"Automatically install pipeline if none exists")
+	flag.StringVar(&tektonVersion,
+		"tekton-version",
+		"latest",
+		"tektoncd pipeline version to be installed",
+	)
+	flag.BoolVar(&autoInstall,
+		"auto-install",
+		false,
+		"Automatically install pipeline if none exists",
+	)
+	flag.BoolVar(&disableRecursive,
+		"disable-recursive",
+		false,
+		"If filename is a directory skip processing manifests in sub directories",
+	)
+}
+
+// finds the directory in path that is latest
+func latestVersionDir(path string) string {
+	entries, err := ioutil.ReadDir(path)
+	if err != nil {
+		return path
+	}
+	// find the latest dir traversing back
+	if len(entries) == 0 {
+		return path
+	}
+
+	latest := ""
+	for i := len(entries) - 1; i >= 0; i-- {
+		f := entries[i]
+		if f.IsDir() {
+			latest = filepath.Join(path, f.Name())
+			break
+		}
+	}
+	if latest == "" {
+		return path
+	}
+	return latest
 }
 
 /**
@@ -48,10 +88,19 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
+	resourceDir = filepath.Join("deploy", "resources")
+	switch {
+	case tektonVersion == "latest":
+		resourceDir = latestVersionDir("deploy/resources")
+		tektonVersion = filepath.Base(resourceDir)
+	default:
+		resourceDir = filepath.Join(resourceDir, tektonVersion)
+	}
+
 	return &ReconcileInstall{
-		client: mgr.GetClient(),
-		scheme: mgr.GetScheme(),
-		config: yaml.NewYamlManifest(filename, mgr.GetConfig()),
+		client:   mgr.GetClient(),
+		scheme:   mgr.GetScheme(),
+		manifest: mf.NewYamlManifest(resourceDir, disableRecursive, mgr.GetConfig()),
 	}
 }
 
@@ -80,7 +129,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	if autoInstall {
-		go createInstallCR(mgr.GetClient())
+		ns, err := k8sutil.GetWatchNamespace()
+		if err != nil {
+			return err
+		}
+		go autoCreateCR(mgr.GetClient(), ns)
 	}
 	return nil
 }
@@ -91,9 +144,9 @@ var _ reconcile.Reconciler = &ReconcileInstall{}
 type ReconcileInstall struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
-	config *yaml.YamlManifest
+	client   client.Client
+	scheme   *runtime.Scheme
+	manifest mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Install object and makes changes based on the state read
@@ -106,7 +159,7 @@ type ReconcileInstall struct {
 func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Install")
-	reqLogger.Info("Pipeline Release Path", "path", filename)
+	reqLogger.Info("Pipeline Release Path", "path", resourceDir)
 
 	// Fetch the Install instance
 	instance := &tektonv1alpha1.Install{}
@@ -115,54 +168,81 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			r.manifest.DeleteAll()
 			// Return and don't requeue
-			r.config.Delete()
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 
-	if instance.Status.Resources != nil {
-		reqLogger.Info("skipping installation resources already set for setup crd")
+	if isUptodate(instance) {
+		reqLogger.Info("skipping installation, resources are already installed")
 		return reconcile.Result{}, nil
 	}
 
-	if err := r.config.Apply(instance); err != nil {
+	err = r.install(instance)
+	if err != nil {
 		reqLogger.Error(err, "failed to apply pipeline manifest")
 		return reconcile.Result{}, err
 	}
-	return reconcile.Result{}, nil
 
+	instance.Status.Version = tektonVersion
+	instance.Status.Resources = r.manifest.ResourceNames()
+
+	err = r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, nil
 }
 
-func createInstallCR(c client.Client) error {
-	installLog := log.WithValues("sub", "auto-install")
-
-	ns, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return err
+func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
+	filters := []mf.FilterFn{
+		mf.ByOwner(instance),
+		mf.ByNamespace(instance.GetNamespace()),
 	}
 
+	r.manifest.Filter(filters...)
+	return r.manifest.ApplyAll()
+}
+
+func isUptodate(instance *tektonv1alpha1.Install) bool {
+	switch {
+	case instance.Status.Version != tektonVersion:
+		return false
+	case instance.Status.Resources != nil:
+		return false
+	}
+	return true
+}
+
+func autoCreateCR(c client.Client, ns string) error {
 	installList := &tektonv1alpha1.InstallList{}
-	err = c.List(context.TODO(), &client.ListOptions{Namespace: ns}, installList)
+	err := c.List(context.TODO(),
+		&client.ListOptions{Namespace: ns},
+		installList,
+	)
 	if err != nil {
-		installLog.Error(err, "Unable to list Installs")
+		log.Error(err, "unable to list install instances")
 		return err
 	}
-	if len(installList.Items) >= 1 {
+	if len(installList.Items) > 0 {
 		return nil
 	}
 
-	install := &tektonv1alpha1.Install{
+	cr := &tektonv1alpha1.Install{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "auto-install",
 			Namespace: ns,
 		},
 	}
-	if err := c.Create(context.TODO(), install); err != nil {
-		installLog.Error(err, "auto-install: failed to create Install CR")
+	err = c.Create(context.TODO(), cr)
+	if err != nil {
+		log.Error(err, "unable to create install custom resource")
 		return err
 	}
+
 	return nil
 }

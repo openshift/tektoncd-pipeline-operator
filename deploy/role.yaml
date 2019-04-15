@@ -58,6 +58,7 @@ rules:
   verbs:
   - get
   - create
+  - update
 - apiGroups:
   - ""
   resources:
@@ -77,6 +78,7 @@ rules:
   verbs:
   - get
   - create
+  - update
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -84,6 +86,7 @@ rules:
   verbs:
   - get
   - create
+  - update
 - apiGroups:
   - admissionregistration.k8s.io
   resources:
@@ -114,6 +117,18 @@ rules:
   - extensions
   resources:
   - deployments
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch
+- apiGroups:
+  - extensions
+  resources:
+  - deployments/finalizers
   verbs:
   - get
   - list

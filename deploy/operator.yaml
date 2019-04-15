@@ -17,11 +17,9 @@ spec:
       containers:
         - name: tektoncd-pipeline-operator
           # Replace this with the built image name
-          image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-1
+          image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-11
           command:
           - tektoncd-pipeline-operator
-          - --manifest=/data/resources
-          - --override-namespace
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

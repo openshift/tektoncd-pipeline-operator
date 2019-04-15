@@ -159,6 +159,7 @@ data:
                 verbs:
                 - get
                 - create
+                - update
               - apiGroups:
                 - ""
                 resources:
@@ -178,6 +179,7 @@ data:
                 verbs:
                 - get
                 - create
+                - update
               - apiGroups:
                 - apiextensions.k8s.io
                 resources:
@@ -185,6 +187,7 @@ data:
                 verbs:
                 - get
                 - create
+                - update
               - apiGroups:
                 - admissionregistration.k8s.io
                 resources:
@@ -223,6 +226,18 @@ data:
                 - delete
                 - patch
                 - watch
+              - apiGroups:
+                - extensions
+                resources:
+                - deployments/finalizers
+                verbs:
+                - get
+                - list
+                - create
+                - update
+                - delete
+                - patch
+                - watch
               serviceAccountName: tektoncd-pipeline-operator
             deployments:
             - name: tektoncd-pipeline-operator
@@ -240,8 +255,7 @@ data:
                     containers:
                     - command:
                       - tektoncd-pipeline-operator
-                      - --manifest=/data/resources
-                      - --override-namespace
+                      #- --auto-install
                       env:
                       - name: WATCH_NAMESPACE
                         valueFrom:
@@ -253,7 +267,7 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: tektoncd-pipeline-operator
-                      image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-1
+                      image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-11
                       imagePullPolicy: Always
                       name: tektoncd-pipeline-operator
                       resources: {}

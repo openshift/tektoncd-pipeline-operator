@@ -1,0 +1,3 @@
+metadata.namespace: tekton-pipelines
+spec.customresourcedefinitions.owned.displayName: TektonCD-Pipeline Install
+spec.customresourcedefinitions.owned.description: CRD to trigger install/delete of TektonCD-Pipeline
