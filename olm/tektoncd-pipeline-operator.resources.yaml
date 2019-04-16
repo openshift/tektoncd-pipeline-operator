@@ -255,7 +255,6 @@ data:
                     containers:
                     - command:
                       - tektoncd-pipeline-operator
-                      #- --auto-install
                       env:
                       - name: WATCH_NAMESPACE
                         valueFrom:
@@ -267,7 +266,7 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: tektoncd-pipeline-operator
-                      image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.0.1-11
+                      image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.2.0-1
                       imagePullPolicy: Always
                       name: tektoncd-pipeline-operator
                       resources: {}

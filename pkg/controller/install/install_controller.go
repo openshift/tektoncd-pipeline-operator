@@ -3,7 +3,6 @@ package install
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"path/filepath"
 
 	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
@@ -24,54 +23,29 @@ import (
 )
 
 var (
-	resourceDir      string
-	autoInstall      bool
-	disableRecursive bool
-	tektonVersion    string
-	log              = logf.Log.WithName("controller_install")
+	tektonVersion = "v0.2.0"
+	resourceDir   string
+	autoInstall   bool
+	recursive     bool
+	log           = logf.Log.WithName("controller_install")
 )
 
 func init() {
-	flag.StringVar(&tektonVersion,
-		"tekton-version",
-		"latest",
-		"tektoncd pipeline version to be installed",
+	flag.StringVar(&resourceDir,
+		"resource-dir",
+		filepath.Join("deploy", "resources", tektonVersion),
+		"Path to resource manifests",
 	)
 	flag.BoolVar(&autoInstall,
 		"auto-install",
 		false,
-		"Automatically install pipeline if none exists",
+		"Automatically create an install custom resource (install pipeline)",
 	)
-	flag.BoolVar(&disableRecursive,
-		"disable-recursive",
+	flag.BoolVar(&recursive,
+		"recursive",
 		false,
-		"If filename is a directory skip processing manifests in sub directories",
+		"If enabled apply manifest file in resource directory recursively",
 	)
-}
-
-// finds the directory in path that is latest
-func latestVersionDir(path string) string {
-	entries, err := ioutil.ReadDir(path)
-	if err != nil {
-		return path
-	}
-	// find the latest dir traversing back
-	if len(entries) == 0 {
-		return path
-	}
-
-	latest := ""
-	for i := len(entries) - 1; i >= 0; i-- {
-		f := entries[i]
-		if f.IsDir() {
-			latest = filepath.Join(path, f.Name())
-			break
-		}
-	}
-	if latest == "" {
-		return path
-	}
-	return latest
 }
 
 /**
@@ -87,20 +61,10 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-
-	resourceDir = filepath.Join("deploy", "resources")
-	switch {
-	case tektonVersion == "latest":
-		resourceDir = latestVersionDir("deploy/resources")
-		tektonVersion = filepath.Base(resourceDir)
-	default:
-		resourceDir = filepath.Join(resourceDir, tektonVersion)
-	}
-
 	return &ReconcileInstall{
 		client:   mgr.GetClient(),
 		scheme:   mgr.GetScheme(),
-		manifest: mf.NewYamlManifest(resourceDir, disableRecursive, mgr.GetConfig()),
+		manifest: mf.NewYamlManifest(resourceDir, recursive, mgr.GetConfig()),
 	}
 }
 
