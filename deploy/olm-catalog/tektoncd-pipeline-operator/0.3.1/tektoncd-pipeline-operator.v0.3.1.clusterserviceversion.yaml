@@ -5,7 +5,7 @@ metadata:
     capabilities: Basic Install
     categories: "Developer Tools"
     description: An operator to install TektonCD Pipeline
-    containerImage: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.2.0-1
+    containerImage: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.2.0-2
     createdAt: 2019-03-15T19:44:21Z
     certified: "false"
     support: Red Hat, Inc.
