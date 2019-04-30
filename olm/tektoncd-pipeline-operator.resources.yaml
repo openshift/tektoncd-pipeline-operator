@@ -100,7 +100,7 @@ data:
                 "spec": {}
               }
             ]
-        name: tektoncd-pipeline-operator.v0.0.1
+        name: tektoncd-pipeline-operator.v0.3.1
         namespace: tekton-pipelines
       spec:
         apiservicedefinitions: {}
@@ -165,6 +165,7 @@ data:
                 - daemonsets
                 - replicasets
                 - statefulsets
+                - deployments/finalizers
                 verbs:
                 - '*'
               - apiGroups:
@@ -189,6 +190,7 @@ data:
                 - get
                 - create
                 - update
+                - delete
               - apiGroups:
                 - ""
                 resources:
@@ -209,6 +211,7 @@ data:
                 - get
                 - create
                 - update
+                - delete
               - apiGroups:
                 - apiextensions.k8s.io
                 resources:
@@ -217,6 +220,7 @@ data:
                 - get
                 - create
                 - update
+                - delete
               - apiGroups:
                 - admissionregistration.k8s.io
                 resources:
@@ -267,6 +271,15 @@ data:
                 - delete
                 - patch
                 - watch
+              - apiGroups:
+                - policy
+                resources:
+                - podsecuritypolicies
+                verbs:
+                - get
+                - create
+                - update
+                - use
               serviceAccountName: tektoncd-pipeline-operator
             deployments:
             - name: tektoncd-pipeline-operator
@@ -295,7 +308,7 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: tektoncd-pipeline-operator
-                      image: quay.io/rhpipeline/nikthoma_tektoncd-pipeline-operator:v0.2.0-1
+                      image: quay.io/openshift-pipeline/tektoncd-pipeline-operator:v0.3.1-2
                       imagePullPolicy: Always
                       name: tektoncd-pipeline-operator
                       resources: {}
@@ -312,10 +325,10 @@ data:
           type: AllNamespaces
         maturity: alpha
         provider: {}
-        version: 0.0.1
+        version: 0.3.1
   packages: |-
-    - packageName: tektoncd
+    - packageName: tektoncd-pipeline-operator
       kind: PackageManifest
       channels:
       - name: alpha
-        currentCSV: tektoncd-pipeline-operator.v0.0.1
+        currentCSV: tektoncd-pipeline-operator.v0.3.1

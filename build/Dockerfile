@@ -1,4 +1,4 @@
-FROM alpine:3.8
+FROM registry.access.redhat.com/ubi8-dev-preview/ubi-minimal:latest
 
 ENV OPERATOR=/usr/local/bin/tektoncd-pipeline-operator \
     USER_UID=1001 \

@@ -1,0 +1,5 @@
+packageName: tektoncd-pipeline-operator
+kind: PackageManifest
+channels:
+- name: alpha
+  currentCSV: tektoncd-pipeline-operator.v0.3.1
