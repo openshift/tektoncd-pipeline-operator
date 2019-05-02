@@ -44,15 +44,15 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
 1. Apply operator crd
 
-   `kubectl apply deploy/crds/*_crd.yaml`
+   `kubectl apply -f deploy/crds/*_crd.yaml`
 
 1. Deploy the operator
 
-    `kubectl -n tekton-pipelines apply -f deploy/`
+    `kubectl apply -f deploy/ -n tekton-pipelines`
 
 1. Install pipeline by creating an `Install` CR
 
-    `kubectl apply deploy/crds/*_cr.yaml`
+    `kubectl apply -f deploy/crds/*_cr.yaml`
 
 ### Deploy pipeline using CatalogSource on OLM
 
