@@ -17,7 +17,7 @@ spec:
       containers:
         - name: tektoncd-pipeline-operator
           # Replace this with the built image name
-          image: quay.io/openshift-pipeline/tektoncd-pipeline-operator:v0.3.1-3
+          image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
           command:
           - tektoncd-pipeline-operator
           imagePullPolicy: Always

@@ -89,7 +89,7 @@ data:
         annotations:
           capabilities: Basic Install
           description: An operator to install TektonCD Pipeline
-          containerImage: quay.io/openshift-pipeline/tektoncd-pipeline-operator:v0.3.1-3
+          containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
           createdAt: 2019-03-15T19:44:21Z
           certified: "false"
           support: Red Hat, Inc.
@@ -341,7 +341,7 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: tektoncd-pipeline-operator
-                      image: quay.io/openshift-pipeline/tektoncd-pipeline-operator:v0.3.1-3
+                      image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
                       imagePullPolicy: Always
                       name: tektoncd-pipeline-operator
                       resources: {}
