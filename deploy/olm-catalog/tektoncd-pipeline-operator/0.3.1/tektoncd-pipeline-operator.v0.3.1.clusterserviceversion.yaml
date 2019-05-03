@@ -48,13 +48,25 @@ spec:
       displayName: TektonCD-Pipeline Install
       description: CRD to trigger install/delete of TektonCD-Pipeline
       resources:
-      - kind: Pod
+      - kind: clusterroles
         version: v1
-      - kind: Service
+      - kind: customresourcedefinitions
+        version: v1beta1
+      - kind: deployments
+        version: v1beta1
+      - kind: podsecuritypolicies
+        version: v1beta1
+      - kind: clusterrolebindings
+        version: v1beta1
+      - kind: services
         version: v1
-      - kind: ServiceAccount
+      - kind: pods
         version: v1
-      - kind: ConfigMap
+      - kind: configmaps
+        version: v1
+      - kind: installs
+        version: v1alpha1
+      - kind: serviceaccounts
         version: v1
       specDescriptors: []
       statusDescriptors:
