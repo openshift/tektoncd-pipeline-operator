@@ -88,7 +88,8 @@ data:
       metadata:
         annotations:
           capabilities: Basic Install
-          description: An operator to install TektonCD Pipeline
+          categories: "Developer Tools"
+          description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
           containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
           createdAt: 2019-03-15T19:44:21Z
           certified: "false"
@@ -100,7 +101,7 @@ data:
                 "apiVersion": "tekton.dev/v1alpha1",
                 "kind": "Install",
                 "metadata": {
-                  "name": "example-install"
+                  "name": "pipelines-install"
                 },
                 "spec": {}
               }
@@ -108,7 +109,7 @@ data:
         name: tektoncd-pipeline-operator.v0.3.1
         namespace: placeholder
       spec:
-        version: 0.0.1
+        version: 0.3.1
         maturity: alpha
         provider:
           name: Red Hat, Inc.
@@ -121,7 +122,7 @@ data:
         links:
         - name: Tekton Pipeline GitHub Repository
           url: https://github.com/tektoncd/pipeline
-        - name: Tekton Pipeline Operator GitHub Repository
+        - name: OpenShift Pipelines Operator GitHub Repository
           url: https://github.com/openshift/tektoncd-pipeline-operator
         keywords: ['tektoncd', 'build', 'pipeline']
         apiservicedefinitions: {}
@@ -130,8 +131,8 @@ data:
           - name: installs.tekton.dev
             version: v1alpha1
             kind: Install
-            displayName: TektonCD-Pipeline Install
-            description: CRD to trigger install/delete of TektonCD-Pipeline
+            displayName: OpenShift Pipelines Install
+            description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
             resources:
             - kind: clusterroles
               version: v1
@@ -158,11 +159,19 @@ data:
             - description: List of resources installed by the operator for this cr
               displayName: Installed Resources
               path: resources
-            - description: Version of Tektoncd Pipeline installed
-              displayName: Tektoncd Pipeline Version
+            - description: Version of Tekton Pipeline installed
+              displayName: Tekton Pipeline Version
               path: version
-        description: Kubernetes operator to install TektonCD-Pipeline
-        displayName: TektonCD Pipeline Operator
+        description: |
+          OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines 
+          using [Tekton](https://tekton.dev) concepts which run natively on OpenShift and Kubernetes.
+
+          OpenShift Pipelines enables:
+          * Defining CI/CD pipelines using Tekton CRDs
+          * Running pipelines on-demand in separate pods
+          * Serverless execution of pipelines
+          * Portability across any Kubernetes platform
+        displayName: OpenShift Pipelines Operator
         install:
           spec:
             clusterPermissions:
