@@ -165,7 +165,6 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 	filters := []mf.FilterFn{
 		mf.ByOwner(instance),
-		mf.ByNamespace(instance.GetNamespace()),
 	}
 
 	r.manifest.Filter(filters...)

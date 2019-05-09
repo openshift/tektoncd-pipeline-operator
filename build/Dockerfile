@@ -1,8 +1,8 @@
 FROM registry.access.redhat.com/ubi8-dev-preview/ubi-minimal:latest
 
-ENV OPERATOR=/usr/local/bin/tektoncd-pipeline-operator \
+ENV OPERATOR=/usr/local/bin/openshift-pipelines-operator \
     USER_UID=1001 \
-    USER_NAME=tektoncd-pipeline-operator
+    USER_NAME=openshift-pipelines-operator
 
 # install operator binary
 COPY build/_output/bin/tektoncd-pipeline-operator ${OPERATOR}

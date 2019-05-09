@@ -3,48 +3,93 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     capabilities: Basic Install
+    categories: "Developer Tools"
+    description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
+    containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
+    createdAt: 2019-03-15T19:44:21Z
+    certified: "false"
+    support: Red Hat, Inc.
+    repository: https://github.com/openshift/tektoncd-pipeline-operator
     alm-examples: |
       [
         {
           "apiVersion": "tekton.dev/v1alpha1",
           "kind": "Install",
           "metadata": {
-            "name": "example-install",
-            "namespace": "tekton-pipelines"
-        },
+            "name": "pipelines-install"
+          },
           "spec": {}
         }
       ]
-  name: tektoncd-pipeline-operator.v0.3.1
-  namespace: tekton-pipelines
+  name: openshift-pipelines-operator.v0.3.1
+  namespace: placeholder
 spec:
+  version: 0.3.1
+  maturity: alpha
+  provider:
+    name: Red Hat, Inc.
+  maintainers:
+  - name: Red Hat, Inc.
+    email: customerservice@redhat.com
+  links:
+  - name: Openshift Tektoncd Pipeline GitHub Repository
+    url: https://github.com/openshift/tektoncd-pipeline
+  - name: OpenShift Pipelines Operator GitHub Repository
+    url: https://github.com/openshift/tektoncd-pipeline-operator
+  keywords: ['tektoncd', 'openshift', 'build', 'pipeline']
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
     - name: installs.tekton.dev
       version: v1alpha1
       kind: Install
-      displayName: TektonCD-Pipeline Install
-      description: CRD to trigger install/delete of TektonCD-Pipeline
+      displayName: OpenShift Pipelines Install
+      description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
       resources:
-      - kind: Pod
+      - kind: clusterroles
         version: v1
-      - kind: Service
+      - kind: customresourcedefinitions
+        version: v1beta1
+      - kind: deployments
+        version: v1beta1
+      - kind: podsecuritypolicies
+        version: v1beta1
+      - kind: clusterrolebindings
+        version: v1beta1
+      - kind: services
         version: v1
-      - kind: ServiceAccount
+      - kind: pods
         version: v1
-      - kind: ConfigMap
+      - kind: configmaps
+        version: v1
+      - kind: installs
+        version: v1alpha1
+      - kind: namespaces
+        version: v1
+      - kind: serviceaccounts
         version: v1
       specDescriptors: []
       statusDescriptors:
       - description: List of resources installed by the operator for this cr
         displayName: Installed Resources
         path: resources
-      - description: Version of Tektoncd Pipeline installed
-        displayName: Tektoncd Pipeline Version
+      - description: Version of Tekton Pipeline installed
+        displayName: Tekton Pipeline Version
         path: version
-  description: Tektoncd Operator Cluster Service Version
-  displayName: Tektoncd Operator
+  description: |
+    OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines 
+    using [Tekton](https://tekton.dev) concepts which run natively on OpenShift and Kubernetes.
+
+    OpenShift Pipelines enables:
+    * Defining CI/CD pipelines using Tekton CRDs
+    * Running pipelines on-demand in separate pods
+    * Serverless execution of pipelines
+    * Portability across any Kubernetes platform
+
+    Note:
+    - When 'Openshift-Pipelines' is installed, 'tekton-pipelines' NameSpace will be created.
+    - This operator supports only 'OwnNamespace' and 'SingleNamespace' installModes
+  displayName: OpenShift Pipelines Operator
   install:
     spec:
       clusterPermissions:
@@ -195,39 +240,39 @@ spec:
           - create
           - update
           - use
-        serviceAccountName: tektoncd-pipeline-operator
+        serviceAccountName: openshift-pipelines-operator
       deployments:
-      - name: tektoncd-pipeline-operator
+      - name: openshift-pipelines-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              name: tektoncd-pipeline-operator
+              name: openshift-pipelines-operator
           strategy: {}
           template:
             metadata:
               labels:
-                name: tektoncd-pipeline-operator
+                name: openshift-pipelines-operator
             spec:
               containers:
               - command:
-                - tektoncd-pipeline-operator
+                - openshift-pipelines-operator
                 env:
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
-                      fieldPath: metadata.namespace
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: POD_NAME
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
-                  value: tektoncd-pipeline-operator
-                image: quay.io/openshift-pipeline/tektoncd-pipeline-operator:v0.3.1-2
+                  value: openshift-pipelines-operator
+                image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
                 imagePullPolicy: Always
-                name: tektoncd-pipeline-operator
+                name: openshift-pipelines-operator
                 resources: {}
-              serviceAccountName: tektoncd-pipeline-operator
+              serviceAccountName: openshift-pipelines-operator
     strategy: deployment
   installModes:
   - supported: true
@@ -236,8 +281,5 @@ spec:
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
-  maturity: alpha
-  provider: {}
-  version: 0.3.1

@@ -1,4 +1,4 @@
-cr-manifest: "deploy/crds/tekton_v1alpha1_install_cr.yaml"
-init-timeout: 60
-csv-path: "deploy/olm-catalog/tektoncd-pipeline-operator/0.0.1/tektoncd-pipeline-operator.v0.0.1.clusterserviceversion.yaml"
-
+cr-manifest: "deploy/crds/openshift_v1alpha1_install_cr.yaml"
+init-timeout: 120
+csv-path: "deploy/olm-catalog/openshift-pipelines-operator/0.3.1/openshift-pipelines-operator.v0.3.1.clusterserviceversion.yaml"
+namespace: tekton-pipelines
