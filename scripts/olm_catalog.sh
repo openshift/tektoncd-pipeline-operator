@@ -24,33 +24,33 @@ cat <<EOF | sed 's/^  *$//'
 apiVersion: v1
 kind: Namespace
 metadata:
- name: tekton-pipelines
+ name: openshift-pipelines-operator
 ---
-apiVersion: operators.coreos.com/v1alpha2
+apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
- name: og-openshift-pipelines-operator
- namespace: tekton-pipelines
+ name: openshift-pipelines-operator
+ namespace: openshift-pipelines-operator
 spec:
  targetNamespaces:
- - tekton-pipelines
+ - openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
   name: $NAME
-  namespace: tekton-pipelines
+  namespace: openshift-pipelines-operator
 spec:
   configMap: $NAME
   displayName: $DISPLAYNAME
   publisher: Red Hat
-  sourceType: internal
+  sourceType: configmap
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: $NAME
-  namespace: tekton-pipelines
+  namespace: openshift-pipelines-operator
 data:
   customResourceDefinitions: |-
 $CRD
