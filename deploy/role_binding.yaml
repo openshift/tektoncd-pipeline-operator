@@ -6,7 +6,7 @@ subjects:
 - kind: ServiceAccount
   name: openshift-pipelines-operator
   # Replace this with the namespace the operator is deployed in.
-  namespace: openshift-pipelines-operator
+  namespace: dev-openshift-pipelines-operator
 roleRef:
   kind: ClusterRole
   name: openshift-pipelines-operator

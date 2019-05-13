@@ -15,7 +15,7 @@ import (
 
 var (
 	deploymentRetry    = 5 * time.Second
-	deploymentTimeout  = 120 * time.Second
+	deploymentTimeout  = 240 * time.Second
 	cleanupRetry       = 1 * time.Second
 	cleanupTimeout     = 5 * time.Second
 	operatorDeployment = "openshift-pipelines-operator"
