@@ -92,4 +92,14 @@ func deleteCRinWatchednamespace(t *testing.T) {
 		config.APITimeout,
 	)
 	helpers.AssertNoError(t, err)
+
+	err = helpers.WaitForDeploymentDeletion(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-dashboard",
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
 }

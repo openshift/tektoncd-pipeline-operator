@@ -69,4 +69,15 @@ func createCRinWatchednamespace(t *testing.T) {
 		config.APITimeout,
 	)
 	helpers.AssertNoError(t, err)
+
+	err = e2eutil.WaitForDeployment(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-dashboard",
+		1,
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
 }
