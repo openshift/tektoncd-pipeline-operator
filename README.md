@@ -2,11 +2,39 @@
 
 ## Dev env
 
+### Checkout your fork
+
+The Go tools require that you clone the repository to the
+`src/github.com/openshift/tektoncd-pipeline-operator` directory in your
+[`GOPATH`](https://github.com/golang/go/wiki/SettingGOPATH).
+
+To check out this repository:
+
+1. Create your own
+   [fork of this repo](https://help.github.com/articles/fork-a-repo/)
+1. Clone it to your machine:
+
+```shell
+mkdir -p ${GOPATH}/src/github.com/openshift
+cd ${GOPATH}/src/github.com/openshift
+git clone git@github.com:${YOUR_GITHUB_USERNAME}/tektoncd-pipeline-operator.git
+cd tektoncd-pipeline-operator
+git remote add upstream git@github.com:tektoncd/tektoncd-pipeline-operator.git
+git remote set-url --push upstream no_push
+```
+
 ### Prerequisites
+You must install these tools:
 
+1. [`go`](https://golang.org/doc/install): The language Tektoncd-pipeline-operator is
+   built in
+1. [`git`](https://help.github.com/articles/set-up-git/): For source control
+1. [`dep`](https://github.com/golang/dep): For managing external Go
+   dependencies. - Please Install dep v0.5.0 or greater.
+1. [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/): For
+   interacting with your kube cluster
 1. operator-sdk: https://github.com/operator-framework/operator-sdk
-
-2. minikube: https://kubernetes.io/docs/tasks/tools/install-minikube/
+1. minikube: https://kubernetes.io/docs/tasks/tools/install-minikube/
 
 ### Install Minikube
 
@@ -24,6 +52,22 @@ minikube start -p mk-tekton \
 ```
 eval $(minikube docker-env -p mk-tekton)
 ```
+
+### Development build
+
+1. change directory to '${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator'
+```
+cd ${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator
+```
+2. go and docker image build
+``` 
+operator-sdk build ${YOUR_REGISTORY}/openshift-pipelines-operator:${IMAGE_TAG}
+```
+3. push docker image
+```
+docker push ${YOUR-REGISTORY}/openshift-pipelines-operator:${IMAGE-TAG}
+```
+4. edit the 'image' value in deploy/operator.yaml to match to your image
 
 ### Install OLM
 
