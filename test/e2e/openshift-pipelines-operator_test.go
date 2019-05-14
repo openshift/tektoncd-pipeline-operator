@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
+const (
 	deploymentRetry    = 5 * time.Second
 	deploymentTimeout  = 240 * time.Second
 	cleanupRetry       = 1 * time.Second
@@ -23,14 +23,14 @@ var (
 )
 
 func TestPipelineOperator(t *testing.T) {
-	piplnOptrList := &v1alpha1.InstallList{
+	installList := &v1alpha1.InstallList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Install",
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 	}
 
-	err := framework.AddToFrameworkScheme(apis.AddToScheme, piplnOptrList)
+	err := framework.AddToFrameworkScheme(apis.AddToScheme, installList)
 	assertNoError(t, err)
 
 	t.Run("pipeline-operator can install pipelines", pipelineOperator)
@@ -52,6 +52,7 @@ func pipelineOperator(t *testing.T) {
 
 	namespace, err := ctx.GetNamespace()
 	assertNoError(t, err)
+
 	f := framework.Global
 	err = e2eutil.WaitForOperatorDeployment(
 		t,
@@ -74,7 +75,7 @@ func createCR(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) erro
 		return fmt.Errorf("could not get namespace: %v", err)
 	}
 
-	exampleInstallCR := &v1alpha1.Install{
+	cr := &v1alpha1.Install{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Install",
 			APIVersion: "tekton.dev/v1alpha1",
@@ -85,13 +86,13 @@ func createCR(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) erro
 		},
 	}
 
-	cleanupOptions := &framework.CleanupOptions{
+	cleanup := &framework.CleanupOptions{
 		TestContext:   ctx,
 		Timeout:       5 * time.Second,
 		RetryInterval: 1 * time.Second,
 	}
 
-	err = f.Client.Create(context.TODO(), exampleInstallCR, cleanupOptions)
+	err = f.Client.Create(context.TODO(), cr, cleanup)
 	if err != nil {
 		return fmt.Errorf("error in creating install CR: %v", err)
 	}
@@ -106,7 +107,7 @@ func createCR(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) erro
 		deploymentTimeout,
 	)
 	if err != nil {
-		return fmt.Errorf("error in tekton-pipelines-controller deployment: %v", err)
+		return fmt.Errorf("failed to deploy tekton-pipelines-controller: %s", err)
 	}
 
 	err = e2eutil.WaitForDeployment(
@@ -119,8 +120,9 @@ func createCR(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) erro
 		deploymentTimeout,
 	)
 	if err != nil {
-		return fmt.Errorf("error in tekton-pipelines-webhook deployment: %v", err)
+		return fmt.Errorf("failed to deploy tekton-pipelines-webhook deployment: %s", err)
 	}
+
 	return nil
 }
 
