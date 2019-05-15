@@ -86,13 +86,17 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
 #### On minikube for testing
 
+1. Create openshift-pipeline-operator namespace
+
+   `kubectl create namespace openshift-pipelines-operator`
+
 1. Apply operator crd
 
    `kubectl apply -f deploy/crds/*_crd.yaml`
 
 1. Deploy the operator
 
-    `kubectl apply -f deploy/ -n tekton-pipelines`
+    `kubectl apply -f deploy/ -n openshift-pipelines-operator`
 
 1. Install pipeline by creating an `Install` CR
 
