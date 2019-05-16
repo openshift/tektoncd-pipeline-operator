@@ -38,7 +38,7 @@ You must install these tools:
 
 ### Install Minikube
 
-**create minikube instance**
+**Create minikube instance**
 
 ```
 minikube start -p mk-tekton \
@@ -47,7 +47,7 @@ minikube start -p mk-tekton \
  --extra-config=apiserver.service-node-port-range=80-32767
 ```
 
-**set docker env**
+**Set docker env**
 
 ```
 eval $(minikube docker-env -p mk-tekton)
@@ -55,36 +55,62 @@ eval $(minikube docker-env -p mk-tekton)
 
 ### Development build
 
-1. change directory to '${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator'
+1. Change directory to '${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator'
 ```
 cd ${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator
 ```
-2. go and docker image build
-``` 
+2. Build go and docker image
+```
 operator-sdk build ${YOUR_REGISTORY}/openshift-pipelines-operator:${IMAGE_TAG}
 ```
-3. push docker image
+3. Push docker image
 ```
 docker push ${YOUR-REGISTORY}/openshift-pipelines-operator:${IMAGE-TAG}
 ```
-4. edit the 'image' value in deploy/operator.yaml to match to your image
+4. Edit the 'image' value in deploy/operator.yaml to match to your image
+
+#### [Running tests](docs/tests.md)
 
 ### Install OLM
 
-**clone OLM repository (into go path)**
+**Clone OLM repository (into go path)**
 
 ```
 git clone git@github.com:operator-framework/operator-lifecycle-manager.git \
-          $GOPATH/github.com/operator-framework/
+          $GOPATH/src/github.com/operator-framework/
+```
+
+**Install OLM**
+
+Ensure minikube is installed and docker env is set [see above](#install-minikube)
+
+```
+cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
+```
+```
+GO111MODULE=on NO_MINIKUBE=true make run-local
+```
+**NOTE:** NO_MINIKUBE=true: we don't want to start a new minikube instance while installing OLM
+
+**Launch web console**
+
+Open a new terminal
+
+```
+cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 ```
 
 ```
-kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manager/deploy/upstream/quickstart
+./scripts/run_console_local.sh
 ```
 
-### Deploy tekton-operator
+### Deploy openshift-pipelines-operator on minikube for testing
 
-#### On minikube for testing
+1. Change directory to `${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator`
+
+1. Create `openshift-pipelines-operator` namespace
+
+   `kubectl create namespace openshift-pipelines-operator`
 
 1. Create openshift-pipeline-operator namespace
 
@@ -102,27 +128,28 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
     `kubectl apply -f deploy/crds/*_cr.yaml`
 
-### Deploy pipeline using CatalogSource on OLM
+### Deploy openshift-pipelines-operator using CatalogSource on OLM
 
-1. install minikube [see above](#install-minikube)
-1. install olm [see above](#install-olm)
-1. Add new catalog source **localOperators**
+1. Install minikube [see above](#install-minikube)
+1. Install olm [see above](#install-olm)
+1. Add local catalog source
 
-    `kubectl apply -f https://raw.githubusercontent.com/nikhil-thomas/operator-registry/pipeline-operator/deploy/operator-catalogsource.0.0.1.yaml`
+    `kubectl apply -f  olm/openshift-pipelines-operator.resources.yaml`
 
     Once the CatalogSource has been applied, you should find it
     under `Catalog > Operator Management`  of the [web console]
 
-1. Subscribe to `Tektoncd Operator`
+1. Subscribe to `Openshift Pipelines Operator`
     1. Open [web console]
-    1. Select [`tekton-pipelines` namespace](http://localhost:9000/status/ns/tekton-pipelines)
-    1. Select [`Catalog > Operator Management`](http://localhost:9000/operatormanagement/ns/tekton-pipelines)
-    1. Scroll down to `Tektoncd Operator` under `localoperators`
+    1. Select [`openshift-pipelines-operator` namespace](http://localhost:9000/status/ns/openshift-pipelines-operator)
+    1. Select [`Catalog > Operator Management`](http://0.0.0.0:9000/operatormanagement/ns/openshift-pipelines-operator)
+    1. Select [`Catalog > Operator Management > Operator Catalogs`](http://0.0.0.0:9000/operatormanagement/ns/openshift-pipelines-operator/catalogsources)
+    1. Scroll down to `Openshift Pipelines Operator` under `Openshift Pipelines Operator Registry`
 
-        **NOTE:** it will take few minutes to appear after applying the `catalogsource`
+        **NOTE:** it will take a few minutes to appear after applying the `catalogsource`
 
     1. Click `Create Subscription` button
-        1. ensure `namespace` in yaml is `tekton-pipelines` e.g.
+        1. ensure `namespace` in yaml is `openshift-pipelines-operator` e.g.
             <details>
               <summary> sample subscription </summary>
 
@@ -130,13 +157,13 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
                 apiVersion: operators.coreos.com/v1alpha1
                 kind: Subscription
                 metadata:
-                  generateName: tektoncd-subscription
-                  namespace: tekton-pipelines
+                  generateName: openshift-pipelines-operator-
+                  namespace: openshift-pipelines-operator
                 spec:
-                  source: localoperators
-                  sourceNamespace: tekton-pipelines
-                  name: tektoncd
-                  startingCSV: tektoncd-operator.v0.0.1
+                  source: openshift-pipelines-operator-registry
+                  sourceNamespace: openshift-pipelines-operator
+                  name: openshift-pipelines-operator
+                  startingCSV: openshift-pipelines-operator.v0.3.1
                   channel: alpha
               ```
             </details>
@@ -144,37 +171,47 @@ kubectl apply -f $GOPATH/github.com/operator-framework/operator-lifecycle-manage
 
   1. Verify operator is installed successfully
       1. Select `Catalog > Installed operators`
-      1. look for `Status` `InstallSucceeded`
+      1. Look for `Status` `InstallSucceeded`
 
 1. Install Tektoncd-Pipeline by creating an `install` CR
-    1. Select `Catalog > Developer Catalog`, you should find `TektonCD-Pipeline Install`
+    1. Select `Catalog > Developer Catalog`, you should find `Openshift Pipelines Install`
     1. Click on it and it should show the Operator Details Panel
     1. Click on `Create` which show an example as below
-          <details>
-              <summary> example </summary>
-              ```yaml
+        <details>
+        <summary> example </summary>
 
-              apiVersion: tekton.dev/v1alpha1
-              kind: Install
-              metadata:
-                name: example
-                namespace: tekton-pipelines ### must be this
-              spec: {}
+        ```yaml
+            apiVersion: tekton.dev/v1alpha1
+            kind: Install
+            metadata:
+            name: pipelines-install
+            namespace: openshift-pipelines-operator
+            spec: {}
+        ```
+        </details>
 
-              ```
-          </details>
+        **NOTE:** This will install Openshift Pipeline resources in `Tekton-Pipelines` Namespace
     1. Verify that the pipeline is installed
-        1. ensure pipeline pods are running
-        1. ensure pipeline crds exist e.g. `kubectl get crds | grep tekton` should show
-          ```shell
-          clustertasks.tekton.dev
-          installs.tekton.dev
-          pipelineresources.tekton.dev
-          pipelineruns.tekton.dev
-          pipelines.tekton.dev
-          taskruns.tekton.dev
-          tasks.tekton.dev
-          ```
+        1. Ensure pipeline pods are running
+
+           `kubectl get all -n tekton-pipelines`
+
+        1. Ensure pipeline crds exist
+
+           `kubectl get crds | grep tekton`
+
+           should show
+
+           ```shell
+           clustertasks.tekton.dev
+           installs.tekton.dev
+           pipelineresources.tekton.dev
+           pipelineruns.tekton.dev
+           pipelines.tekton.dev
+           taskruns.tekton.dev
+           tasks.tekton.dev
+           ```
+    **NOTE:** Now TektonCD Pipelines can be created and run
 
 ### End to End workflow
 
@@ -188,34 +225,12 @@ It asssumes you have already followed install [minikube](#install-minikube) and 
 1. Test operator locally with `operator-sdk up local`
 1. Build operator image `operator-sdk build <imagename:tag>`
 1. Update image reference in `deploy/operator.yaml`
-1. Build csv using `opertor-sdk olm-catalog gen-csv --csv-version 0.0.<x>` **change `<x>`**
-1. Apply the CSV
-    ```shell
-    kubectl apply -f deploy/olm-catalog/tektoncd-operator/0.0.<x>/*.yaml
-    ```
-1. Verify that the new image is running
+1. Update image reference in CSV `deploy/olm-catalog/openshift-pipelines-operator/0.3.1/openshift-pipelines-operator.v0.3.1.clusterserviceversion.yaml`
 
 #### Update Local CatalogSource
 
-1. clone the fork of [operator-registry fork][or-fork] where we have added tektoncd-pipeline manifests
-    ```shell
-    git clone https://github.com/nikhil-thomas/operator-registry
-    git checkout -b pipeline-operator
-    ```
-2.  Copy csv from *step 5* to `manifests` directory in `operator-registry`
+1. 1. Build local catalog source **localOperators**
 
-     **NOTE:** Be sure to preserve the directory structure
-     
-     **IMPORTANT:** Ensure latest crd(s) are also beside csv
-     
-3. Build and push operator-registry image
-    ```shell
-    docker build -t example-registry:latest -f upstream-example.Dockerfile
-    docker push example-registry:latest
-    ```
-4. Update image reference in catalog-src - `deploy`
-   `kubectl apply -f deploy/operator-catalogsource.0.0.1.yaml`
-
+    `./scripts/olm_catalog.sh > olm/openshift-pipelines-operator.resources.yaml`
 
 [web console]: http://localhost:9000
-[or-fork]: https://github.com/nikhil-thomas/operator-registry/tree/pipeline-operator
