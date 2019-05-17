@@ -495,7 +495,7 @@ spec:
     spec:
       containers:
       - name: tekton-dashboard
-        image: akihikokuroda/backend:v64
+        image: akihikokuroda/backend:v65
         #image: "image name and tag"
         ports:
         - containerPort: 9097
