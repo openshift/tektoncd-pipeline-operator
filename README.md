@@ -112,10 +112,6 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
    `kubectl create namespace openshift-pipelines-operator`
 
-1. Create openshift-pipeline-operator namespace
-
-   `kubectl create namespace openshift-pipelines-operator`
-
 1. Apply operator crd
 
    `kubectl apply -f deploy/crds/*_crd.yaml`
