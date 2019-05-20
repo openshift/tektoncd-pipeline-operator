@@ -175,7 +175,10 @@ func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 	for _, path := range instance.Spec.AddOns {
 		extension := mf.NewYamlManifest(filepath.Join("deploy", "resources", path), true, r.config)
 		extension.Filter(filters...)
-		extension.ApplyAll()
+		rc = extension.ApplyAll()
+		if rc != nil {
+			return rc
+		}
 	}
 	return rc
 }
