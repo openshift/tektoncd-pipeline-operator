@@ -1,0 +1,12 @@
+          volumeMounts:
+          - name: addon1
+            mountPath: /deploy/resources/addon1/addon1.yaml
+            subPath: addon1.yaml
+      volumes:
+      - name: addon1
+        configMap:
+          name: addon1
+          items:
+          - key: addon1.yaml
+            path: addon1.yaml
+            mode: 0777

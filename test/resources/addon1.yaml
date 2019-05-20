@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: addon1
+  namespace: openshift-pipelines-operator
+data:
+  addon1.yaml: |
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    metadata:
+      name: addon1-deployment
+      namespace: tekton-pipelines
+    spec:
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx
+            image: nginx:1.15.12
+            ports:
+            - containerPort: 80
+          serviceAccountName: tekton-pipelines-controller
