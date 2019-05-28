@@ -253,11 +253,11 @@
   version = "v0.3.7"
 
 [[projects]]
-  digest = "1:33ebb6e7d555376a0df26a576c22b921aed11faa37a23c24436d0fca5112f0e0"
+  digest = "1:77b62b256126cfbb7d62e6f8544212bb2c4a2cd87108a6c813e23aec3aada3dc"
   name = "github.com/jcrossley3/manifestival"
   packages = ["."]
   pruneopts = "NT"
-  revision = "8f133cb9c6c9d11ce74eeee056d3fc76d5e756ca"
+  revision = "921da97b38a42f3dc6a58278cc6edb8955e02293"
 
 [[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
@@ -681,6 +681,7 @@
   digest = "1:15b5c41ff6faa4d0400557d4112d6337e1abc961c65513d44fce7922e32c9ca7"
   name = "k8s.io/apimachinery"
   packages = [
+    "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",

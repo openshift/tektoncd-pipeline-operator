@@ -17,7 +17,7 @@ spec:
       containers:
         - name: openshift-pipelines-operator
           # Replace this with the built image name
-          image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-1
+          image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-2
           command:
           - openshift-pipelines-operator
           imagePullPolicy: Always
