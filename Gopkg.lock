@@ -253,11 +253,11 @@
   version = "v0.3.7"
 
 [[projects]]
-  digest = "1:77b62b256126cfbb7d62e6f8544212bb2c4a2cd87108a6c813e23aec3aada3dc"
+  digest = "1:cb111522e454b08cbb329a859955ef50ccf9915c661a5857192b2501e6c9f277"
   name = "github.com/jcrossley3/manifestival"
   packages = ["."]
   pruneopts = "NT"
-  revision = "921da97b38a42f3dc6a58278cc6edb8955e02293"
+  revision = "501df003f7629401b107df70bfb5afe94d852997"
 
 [[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
@@ -338,6 +338,7 @@
     "pkg/leader",
     "pkg/log/zap",
     "pkg/metrics",
+    "pkg/predicate",
     "pkg/scaffold",
     "pkg/scaffold/input",
     "pkg/test",
@@ -946,11 +947,12 @@
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
     "github.com/operator-framework/operator-sdk/pkg/metrics",
+    "github.com/operator-framework/operator-sdk/pkg/predicate",
     "github.com/operator-framework/operator-sdk/pkg/test",
     "github.com/operator-framework/operator-sdk/pkg/test/e2eutil",
     "github.com/operator-framework/operator-sdk/version",
     "github.com/spf13/pflag",
-    "k8s.io/api/core/v1",
+    "k8s.io/api/apps/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
