@@ -140,7 +140,9 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			r.manifest.DeleteAll()
+			r.manifest.DeleteAll(
+				client.PropagationPolicy(metav1.DeletePropagationForeground),
+			)
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
@@ -175,7 +177,10 @@ func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 		mf.InjectOwner(instance),
 	}
 
-	r.manifest.Transform(tfs...)
+	err := r.manifest.Transform(tfs...)
+	if err != nil {
+		return err
+	}
 	return r.manifest.ApplyAll()
 }
 
