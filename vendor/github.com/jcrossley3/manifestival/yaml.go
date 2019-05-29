@@ -118,6 +118,9 @@ func decode(reader io.Reader) ([]unstructured.Unstructured, error) {
 		if err != nil {
 			break
 		}
+		if len(out.Object) == 0 {
+			continue
+		}
 		objs = append(objs, out)
 	}
 	if err != io.EOF {
