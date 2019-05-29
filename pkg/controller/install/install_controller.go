@@ -175,6 +175,7 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(instance),
+		mf.InjectNamespace(instance.GetNamespace()),
 	}
 
 	err := r.manifest.Transform(tfs...)

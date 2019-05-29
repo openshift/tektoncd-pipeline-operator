@@ -19,7 +19,6 @@ const (
 	cleanupRetry       = 1 * time.Second
 	cleanupTimeout     = 5 * time.Second
 	operatorDeployment = "openshift-pipelines-operator"
-	pipelinesNamespace = "tekton-pipelines"
 )
 
 func TestPipelineOperator(t *testing.T) {
@@ -33,7 +32,7 @@ func TestPipelineOperator(t *testing.T) {
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, installList)
 	assertNoError(t, err)
 
-	t.Run("pipeline-operator can install pipelines", pipelineOperator)
+	t.Run("can install pipelines", pipelineOperator)
 }
 
 func pipelineOperator(t *testing.T) {
@@ -100,7 +99,7 @@ func createCR(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) erro
 	err = e2eutil.WaitForDeployment(
 		t,
 		f.KubeClient,
-		pipelinesNamespace,
+		namespace,
 		"tekton-pipelines-controller",
 		1,
 		deploymentRetry,
@@ -113,7 +112,7 @@ func createCR(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) erro
 	err = e2eutil.WaitForDeployment(
 		t,
 		f.KubeClient,
-		pipelinesNamespace,
+		namespace,
 		"tekton-pipelines-webhook",
 		1,
 		deploymentRetry,
