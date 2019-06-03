@@ -3,8 +3,8 @@ package testgroups
 import (
 	"testing"
 
-	"github.com/openshift/tektoncd-pipeline-operator/test/helpers"
 	"github.com/openshift/tektoncd-pipeline-operator/test/config"
+	"github.com/openshift/tektoncd-pipeline-operator/test/helpers"
 	"github.com/openshift/tektoncd-pipeline-operator/test/testsuites"
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -18,7 +18,8 @@ func InstallCRDTestGroup(t *testing.T) {
 	defer ctx.Cleanup()
 	helpers.AssertNoError(t, err)
 
-	t.Run("create-install-cr-installs-pipelines", testsuites.CreateInstallCR)
+	t.Run("create-install-cr_installs-pipelines", testsuites.CreateInstallCR)
+	t.Run("delete-install-cr_uninstalls-pipelines", testsuites.DeleteInstallCR)
 }
 
 func deployOperator(t *testing.T, ctx *framework.TestCtx) error {

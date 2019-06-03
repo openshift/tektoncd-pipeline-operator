@@ -13,14 +13,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateInstallCR creates an instance of install.tekton.dev
-// and checks whether openshift pipelines deployment are created
-func CreateInstallCR(t *testing.T) {
+// DeleteInstallCR creates an instance of install.tekton.dev
+// then deletes it to check whether openshift pipelines deployments are removed
+func DeleteInstallCR(t *testing.T) {
 
-	t.Run("watched-namespace", createCRinWatchednamespace)
+	t.Run("watched-namespace", deleteCRinWatchednamespace)
 }
 
-func createCRinWatchednamespace(t *testing.T) {
+func deleteCRinWatchednamespace(t *testing.T) {
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
 
@@ -65,6 +65,29 @@ func createCRinWatchednamespace(t *testing.T) {
 		namespace,
 		"tekton-pipelines-webhook",
 		1,
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+
+	err = f.Client.Delete(context.TODO(), cr)
+	helpers.AssertNoError(t, err)
+
+	err = helpers.WaitForDeploymentDeletion(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-pipelines-controller",
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+
+	err = helpers.WaitForDeploymentDeletion(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-pipelines-webhook",
 		config.APIRetry,
 		config.APITimeout,
 	)

@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 func TestPipelineOperator(t *testing.T) {
 	initTestingFramework(t)
 
-	//Run test groups
+	// Run test groups (test each CRDs)
 	t.Run("install-crd", testgroups.InstallCRDTestGroup)
 }
 
