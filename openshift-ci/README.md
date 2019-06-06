@@ -3,7 +3,7 @@
 TektonCD Pipeline operator uses [OpenShift CI][openshift-ci] for continuous
 integration.  The Openshift CI is built using
 [CI-Operator][ci-operator].  The TektonCD Pipeline Operator specific
-configuration is located here: http://bit.ly/304kpIo
+configuration is located here: http://bit.ly/2KzC5q3
 
 As part of the continuous integration, there are several
 jobs configured to run against pull requests in GitHub.  The CI jobs

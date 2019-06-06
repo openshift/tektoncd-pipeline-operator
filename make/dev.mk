@@ -4,11 +4,11 @@ DEV_MK:=# Prevent repeated "-include".
 include ./make/verbose.mk
 include ./make/git.mk
 
-DOCKER_REPO?=quay.io/openshiftio
+DOCKER_REPO?=quay.io/openshift-pipeline
 IMAGE_NAME?=tektoncd-pipeline-operator
 REGISTRY_URI=quay.io
 
-DEVCONSOLE_OPERATOR_IMAGE?=quay.io/redhat-developers/tektoncd-pipeline-operator
+TEKTONCD_PIPELINE_OPERATOR_IMAGE?=quay.io/openshift-pipeline/tektoncd-pipeline-operator
 TIMESTAMP:=$(shell date +%s)
 TAG?=$(GIT_COMMIT_ID_SHORT)-$(TIMESTAMP)
 OPENSHIFT_VERSION?=4
@@ -34,9 +34,8 @@ deploy-rbac:
 .PHONY: deploy-crd
 ## Deploy CRD
 deploy-crd:
-	$(Q)-oc apply -f deploy/crds/devconsole_v1alpha1_component_crd.yaml
-	$(Q)-oc apply -f deploy/crds/devconsole_v1alpha1_gitsource_crd.yaml
-	$(Q)-oc apply -f deploy/crds/devconsole_v1alpha1_gitsourceanalysis_crd.yaml
+	$(Q)-oc apply -f deploy/crds/openshift-pipelines-operator-tekton-v1alpha1_install_crd.yaml
+	$(Q)-oc apply -f deploy/crds/openshift_v1alpha1_install_crd.yaml
 
 .PHONY: deploy-operator
 ## Deploy Operator
@@ -48,24 +47,10 @@ deploy-operator: deploy-crd
 deploy-clean:
 	$(Q)-oc delete project $(LOCAL_TEST_NAMESPACE)
 
-.PHONY: deploy-test
-## Deploy a CR as test
-deploy-test:
-	$(Q)-oc new-project $(LOCAL_TEST_NAMESPACE)
-	$(Q)-oc apply -f examples/devconsole_v1alpha1_gitsource_cr.yaml
-	$(Q)-oc apply -f examples/devconsole_v1alpha1_component_cr.yaml
-	$(Q)-oc apply -f examples/devconsole_v1alpha1_gitsourceanalysis_cr.yaml
-
 .PHONY: build-operator-image
 ## Build and create the operator container image
 build-operator-image: ./vendor
-	operator-sdk build $(DEVCONSOLE_OPERATOR_IMAGE):$(TAG)
-
-.PHONY: push-operator-image
-## Push the operator container image to a container registry
-push-operator-image: build-operator-image
-	@docker login -u $(QUAY_USERNAME) -p $(QUAY_PASSWORD) $(REGISTRY_URI)
-	docker push $(DEVCONSOLE_OPERATOR_IMAGE):$(TAG)
+	operator-sdk build $(TEKTONCD_PIPELINE_OPERATOR_IMAGE):$(TAG)
 
 .PHONY: deploy-operator-only
 deploy-operator-only:
@@ -90,17 +75,19 @@ clean-resources:
 	@echo "Deleting Service Account"
 	@oc delete -f ./deploy/service_account.yaml || true
 	@echo "Deleting Custom Resource Definitions..."
-	@oc delete -f ./deploy/crds/devconsole_v1alpha1_gitsource_crd.yaml || true
+	@oc delete -f ./deploy/crds/openshift-pipelines-operator-tekton-v1alpha1_install_crd.yaml || true
+	@oc delete -f ./deploy/crds/openshift_v1alpha1_install_crd.yaml || true
 
 .PHONY: deploy-operator
 deploy-operator: build build-operator-image deploy-operator-only
 
-.PHONY: minishift-start
-minishift-start:
-	minishift start --cpus 4 --memory 8GB
-	-eval `minishift docker-env` && oc login -u system:admin
+.PHONY: minikube-start
+minikube-start:
+    minikube start --cpus 4 --memory 8GB \
+    --extra-config=apiserver.enable-admission-plugins="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook" \
+    --extra-config=apiserver.service-node-port-range=80-32767
 
 .PHONY: deploy-all
-deploy-all: clean-resources deploy-operator
+deploy-all: clean-resources tektoncd-pipeline-operator
 
 endif

@@ -6,8 +6,8 @@ include ./make/verbose.mk
 include ./make/out.mk
 
 # Quay App Registry
-DEVCONSOLE_APPR_NAMESPACE ?= odcqe
-DEVCONSOLE_APPR_REPOSITORY ?= devconsole
+TEKTONCD_PIPELINE_APPR_NAMESPACE ?= odcqe
+TEKTONCD_PIPELINE_APPR_REPOSITORY ?= tektoncd-pipeline
 
 export DEPLOYED_NAMESPACE:=
 
@@ -35,7 +35,7 @@ get-test-namespace: ./out/test-namespace
 .PHONY: get-operator-version
 get-operator-version:
 	$(eval package_yaml := ./manifests/devconsole/devconsole.package.yaml)
-	$(eval DEVCONSOLE_OPERATOR_VERSION := $(shell cat $(package_yaml) | grep "currentCSV"| cut -d "." -f2- | cut -d "v" -f2 | tr -d '[:space:]'))
+	$(eval TEKTONCD_PIPELINE_OPERATOR_VERSION := $(shell cat $(package_yaml) | grep "currentCSV"| cut -d "." -f2- | cut -d "v" -f2 | tr -d '[:space:]'))
 
 ./out/test-namespace:
 	@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
@@ -66,17 +66,17 @@ ifeq ($(OPENSHIFT_VERSION),3)
 	$(eval DEPLOYED_NAMESPACE := operators)
 	$(Q)oc apply -f https://raw.githubusercontent.com/operator-framework/operator-lifecycle-manager/master/deploy/upstream/quickstart/olm.yaml
 endif
-	$(Q)docker build -f Dockerfile.registry . -t $(DEVCONSOLE_OPERATOR_REGISTRY_IMAGE):$(DEVCONSOLE_OPERATOR_VERSION)-$(TAG) \
-		--build-arg image=$(DEVCONSOLE_OPERATOR_IMAGE):$(TAG) --build-arg version=$(DEVCONSOLE_OPERATOR_VERSION)
+	$(Q)docker build -f Dockerfile.registry . -t $(TEKTONCD_PIPELINE_OPERATOR_REGISTRY_IMAGE):$(TEKTONCD_PIPELINE_OPERATOR_VERSION)-$(TAG) \
+		--build-arg image=$(TEKTONCD_PIPELINE_OPERATOR_IMAGE):$(TAG) --build-arg version=$(TEKTONCD_PIPELINE_OPERATOR_VERSION)
 	@docker login -u $(QUAY_USERNAME) -p $(QUAY_PASSWORD) $(REGISTRY_URI)
-	$(Q)docker push $(DEVCONSOLE_OPERATOR_REGISTRY_IMAGE):$(DEVCONSOLE_OPERATOR_VERSION)-$(TAG)
+	$(Q)docker push $(TEKTONCD_PIPELINE_OPERATOR_REGISTRY_IMAGE):$(TEKTONCD_PIPELINE_OPERATOR_VERSION)-$(TAG)
 ifeq ($(OPENSHIFT_VERSION),3)
-	$(Q)sed -e "s,REPLACE_IMAGE,$(DEVCONSOLE_OPERATOR_REGISTRY_IMAGE):$(DEVCONSOLE_OPERATOR_VERSION)-$(TAG)," ./test/e2e/catalog_source_OS3.yaml | oc apply -f -
+	$(Q)sed -e "s,REPLACE_IMAGE,$(TEKTONCD_PIPELINE_OPERATOR_REGISTRY_IMAGE):$(TEKTONCD_PIPELINE_OPERATOR_VERSION)-$(TAG)," ./test/e2e/catalog_source_OS3.yaml | oc apply -f -
 	$(Q)oc apply -f ./test/e2e/subscription_OS3.yaml
 endif
 ifeq ($(OPENSHIFT_VERSION),4)
 	$(eval DEPLOYED_NAMESPACE := openshift-operators)
-	$(Q)sed -e "s,REPLACE_IMAGE,$(DEVCONSOLE_OPERATOR_REGISTRY_IMAGE):$(DEVCONSOLE_OPERATOR_VERSION)-$(TAG)," ./test/e2e/catalog_source_OS4.yaml | oc apply -f -
+	$(Q)sed -e "s,REPLACE_IMAGE,$(TEKTONCD_PIPELINE_OPERATOR_REGISTRY_IMAGE):$(TEKTONCD_PIPELINE_OPERATOR_VERSION)-$(TAG)," ./test/e2e/catalog_source_OS4.yaml | oc apply -f -
 	$(Q)oc apply -f ./test/e2e/subscription_OS4.yaml
 endif
 	$(Q)operator-sdk test local ./test/e2e/ --no-setup --go-test-flags "-v -timeout=15m"
@@ -94,22 +94,22 @@ endif
 	$(eval OPERATOR_MANIFESTS := tmp/manifests/$(TAG))
 	$(Q)operator-courier flatten manifests/devconsole/ $(OPERATOR_MANIFESTS)
 	$(Q)cp -vf deploy/crds/* $(OPERATOR_MANIFESTS)
-	$(Q)sed -i -e 's,REPLACE_IMAGE,$(DEVCONSOLE_OPERATOR_IMAGE):$(TAG),' $(OPERATOR_MANIFESTS)/tektoncd-pipeline-operator.v$(DEVCONSOLE_OPERATOR_VERSION).clusterserviceversion-v$(DEVCONSOLE_OPERATOR_VERSION).yaml
+	$(Q)sed -i -e 's,REPLACE_IMAGE,$(TEKTONCD_PIPELINE_OPERATOR_IMAGE):$(TAG),' $(OPERATOR_MANIFESTS)/tektoncd-pipeline-operator.v$(TEKTONCD_PIPELINE_OPERATOR_VERSION).clusterserviceversion-v$(TEKTONCD_PIPELINE_OPERATOR_VERSION).yaml
 	$(Q)operator-courier verify $(OPERATOR_MANIFESTS)
 	$(eval QUAY_API_TOKEN := $(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user":{"username":"'${QUAY_USERNAME}'","password":"'${QUAY_PASSWORD}'"}}' | jq -r '.token'))
-	$(Q)operator-courier push $(OPERATOR_MANIFESTS) $(DEVCONSOLE_APPR_NAMESPACE) $(DEVCONSOLE_APPR_REPOSITORY) $(DEVCONSOLE_OPERATOR_VERSION)-$(TAG) "$(QUAY_API_TOKEN)"
+	$(Q)operator-courier push $(OPERATOR_MANIFESTS) $(TEKTONCD_PIPELINE_APPR_NAMESPACE) $(TEKTONCD_PIPELINE_APPR_REPOSITORY) $(TEKTONCD_PIPELINE_OPERATOR_VERSION)-$(TAG) "$(QUAY_API_TOKEN)"
 
 .PHONY: test-operator-source
 test-operator-source: push-operator-app-registry
 	$(eval OPSRC_NAME := tektoncd-pipeline-operators-$(TAG))
 	$(eval OPSRC_DIR := test/operatorsource)
 	$(Q)oc project openshift-marketplace 
-	$(Q)sed -e "s,REPLACE_NAMESPACE,$(DEVCONSOLE_APPR_NAMESPACE)," ./$(OPSRC_DIR)/operatorsource.yaml | sed -e "s,REPLACE_OPERATOR_SOURCE_NAME,$(OPSRC_NAME)," | oc apply -f -
-	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(DEVCONSOLE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/catalogsourceconfig.yaml | oc apply -f -
-	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(DEVCONSOLE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/subscription.yaml | oc apply -f -
+	$(Q)sed -e "s,REPLACE_NAMESPACE,$(TEKTONCD_PIPELINE_APPR_NAMESPACE)," ./$(OPSRC_DIR)/operatorsource.yaml | sed -e "s,REPLACE_OPERATOR_SOURCE_NAME,$(OPSRC_NAME)," | oc apply -f -
+	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(TEKTONCD_PIPELINE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/catalogsourceconfig.yaml | oc apply -f -
+	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(TEKTONCD_PIPELINE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/subscription.yaml | oc apply -f -
 	$(Q)./hack/check-crds.sh
 	$(Q)OPSRC_NAME=$(OPSRC_NAME) \
-	DEVCONSOLE_OPERATOR_VERSION=$(DEVCONSOLE_OPERATOR_VERSION) \
+	TEKTONCD_PIPELINE_OPERATOR_VERSION=$(TEKTONCD_PIPELINE_OPERATOR_VERSION) \
 	go test -vet off ${V_FLAG} $(shell go list ./... | grep $(OPSRC_DIR)) -failfast
 
 .PHONY: olm-integration-cleanup
