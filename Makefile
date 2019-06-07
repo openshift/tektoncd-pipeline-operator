@@ -29,6 +29,6 @@ clean:
 	#$(Q)operator-sdk generate k8s
 	$(Q)CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
 		go build ${V_FLAG} \
-		-ldflags "-X ${GO_PACKAGE_PATH}/cmd/manager.Commit=${GIT_COMMIT_ID} -X ${GO_PACKAGE_PATH}/cmd/manager.BuildTime=${BUILD_TIME}" \
+		-ldflags \
 		-o ./out/operator \
 		cmd/manager/main.go
