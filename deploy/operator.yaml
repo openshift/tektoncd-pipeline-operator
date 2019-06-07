@@ -16,7 +16,7 @@ spec:
       serviceAccountName: openshift-pipelines-operator
       containers:
         - name: openshift-pipelines-operator
-          image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-2
+          image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1
           command:
           - openshift-pipelines-operator
           imagePullPolicy: Always
