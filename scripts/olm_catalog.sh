@@ -5,16 +5,23 @@ indent() {
   sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
 }
 
+listCSV() {
+  for index in ${!CSVDIRS[*]}
+  do
+    cat $(ls ${CSVDIRS[$index]}/*version.yaml) | indent apiVersion
+  done
+}
+
 CRDDIR=${DIR:-$(cd $(dirname "$0")/../deploy/crds && pwd)}
 PKGDIR=${DIR:-$(cd $(dirname "$0")/../deploy/olm-catalog/openshift-pipelines-operator && pwd)}
-CSVDIR=${DIR:-$(cd ${PKGDIR}/0.3.1 && pwd)}
+CSVDIRS[0]=${DIR:-$(cd ${PKGDIR}/0.3.1 && pwd)}
+CSVDIRS[1]=${DIR:-$(cd ${PKGDIR}/0.4.0 && pwd)}
 
 NAME=${NAME:-openshift-pipelines-operator-registry}
 x=( $(echo $NAME | tr '-' ' ') )
 DISPLAYNAME=${DISPLAYNAME:=${x[*]^}}
 
 CRD=$(cat $(ls $CRDDIR/*crd.yaml) | grep -v -- "---" | indent apiVersion)
-CSV=$(cat $(ls $CSVDIR/*version.yaml) | indent apiVersion)
 PKG=$(cat $(ls $PKGDIR/*openshift-pipelines-operator.package.yaml) | indent packageName)
 
 cat <<EOF | sed 's/^  *$//'
@@ -55,7 +62,7 @@ data:
   customResourceDefinitions: |-
 $CRD
   clusterServiceVersions: |-
-$CSV
+$(listCSV)
   packages: |-
 $PKG
 EOF

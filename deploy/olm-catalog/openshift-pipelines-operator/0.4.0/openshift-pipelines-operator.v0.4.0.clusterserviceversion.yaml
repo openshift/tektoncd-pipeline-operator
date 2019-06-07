@@ -272,7 +272,7 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat, Inc.
-  version: 0.4.0
+  version: 0.1.0
   replaces: openshift-pipelines-operator.v0.3.1
   maintainers:
   - name: Red Hat, Inc.
