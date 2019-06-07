@@ -432,9 +432,9 @@ data:
               version: v1
             specDescriptors: []
             statusDescriptors:
-            - description: List of resources installed by the operator for this cr
-              displayName: Installed Resources
-              path: resources
+            # - description: List of resources installed by the operator for this cr
+            #   displayName: Installed Resources
+            #   path: resources
             - description: Version of Tekton Pipeline installed
               displayName: Tekton Pipeline Version
               path: version
@@ -657,7 +657,7 @@ data:
         maturity: alpha
         provider:
           name: Red Hat, Inc.
-        version: 0.4.0
+        version: 0.1.0
         replaces: openshift-pipelines-operator.v0.3.1
         maintainers:
         - name: Red Hat, Inc.

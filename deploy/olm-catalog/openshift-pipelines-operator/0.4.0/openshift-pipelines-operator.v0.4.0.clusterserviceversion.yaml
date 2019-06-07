@@ -4,14 +4,14 @@ metadata:
   annotations:
     alm-examples: '[{"apiVersion":"tekton.dev/v1alpha1","kind":"Install","metadata":{"name":"example-install","namespace":"openshift-pipelines-operator"},"spec":{}}]'
     capabilities: Basic Install
+    categories: "Developer Tools, Integration & Delivery"
+    description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
+    containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1
+    createdAt: 2019-03-15T19:44:21Z
+    certified: "false"
+    support: Red Hat, Inc.
+    repository: https://github.com/openshift/tektoncd-pipeline-operator
   name: openshift-pipelines-operator.v0.4.0
-  categories: "Developer Tools, Integration & Delivery"
-  description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
-  containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1
-  createdAt: 2019-03-15T19:44:21Z
-  certified: "false"
-  support: Red Hat, Inc.
-  repository: https://github.com/openshift/tektoncd-pipeline-operator
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -47,9 +47,9 @@ spec:
         version: v1
       specDescriptors: []
       statusDescriptors:
-      - description: List of resources installed by the operator for this cr
-        displayName: Installed Resources
-        path: resources
+      # - description: List of resources installed by the operator for this cr
+      #   displayName: Installed Resources
+      #   path: resources
       - description: Version of Tekton Pipeline installed
         displayName: Tekton Pipeline Version
         path: version
@@ -69,6 +69,9 @@ spec:
 
     ## Installation
     _OpenShift Pipelines Operator_ gets installed into a single namespace which would then install _OpenShift Pipelines_ into the same namespace. _OpenShift Pipelines_ is however cluster-wide and can run pipelines created in any namespace.
+
+    #### Pre-Requisites
+    none
 
     ## Getting Started
     In order to get familiar with _OpenShift Pipelines_ concepts and create your first pipeline, follow the [OpenShift Pipelines Tutorial](https://github.com/openshift/pipelines-tutorial).
