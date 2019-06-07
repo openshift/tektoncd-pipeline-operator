@@ -3,13 +3,15 @@ package install
 import (
 	"context"
 	"flag"
+	"fmt"
 	"path/filepath"
 
 	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	mf "github.com/jcrossley3/manifestival"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/operator-framework/operator-sdk/pkg/predicate"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -57,15 +59,19 @@ func init() {
 // Add creates a new Install Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+	m, err := mf.NewManifest(resourceDir, recursive, mgr.GetClient())
+	if err != nil {
+		return err
+	}
+	return add(mgr, newReconciler(mgr, m))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, m mf.Manifest) reconcile.Reconciler {
 	return &ReconcileInstall{
 		client:   mgr.GetClient(),
 		scheme:   mgr.GetScheme(),
-		manifest: mf.NewYamlManifest(resourceDir, recursive, mgr.GetConfig()),
+		manifest: m,
 		config:   mgr.GetConfig(),
 	}
 }
@@ -79,14 +85,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Install
-	err = c.Watch(&source.Kind{Type: &tektonv1alpha1.Install{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(
+		&source.Kind{Type: &tektonv1alpha1.Install{}},
+		&handler.EnqueueRequestForObject{},
+		predicate.GenerationChangedPredicate{},
+	)
 	if err != nil {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Install
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &tektonv1alpha1.Install{},
 	})
@@ -135,7 +143,9 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			r.manifest.DeleteAll()
+			r.manifest.DeleteAll(
+				client.PropagationPolicy(metav1.DeletePropagationForeground),
+			)
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
@@ -155,7 +165,7 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	instance.Status.Version = tektonVersion
-	instance.Status.Resources = r.manifest.ResourceNames()
+	instance.Status.Resources = r.resourceNames()
 
 	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
@@ -166,21 +176,28 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 }
 
 func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
-	filters := []mf.FilterFn{
-		mf.ByOwner(instance),
+	tfs := []mf.Transformer{
+		mf.InjectOwner(instance),
+		mf.InjectNamespace(instance.GetNamespace()),
 	}
-	r.manifest.Filter(filters...)
-	rc := r.manifest.ApplyAll()
+	err := r.manifest.Transform(tfs...)
+	if err != nil {
+		return err
+	}
+	err  = r.manifest.ApplyAll()
 
 	for _, path := range instance.Spec.AddOns {
-		extension := mf.NewYamlManifest(filepath.Join("deploy", "resources", path), true, r.config)
-		extension.Filter(filters...)
-		rc = extension.ApplyAll()
-		if rc != nil {
-			return rc
+		extension, err := mf.NewManifest(filepath.Join("deploy", "resources", path), true, r.client)
+		if err != nil {
+			return err
+		}
+		extension.Transform(tfs...)
+		err = extension.ApplyAll()
+		if err != nil {
+			return err
 		}
 	}
-	return rc
+	return nil
 }
 
 func isUptodate(instance *tektonv1alpha1.Install) bool {
@@ -220,4 +237,19 @@ func autoCreateCR(c client.Client, ns string) error {
 	}
 
 	return nil
+}
+
+func (r *ReconcileInstall) resourceNames() []string {
+	var names []string
+	for _, rsc := range r.manifest.Resources {
+		name := fmt.Sprintf(
+			"%s/%s : %s\n",
+			rsc.GetNamespace(),
+			rsc.GetName(),
+			rsc.GroupVersionKind(),
+		)
+		names = append(names, name)
+	}
+
+	return names
 }

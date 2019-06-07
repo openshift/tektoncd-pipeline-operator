@@ -49,6 +49,7 @@ rules:
   - serviceaccounts
   - configmaps
   - persistentvolumeclaims
+  - services
   verbs:
   - get
   - list
@@ -439,6 +440,11 @@ spec:
         - quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.3.1
         image:  quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.3.1
         name: tekton-pipelines-controller
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         volumeMounts:
         - mountPath: /etc/config-logging
           name: config-logging
@@ -464,6 +470,11 @@ spec:
       containers:
       - image:  quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.3.1
         name: webhook
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         volumeMounts:
         - mountPath: /etc/config-logging
           name: config-logging
@@ -474,3 +485,48 @@ spec:
         name: config-logging
 
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekton-dashboard
+  namespace: tekton-pipelines
+  labels:
+    app: tekton-dashboard-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tekton-dashboard
+  template:
+    metadata:
+      name: tekton-dashboard
+      labels:
+        app: tekton-dashboard
+    spec:
+      containers:
+      - name: tekton-dashboard
+        image: akihikokuroda/backend:v65
+        #image: "image name and tag"
+        ports:
+        - containerPort: 9097
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9097
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 9097
+        resources:
+        env:
+        - name: PORT
+          value: "9097"
+        - name: WEB_RESOURCES_DIR
+          value: /var/run/ko/web
+        - name: PIPELINE_RUN_SERVICE_ACCOUNT
+          value: ""
+        - name: INSTALLED_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      serviceAccountName: tekton-pipelines-controller
