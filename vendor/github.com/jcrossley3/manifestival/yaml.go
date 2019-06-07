@@ -1,96 +1,136 @@
 package manifestival
 
 import (
-	"bytes"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func Parse(pathname string, recursive bool) []unstructured.Unstructured {
-	in, out := make(chan []byte, 10), make(chan unstructured.Unstructured, 10)
-	go read(pathname, recursive, in)
-	go decode(in, out)
-	result := []unstructured.Unstructured{}
-	for spec := range out {
-		result = append(result, spec)
+// Parse parses YAML files into Unstructured objects.
+//
+// It supports 5 cases today:
+// 1. pathname = path to a file --> parses that file.
+// 2. pathname = path to a directory, recursive = false --> parses all files in
+//    that directory.
+// 3. pathname = path to a directory, recursive = true --> parses all files in
+//    that directory and it's descendants
+// 4. pathname = url --> fetches the contents of that URL and parses them as YAML.
+// 5. pathname = combination of all previous cases, the string can contain
+//    multiple records (file, directory or url) separated by comma
+func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
+
+	pathnames := strings.Split(pathname, ",")
+	aggregated := []unstructured.Unstructured{}
+	for _, pth := range pathnames {
+		els, err := read(pth, recursive)
+		if err != nil {
+			return nil, err
+		}
+
+		aggregated = append(aggregated, els...)
 	}
-	return result
+	return aggregated, nil
 }
 
-func read(pathname string, recursive bool, sink chan []byte) {
-	defer close(sink)
-	file, err := os.Stat(pathname)
+// read cotains a logic to distinguish the type of record in pathname
+// (file, directory or url) and calls the appropriate function
+func read(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
+	if isURL(pathname) {
+		return readURL(pathname)
+	}
+
+	info, err := os.Stat(pathname)
 	if err != nil {
-		log.Error(err, "Unable to get file info")
-		return
+		return nil, err
 	}
-	if file.IsDir() {
-		readDir(pathname, recursive, sink)
-	} else {
-		readFile(pathname, sink)
+
+	if info.IsDir() {
+		return readDir(pathname, recursive)
 	}
+	return readFile(pathname)
 }
 
-func readDir(pathname string, recursive bool, sink chan []byte) {
+// readFile parses a single file.
+func readFile(pathname string) ([]unstructured.Unstructured, error) {
+	file, err := os.Open(pathname)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	return decode(file)
+}
+
+// readDir parses all files in a single directory and it's descendant directories
+// if the recursive flag is set to true.
+func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
 	list, err := ioutil.ReadDir(pathname)
 	if err != nil {
-		log.Error(err, "Unable to read directory")
-		return
+		return nil, err
 	}
+
+	aggregated := []unstructured.Unstructured{}
 	for _, f := range list {
 		name := path.Join(pathname, f.Name())
+		var els []unstructured.Unstructured
+
 		switch {
 		case f.IsDir() && recursive:
-			readDir(name, recursive, sink)
+			els, err = readDir(name, recursive)
 		case !f.IsDir():
-			readFile(name, sink)
+			els, err = readFile(name)
 		}
+
+		if err != nil {
+			return nil, err
+		}
+		aggregated = append(aggregated, els...)
 	}
+	return aggregated, nil
 }
 
-func readFile(filename string, sink chan []byte) {
-	file, err := os.Open(filename)
+// readURL fetches a URL and parses its contents as YAML.
+func readURL(url string) ([]unstructured.Unstructured, error) {
+	resp, err := http.Get(url)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	manifests := yaml.NewDocumentDecoder(file)
-	defer manifests.Close()
-	buf := buffer(file)
+	defer resp.Body.Close()
+
+	return decode(resp.Body)
+}
+
+// decode consumes the given reader and parses its contents as YAML.
+func decode(reader io.Reader) ([]unstructured.Unstructured, error) {
+	decoder := yaml.NewYAMLToJSONDecoder(reader)
+	objs := []unstructured.Unstructured{}
+	var err error
 	for {
-		size, err := manifests.Read(buf)
-		if err == io.EOF {
+		out := unstructured.Unstructured{}
+		err = decoder.Decode(&out)
+		if err != nil {
 			break
 		}
-		b := make([]byte, size)
-		copy(b, buf)
-		sink <- b
-	}
-}
-
-func decode(in chan []byte, out chan unstructured.Unstructured) {
-	for buf := range in {
-		spec := unstructured.Unstructured{}
-		err := yaml.NewYAMLToJSONDecoder(bytes.NewReader(buf)).Decode(&spec)
-		if err != nil {
-			if err != io.EOF {
-				log.Error(err, "Unable to decode YAML; ignoring")
-			}
+		if len(out.Object) == 0 {
 			continue
 		}
-		out <- spec
+		objs = append(objs, out)
 	}
-	close(out)
+	if err != io.EOF {
+		return nil, err
+	}
+	return objs, nil
 }
 
-func buffer(file *os.File) []byte {
-	var size int64 = bytes.MinRead
-	if fi, err := file.Stat(); err == nil {
-		size = fi.Size()
-	}
-	return make([]byte, size)
+// isURL checks whether or not the given path parses as a URL.
+func isURL(pathname string) bool {
+	_, err := url.ParseRequestURI(pathname)
+	return err == nil
 }
