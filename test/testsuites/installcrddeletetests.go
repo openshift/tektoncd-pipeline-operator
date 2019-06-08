@@ -18,6 +18,7 @@ import (
 func DeleteInstallCR(t *testing.T) {
 
 	t.Run("watched-namespace", deleteCRinWatchednamespace)
+	t.Run("watched-namespace", deleteCRWithAddoninWatchednamespace)
 }
 
 func deleteCRinWatchednamespace(t *testing.T) {
@@ -88,6 +89,93 @@ func deleteCRinWatchednamespace(t *testing.T) {
 		f.KubeClient,
 		namespace,
 		"tekton-pipelines-webhook",
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+}
+
+func deleteCRWithAddoninWatchednamespace(t *testing.T) {
+	ctx := framework.NewTestCtx(t)
+	defer ctx.Cleanup()
+
+	namespace, err := ctx.GetNamespace()
+	helpers.AssertNoError(t, err)
+
+	cr := &v1alpha1.Install{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Install",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pipelines-install",
+			Namespace: namespace,
+		},
+		Spec:  v1alpha1.InstallSpec{
+			AddOns:     []string {"addon1"},
+		},
+	}
+
+	cleanup := &framework.CleanupOptions{
+		TestContext:   ctx,
+		Timeout:       5 * time.Second,
+		RetryInterval: 1 * time.Second,
+	}
+
+	f := framework.Global
+	err = f.Client.Create(context.TODO(), cr, cleanup)
+	helpers.AssertNoError(t, err)
+
+	err = e2eutil.WaitForDeployment(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-pipelines-controller",
+		1,
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+
+	err = e2eutil.WaitForDeployment(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-pipelines-webhook",
+		1,
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+
+	err = f.Client.Delete(context.TODO(), cr)
+	helpers.AssertNoError(t, err)
+
+	err = helpers.WaitForDeploymentDeletion(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-pipelines-controller",
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+
+	err = helpers.WaitForDeploymentDeletion(
+		t,
+		f.KubeClient,
+		namespace,
+		"tekton-pipelines-webhook",
+		config.APIRetry,
+		config.APITimeout,
+	)
+	helpers.AssertNoError(t, err)
+
+	err = helpers.WaitForDeploymentDeletion(
+		t,
+		f.KubeClient,
+		namespace,
+		"addon1-deployment",
 		config.APIRetry,
 		config.APITimeout,
 	)
