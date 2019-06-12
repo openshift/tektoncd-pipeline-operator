@@ -143,9 +143,13 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			r.manifest.DeleteAll(
+			err := r.manifest.DeleteAll(
 				client.PropagationPolicy(metav1.DeletePropagationForeground),
 			)
+			if err != nil {
+				reqLogger.Error(err, "failed to delete pipeline manifest")
+				return reconcile.Result{}, err
+			}
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
@@ -210,7 +214,7 @@ func isUptodate(instance *tektonv1alpha1.Install) bool {
 	return true
 }
 
-func autoCreateCR(c client.Client, ns string) error {
+func autoCreateCR(c client.Client, ns string) {
 	installList := &tektonv1alpha1.InstallList{}
 	err := c.List(context.TODO(),
 		&client.ListOptions{Namespace: ns},
@@ -218,10 +222,9 @@ func autoCreateCR(c client.Client, ns string) error {
 	)
 	if err != nil {
 		log.Error(err, "unable to list install instances")
-		return err
 	}
 	if len(installList.Items) > 0 {
-		return nil
+		return
 	}
 
 	cr := &tektonv1alpha1.Install{
@@ -233,10 +236,7 @@ func autoCreateCR(c client.Client, ns string) error {
 	err = c.Create(context.TODO(), cr)
 	if err != nil {
 		log.Error(err, "unable to create install custom resource")
-		return err
 	}
-
-	return nil
 }
 
 func (r *ReconcileInstall) resourceNames() []string {
