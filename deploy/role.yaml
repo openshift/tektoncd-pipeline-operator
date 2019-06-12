@@ -122,6 +122,7 @@ rules:
   - extensions
   resources:
   - deployments
+  - ingresses
   verbs:
   - get
   - list

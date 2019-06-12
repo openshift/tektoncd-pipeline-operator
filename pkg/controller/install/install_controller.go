@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -14,6 +15,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -172,17 +174,75 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 	return reconcile.Result{}, nil
 }
 
+func InjectHostname(hostname string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		switch strings.ToLower(u.GetKind()) {
+		case "ingress":
+			rules, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "rules")
+			for _, rule := range rules.([]interface{}) {
+				m := rule.(map[string]interface{})
+				if _, ok := m["host"]; ok {
+					m["host"] = hostname
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func InjectEnv(name, value string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		switch strings.ToLower(u.GetKind()) {
+		case "deployment":
+			containers, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "template", "spec", "containers")
+			for _, container := range containers.([]interface{}) {
+				m := container.(map[string]interface{})
+				if envs, ok := m["env"]; ok {
+					var exist = false
+					for _, env := range envs.([]interface{}) {
+						e := env.(map[string]interface{})
+						if item, _ := e["name"]; item.(string) == name {
+							e["value"] = value
+							exist = true
+						}
+					}
+					if !exist {
+						e := envs.([]interface{})
+						e = append(e, map[string]interface{} {"name": name, "value": value})
+						m["env"] = e
+					}
+				}
+			}
+		}
+		return nil
+	}
+}
+
 func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(instance),
 		mf.InjectNamespace(instance.GetNamespace()),
 	}
 
+	if instance.Spec.Hostname != "" {
+		tfs = append(tfs, InjectHostname(instance.Spec.Hostname))
+		tfs = append(tfs, InjectEnv("HOST_NAME", instance.Spec.Hostname))
+		ingress, err := mf.NewManifest(filepath.Join("deploy", "resources", "ingress"), true, r.client)
+		if err != nil {
+			return err
+		}
+		ingress.Transform(tfs...)
+		err = ingress.ApplyAll()
+		if err != nil {
+			return err
+		}
+	}
+
 	err := r.manifest.Transform(tfs...)
 	if err != nil {
 		return err
 	}
-	return r.manifest.ApplyAll()
+	return  r.manifest.ApplyAll()
 }
 
 func isUptodate(instance *tektonv1alpha1.Install) bool {
