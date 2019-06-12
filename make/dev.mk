@@ -83,9 +83,9 @@ deploy-operator: build build-operator-image deploy-operator-only
 
 .PHONY: minikube-start
 minikube-start:
-    minikube start --cpus 4 --memory 8GB \
-    --extra-config=apiserver.enable-admission-plugins="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook" \
-    --extra-config=apiserver.service-node-port-range=80-32767
+	minikube start --cpus 4 --memory 8GB \
+	--extra-config=apiserver.enable-admission-plugins="LimitRanger,NamespaceExists,NamespaceLifecycle,ResourceQuota,ServiceAccount,DefaultStorageClass,MutatingAdmissionWebhook" \
+	--extra-config=apiserver.service-node-port-range=80-32767
 
 .PHONY: deploy-all
 deploy-all: clean-resources tektoncd-pipeline-operator

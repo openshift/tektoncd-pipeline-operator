@@ -24,16 +24,16 @@ cat <<EOF | sed 's/^  *$//'
 apiVersion: v1
 kind: Namespace
 metadata:
- name: openshift-pipelines-operator
+  name: openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
- name: openshift-pipelines-operator
- namespace: openshift-pipelines-operator
+  name: openshift-pipelines-operator
+  namespace: openshift-pipelines-operator
 spec:
- targetNamespaces:
- - openshift-pipelines-operator
+  targetNamespaces:
+  - openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
