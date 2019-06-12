@@ -29,6 +29,8 @@ clean:
 	#$(Q)operator-sdk generate k8s
 	$(Q)CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
 		go build ${V_FLAG} \
-		-ldflags \
 		-o ./out/operator \
 		cmd/manager/main.go
+
+# TODO: Disable for now for CI to go over
+upgrade-build: #TODO: reenable it
