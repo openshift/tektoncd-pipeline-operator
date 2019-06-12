@@ -14,8 +14,7 @@ rules:
   hyphens: enable
   key-duplicates: enable
   key-ordering: disable
-  line-length:
-    level: warning
+  line-length: disable
   new-line-at-end-of-file: disable
   new-lines: enable
   octal-values: enable
