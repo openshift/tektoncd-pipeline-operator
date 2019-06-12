@@ -438,7 +438,7 @@ spec:
         - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/gsutil@sha256:7ee20ca5428358e766086a217b7d27dba56960dbcb4ce705dd0db3e551cd06fd
         - -entrypoint-image
         - quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.3.1
-        image:  quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.3.1
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.3.1
         name: tekton-pipelines-controller
         env:
         - name: SYSTEM_NAMESPACE
@@ -468,7 +468,7 @@ spec:
         app: tekton-pipelines-webhook
     spec:
       containers:
-      - image:  quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.3.1
+      - image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.3.1
         name: webhook
         env:
         - name: SYSTEM_NAMESPACE
