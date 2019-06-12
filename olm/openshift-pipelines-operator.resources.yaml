@@ -4,16 +4,16 @@
 apiVersion: v1
 kind: Namespace
 metadata:
- name: openshift-pipelines-operator
+  name: openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
- name: openshift-pipelines-operator
- namespace: openshift-pipelines-operator
+  name: openshift-pipelines-operator
+  namespace: openshift-pipelines-operator
 spec:
- targetNamespaces:
- - openshift-pipelines-operator
+  targetNamespaces:
+  - openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
@@ -82,6 +82,12 @@ data:
         - name: v1alpha1
           served: true
           storage: true
+    - apiVersion: tekton.dev/v1alpha1
+      kind: Install
+      metadata:
+        name: example-install
+        namespace: openshift-pipelines-operator
+      spec: {}
   clusterServiceVersions: |-
     - apiVersion: operators.coreos.com/v1alpha1
       kind: ClusterServiceVersion
@@ -166,7 +172,7 @@ data:
               path: version
         description: |
           # OpenShift Pipelines
-          OpenShift Pipelines is a cloud-native continuous integration and delivery (CI/CD) solution for building pipelines using [Tekton](https://tekton.dev). Tekton is a flexible Kubernetes-native open-source CI/CD framework which enables automating deployments across multiple platforms (Kubernetes, serverless, VMs, etc) by abstracting away the underlying details. 
+          OpenShift Pipelines is a cloud-native continuous integration and delivery (CI/CD) solution for building pipelines using [Tekton](https://tekton.dev). Tekton is a flexible Kubernetes-native open-source CI/CD framework which enables automating deployments across multiple platforms (Kubernetes, serverless, VMs, etc) by abstracting away the underlying details.
 
           ## Features
           * Standard CI/CD pipelines definition
