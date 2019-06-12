@@ -440,7 +440,7 @@ data:
               path: version
         description: |
           # OpenShift Pipelines
-          OpenShift Pipelines is a cloud-native continuous integration and delivery (CI/CD) solution for building pipelines using [Tekton](https://tekton.dev). Tekton is a flexible Kubernetes-native open-source CI/CD framework which enables automating deployments across multiple platforms (Kubernetes, serverless, VMs, etc) by abstracting away the underlying details. 
+          OpenShift Pipelines is a cloud-native continuous integration and delivery (CI/CD) solution for building pipelines using [Tekton](https://tekton.dev). Tekton is a flexible Kubernetes-native open-source CI/CD framework which enables automating deployments across multiple platforms (Kubernetes, serverless, VMs, etc) by abstracting away the underlying details.
 
           ## Features
           * Standard CI/CD pipelines definition
@@ -467,7 +467,7 @@ data:
           [Download Tekton CLI](https://github.com/tektoncd/cli/releases/tag/v0.1.0)
 
           [Tekton CLI Project](https://github.com/tektoncd/cli)
-        displayName: OpenShift Pipelines Operator  
+        displayName: OpenShift Pipelines Operator
         install:
           spec:
             clusterPermissions:

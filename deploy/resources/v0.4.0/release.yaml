@@ -498,7 +498,7 @@ spec:
         - quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.4.0
         - -imagedigest-exporter-image
         - quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.4.0
-        image:  quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.4.0
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.4.0
         name: tekton-pipelines-controller
         env:
         - name: SYSTEM_NAMESPACE
@@ -528,7 +528,7 @@ spec:
         app: tekton-pipelines-webhook
     spec:
       containers:
-      - image:  quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.4.0
+      - image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.4.0
         name: webhook
         env:
         - name: SYSTEM_NAMESPACE
