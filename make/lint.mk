@@ -6,9 +6,11 @@ GOLANGCI_LINT_BIN=./out/golangci-lint
 include ./make/verbose.mk
 include ./make/go.mk
 
+# NOTE: Disabling courier check by default until we move to a directory
+# nomenclature as what courier is expecting
 .PHONY: lint
 ## Runs linters on Go code files and YAML files
-lint: lint-go-code lint-yaml courier
+lint: lint-go-code lint-yaml
 
 YAML_FILES := $(shell find . -path ./vendor -prune -o -type f -regex ".*y[a]ml" -print)
 .PHONY: lint-yaml
@@ -38,4 +40,3 @@ courier: copy-crds
 	$(Q)./out/venv3/bin/operator-courier verify ./out/manifests-flat
 
 endif
-
