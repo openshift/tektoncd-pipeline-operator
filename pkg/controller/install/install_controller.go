@@ -195,13 +195,16 @@ func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 		if err != nil {
 			return err
 		}
-		extension.Transform(tfs...)
+		err = extension.Transform(tfs...)
+		if err != nil {
+			return err
+		}
 		err = extension.ApplyAll()
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return err
 }
 
 func isUptodate(instance *tektonv1alpha1.Install) bool {
