@@ -1,20 +1,20 @@
 # Running E2E Tests
 
-1. Ensure **operator-sdk** version: **v0.8.0** is installed
+1. Ensure **operator-sdk** **v0.8.0** is installed.
 
-1. if namespace **openshift-pipelines-operator** exists, delete it (to make sure the namespace is clean)
+2. If the namespace **openshift-pipelines-operator** exists, delete it. Do this to make sure the namespace is clean.
 
 ```
 oc delete namespace openshift-pipelines-operator
 ```
 
-1. create namespace **openshift-pipelines-operator**
+3. Create the namespace **openshift-pipelines-operator**.
 
 ```
 oc create namespace openshift-pipelines-operator
 ```
 
-1. run the test using `operator-sdk test`  command locally (without buid)
+4. Run the test using `operator-sdk test`  command locally (without buid).
 
 ```
 operator-sdk test local --up-local ./test/e2e \
