@@ -11,6 +11,7 @@ RUN initializer
 # remove them asap
 # NT
 # june 14, 2019
+RUN mkdir out
 RUN touch out/manifests.tar.gz
 
 USER 1001
