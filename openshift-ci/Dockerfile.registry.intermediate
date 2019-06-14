@@ -1,8 +1,1 @@
 FROM quay.io/openshift/origin-operator-registry:latest
-
-# next two lines are evil hacks
-# remove them asap
-# NT
-# june 14, 2019
-RUN mkdir out
-RUN tar -zcvf out/manifests.tar.gz deploy/olm-catalog
