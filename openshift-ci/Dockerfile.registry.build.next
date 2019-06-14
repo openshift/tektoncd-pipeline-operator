@@ -1,7 +1,7 @@
 FROM quay.io/openshift/origin-operator-registry:latest
 
-COPY manifests.tar.gz .
-RUN tar zxvf manifests.tar.gz
+# COPY manifests.tar.gz .
+# RUN tar zxvf manifests.tar.gz
 RUN initializer
 
 USER 1001
