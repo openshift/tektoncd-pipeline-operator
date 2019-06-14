@@ -1,9 +1,8 @@
 FROM quay.io/openshift/origin-operator-registry:latest
 
-ARG version=0.1.0
+ARG version=0.3.1
 
-COPY manifests manifests
-COPY deploy/crds/*.yaml manifests/tektoncd-pipeline-operator/${version}/
+COPY deploy/olm-catalog manifests
 
 RUN sed -e "s,REPLACE_IMAGE,registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator," -i manifests/tektoncd-pipeline-operator/${version}/tektoncd-pipeline-operator.v${version}.clusterserviceversion.yaml
 RUN initializer
