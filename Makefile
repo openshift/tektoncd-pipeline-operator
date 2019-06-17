@@ -31,6 +31,9 @@ clean:
 		go build ${V_FLAG} \
 		-o ./out/operator \
 		cmd/manager/main.go
+	$(Q)cp -r deploy/olm-catalog manifests && \
+		tar -zcvf manifests.tar.gz manifests && \
+		rm -rf manifests
 
 # TODO: Disable for now for CI to go over
 upgrade-build: #TODO: reenable it
