@@ -340,6 +340,7 @@ data:
                 - create
                 - update
                 - use
+                - delete
               serviceAccountName: openshift-pipelines-operator
             deployments:
             - name: openshift-pipelines-operator
