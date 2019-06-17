@@ -43,6 +43,7 @@ rules:
   - ""
   resources:
   - pods
+  - pods/log
   - namespaces
   - secrets
   - events
@@ -236,8 +237,10 @@ metadata:
 spec:
   additionalPrinterColumns:
   - JSONPath: .status.conditions[?(@.type=="Succeeded")].status
-    description: The status of the pipelinrun
-    name: Status
+    name: Succeeded
+    type: string
+  - JSONPath: .status.conditions[?(@.type=="Succeeded")].reason
+    name: Reason
     type: string
   - JSONPath: .status.startTime
     name: StartTime
@@ -363,11 +366,67 @@ spec:
     app: tekton-pipelines-webhook
 
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  name: tekton-aggregate-edit
+rules:
+- apiGroups:
+  - tekton.dev
+  resources:
+  - tasks
+  - taskruns
+  - pipelines
+  - pipelineruns
+  - pipelineresources
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: tekton-aggregate-view
+rules:
+- apiGroups:
+  - tekton.dev
+  resources:
+  - tasks
+  - taskruns
+  - pipelines
+  - pipelineruns
+  - pipelineresources
+  verbs:
+  - get
+  - list
+  - watch
+
+---
 apiVersion: v1
 data: null
 kind: ConfigMap
 metadata:
   name: config-artifact-bucket
+  namespace: tekton-pipelines
+
+---
+apiVersion: v1
+data: null
+kind: ConfigMap
+metadata:
+  name: config-artifact-pvc
   namespace: tekton-pipelines
 
 ---
@@ -424,20 +483,22 @@ spec:
         - -stderrthreshold
         - INFO
         - -kubeconfig-writer-image
-        - quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.3.1
+        - quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.4.0
         - -creds-image
-        - quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.3.1
+        - quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.4.0
         - -git-image
-        - quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.3.1
+        - quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.4.0
         - -nop-image
-        - quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.3.1
+        - quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.4.0
         - -bash-noop-image
-        - quay.io/openshift-pipeline/tektoncd-pipeline-bash:v0.3.1
+        - quay.io/openshift-pipeline/tektoncd-pipeline-bash:v0.4.0
         - -gsutil-image
-        - gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/gsutil@sha256:7ee20ca5428358e766086a217b7d27dba56960dbcb4ce705dd0db3e551cd06fd
+        - quay.io/openshift-pipeline/tektoncd-pipeline-gsutil:v0.4.0
         - -entrypoint-image
-        - quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.3.1
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.3.1
+        - quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.4.0
+        - -imagedigest-exporter-image
+        - quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.4.0
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.4.0
         name: tekton-pipelines-controller
         env:
         - name: SYSTEM_NAMESPACE
@@ -467,7 +528,7 @@ spec:
         app: tekton-pipelines-webhook
     spec:
       containers:
-      - image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.3.1
+      - image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.4.0
         name: webhook
         env:
         - name: SYSTEM_NAMESPACE
