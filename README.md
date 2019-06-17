@@ -47,7 +47,7 @@ minikube start -p mk-tekton \
  --extra-config=apiserver.service-node-port-range=80-32767
 ```
 
-**Set docker env**
+**Set the shell environment up for the container runtime**
 
 ```
 eval $(minikube docker-env -p mk-tekton)
@@ -59,11 +59,11 @@ eval $(minikube docker-env -p mk-tekton)
 ```
 cd ${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator
 ```
-2. Build go and docker image
+2. Build go and the container image
 ```
 operator-sdk build ${YOUR_REGISTORY}/openshift-pipelines-operator:${IMAGE_TAG}
 ```
-3. Push docker image
+3. Push the container image
 ```
 docker push ${YOUR-REGISTORY}/openshift-pipelines-operator:${IMAGE-TAG}
 ```
