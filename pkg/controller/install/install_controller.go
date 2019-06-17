@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	tektonVersion = "v0.3.1"
+	tektonVersion = "v0.4.0"
 	resourceDir   string
 	autoInstall   bool
 	recursive     bool
