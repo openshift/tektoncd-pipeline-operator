@@ -29,10 +29,8 @@ test-coverage-html: ./vendor ./out/cover.out
 	$(Q)go test ${V_FLAG} -race $(shell go list ./... | grep -v -E '(/test/e2e|/test/operatorsource)') -failfast -coverprofile=cover.out -covermode=atomic -outputdir=./out
 
 .PHONY: get-test-namespace
-# get-test-namespace: ./out/test-namespace
-get-test-namespace:
-	# $(eval TEST_NAMESPACE := $(shell cat ./out/test-namespace))
-	$(eval TEST_NAMESPACE := test-openshift-pipelines-operator)
+get-test-namespace: ./out/test-namespace
+	$(eval TEST_NAMESPACE := $(shell cat ./out/test-namespace))
 
 .PHONY: get-operator-version
 get-operator-version:
@@ -40,7 +38,8 @@ get-operator-version:
 	$(eval TEKTONCD_PIPELINE_OPERATOR_VERSION := $(shell cat $(package_yaml) | grep "currentCSV"| cut -d "." -f2- | cut -d "v" -f2 | tr -d '[:space:]'))
 
 ./out/test-namespace:
-	@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
+	# @echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
+	@echo -n "test-openshift-pipelines-operator" > ./out/test-namespace
 
 .PHONY: test-e2e
 ## Runs the e2e tests locally
@@ -49,8 +48,8 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	# $(Q)operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-v -timeout=10m"
-	$(Q)operator-sdk test local ./test/e2e --image quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1 --namespace $(TEST_NAMESPACE)
+	$(Q)operator-sdk test local ./test/e2e --image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator --namespace $(TEST_NAMESPACE) --verbose --debug --go-test-flags "-v -timeout=10m"
+
 .PHONY: e2e-setup
 e2e-setup: e2e-cleanup
 	$(Q)oc new-project $(TEST_NAMESPACE)
