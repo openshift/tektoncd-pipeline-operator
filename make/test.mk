@@ -29,8 +29,10 @@ test-coverage-html: ./vendor ./out/cover.out
 	$(Q)go test ${V_FLAG} -race $(shell go list ./... | grep -v -E '(/test/e2e|/test/operatorsource)') -failfast -coverprofile=cover.out -covermode=atomic -outputdir=./out
 
 .PHONY: get-test-namespace
-get-test-namespace: ./out/test-namespace
-	$(eval TEST_NAMESPACE := $(shell cat ./out/test-namespace))
+# get-test-namespace: ./out/test-namespace
+get-test-namespace:
+	# $(eval TEST_NAMESPACE := $(shell cat ./out/test-namespace))
+	$(eval TEST_NAMESPACE := test-openshift-pipelines-operator)
 
 .PHONY: get-operator-version
 get-operator-version:
@@ -47,11 +49,10 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	$(Q)operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-v -timeout=30m"
-
-
+	$(Q)operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-v -timeout=10m"
+	# $(Q)operator-sdk test local ./test/e2e --image quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1 --namespace $(TEST_NAMESPACE)
 .PHONY: e2e-setup
-e2e-setup: e2e-cleanup 
+e2e-setup: e2e-cleanup
 	$(Q)oc new-project $(TEST_NAMESPACE)
 
 .PHONY: e2e-cleanup
