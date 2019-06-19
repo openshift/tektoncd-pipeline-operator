@@ -47,11 +47,12 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	$(Q)operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-v -timeout=30m"
+	$(Q)operator-sdk version
+	$(Q)operator-sdk --verbose test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-timeout=30m"
 
 
 .PHONY: e2e-setup
-e2e-setup: e2e-cleanup 
+e2e-setup: e2e-cleanup
 	$(Q)oc new-project $(TEST_NAMESPACE)
 
 .PHONY: e2e-cleanup
@@ -87,7 +88,7 @@ olm-integration-setup: olm-integration-cleanup
 
 .PHONY: push-operator-app-registry
 ifdef DO_NOT_PUSH_OPERATOR_IMAGE
-push-operator-app-registry: get-operator-version 
+push-operator-app-registry: get-operator-version
 else
 push-operator-app-registry: get-operator-version push-operator-image
 endif
@@ -103,7 +104,7 @@ endif
 test-operator-source: push-operator-app-registry
 	$(eval OPSRC_NAME := tektoncd-pipeline-operators-$(TAG))
 	$(eval OPSRC_DIR := test/operatorsource)
-	$(Q)oc project openshift-marketplace 
+	$(Q)oc project openshift-marketplace
 	$(Q)sed -e "s,REPLACE_NAMESPACE,$(TEKTONCD_PIPELINE_APPR_NAMESPACE)," ./$(OPSRC_DIR)/operatorsource.yaml | sed -e "s,REPLACE_OPERATOR_SOURCE_NAME,$(OPSRC_NAME)," | oc apply -f -
 	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(TEKTONCD_PIPELINE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/catalogsourceconfig.yaml | oc apply -f -
 	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(TEKTONCD_PIPELINE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/subscription.yaml | oc apply -f -
