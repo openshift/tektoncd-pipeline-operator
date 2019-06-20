@@ -48,7 +48,10 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	$(Q)operator-sdk up local --namespace $(TEST_NAMESPACE) &  sleep 180; kill $!
+	$(eval POD_NAME := openshift-pipelines-operator)
+	$(eval OPERATOR_NAME := openshift-pipelines-operator)
+	echo ${POD_NAME} ${OPERATOR_NAME}
+	$(Q)operator-sdk up local --namespace $(TEST_NAMESPACE) &  sleep 120; kill $!
 
 .PHONY: e2e-setup
 e2e-setup: e2e-cleanup
