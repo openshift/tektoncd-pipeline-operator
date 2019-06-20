@@ -26,7 +26,7 @@ required = [
 
 [[override]]
   name = "sigs.k8s.io/controller-tools"
-  version = "=v0.1.8"
+  revision = "9d55346c2bde73fb3326ac22eac2e5210a730207"
 
 [[override]]
   name = "k8s.io/api"
@@ -50,7 +50,7 @@ required = [
 
 [[override]]
   name = "github.com/coreos/prometheus-operator"
-  version = "=v0.26.0"
+  version = "=v0.29.0"
 
 [[override]]
   name = "sigs.k8s.io/controller-runtime"
@@ -60,7 +60,7 @@ required = [
   name = "github.com/operator-framework/operator-sdk"
   # The version rule is used for a specific release and the master branch for in between releases.
   # branch = "master" #osdk_branch_annotation
-  version = "=v0.5.0" #osdk_version_annotation
+  version = "=v0.8.1" #osdk_version_annotation
 
 [prune]
   go-tests = true
@@ -76,4 +76,4 @@ required = [
 
 [[constraint]]
   name = "github.com/jcrossley3/manifestival"
-  revision = "501df003f7629401b107df70bfb5afe94d852997"
+  revision = "c8f99ce4c2a29e0531817d4954a950c1daa4a352"
