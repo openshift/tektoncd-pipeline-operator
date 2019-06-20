@@ -63,7 +63,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 	if current == nil {
 		logResource("Creating", spec)
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.client.Create(context.TODO(), spec); err != nil {
+		if err = f.client.Create(context.TODO(), spec.DeepCopy()); err != nil {
 			return err
 		}
 	} else {
