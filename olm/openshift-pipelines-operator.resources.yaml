@@ -11,9 +11,6 @@ kind: OperatorGroup
 metadata:
   name: openshift-pipelines-operator
   namespace: openshift-pipelines-operator
-spec:
-  targetNamespaces:
-  - openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
@@ -82,12 +79,6 @@ data:
         - name: v1alpha1
           served: true
           storage: true
-    - apiVersion: tekton.dev/v1alpha1
-      kind: Install
-      metadata:
-        name: example-install
-        namespace: openshift-pipelines-operator
-      spec: {}
   clusterServiceVersions: |-
     - apiVersion: operators.coreos.com/v1alpha1
       kind: ClusterServiceVersion
@@ -96,7 +87,7 @@ data:
           capabilities: Basic Install
           categories: "Developer Tools, Integration & Delivery"
           description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
-          containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-2
+          containerImage: REPLACE_IMAGE
           createdAt: 2019-03-15T19:44:21Z
           certified: "false"
           support: Red Hat, Inc.
@@ -368,7 +359,7 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: openshift-pipelines-operator
-                      image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.3.1-2
+                      image: REPLACE_IMAGE
                       imagePullPolicy: Always
                       name: openshift-pipelines-operator
                       resources: {}
@@ -391,7 +382,7 @@ data:
           capabilities: Basic Install
           categories: "Developer Tools, Integration & Delivery"
           description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
-          containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1
+          containerImage: docker.io/piyushgarg/test-operator
           createdAt: 2019-03-15T19:44:21Z
           certified: "false"
           support: Red Hat, Inc.
@@ -649,20 +640,20 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: openshift-pipelines-operator
-                      image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.4.0-1
+                      image: docker.io/piyushgarg/test-operator
                       imagePullPolicy: Always
                       name: openshift-pipelines-operator
                       resources: {}
                     serviceAccountName: openshift-pipelines-operator
           strategy: deployment
         installModes:
-        - supported: true
+        - supported: false
           type: OwnNamespace
-        - supported: true
+        - supported: false
           type: SingleNamespace
         - supported: false
           type: MultiNamespace
-        - supported: false
+        - supported: true
           type: AllNamespaces
         maturity: alpha
         provider:

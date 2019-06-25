@@ -1,6 +1,6 @@
 apiVersion: tekton.dev/v1alpha1
 kind: Install
 metadata:
-  name: example-install
+  name: tektoncd-pipeline-install
+spec:
   namespace: openshift-pipelines-operator
-spec: {}

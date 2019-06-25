@@ -38,9 +38,6 @@ kind: OperatorGroup
 metadata:
   name: openshift-pipelines-operator
   namespace: openshift-pipelines-operator
-spec:
-  targetNamespaces:
-  - openshift-pipelines-operator
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource

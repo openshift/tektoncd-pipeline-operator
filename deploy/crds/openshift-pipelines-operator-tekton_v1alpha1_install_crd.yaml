@@ -9,7 +9,6 @@ spec:
     listKind: InstallList
     plural: installs
     singular: install
-  scope: Namespaced
   subresources:
     status: {}
   validation:

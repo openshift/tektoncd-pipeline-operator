@@ -138,20 +138,36 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			err := r.manifest.DeleteAll(
-				client.PropagationPolicy(metav1.DeletePropagationForeground),
-			)
-			if err != nil {
-				reqLogger.Error(err, "failed to delete pipeline manifest")
-				return reconcile.Result{}, err
+			if request.Name == "tektoncd-pipeline-install" {
+				// Request object not found, could have been deleted after reconcile request.
+				// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+				err := r.manifest.DeleteAll(
+					client.PropagationPolicy(metav1.DeletePropagationForeground),
+				)
+				if err != nil {
+					reqLogger.Error(err, "failed to delete pipeline manifest")
+					return reconcile.Result{}, err
+				}
+				// Return and don't requeue
+				return reconcile.Result{}, nil
 			}
-			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if request.Name != "tektoncd-pipeline-install" {
+
+		reqLogger.Info("skipping installation, provided configuration incorrect")
+		instance.Status.Message = "Error, provided configuration wrong"
+
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		return reconcile.Result{}, nil
 	}
 
 	if isUptodate(instance) {
@@ -167,6 +183,7 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	instance.Status.Version = tektonVersion
 	instance.Status.Resources = r.resourceNames()
+	instance.Status.Message = "Installed"
 
 	err = r.client.Status().Update(context.TODO(), instance)
 	if err != nil {
@@ -179,7 +196,7 @@ func (r *ReconcileInstall) Reconcile(request reconcile.Request) (reconcile.Resul
 func (r *ReconcileInstall) install(instance *tektonv1alpha1.Install) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(instance),
-		mf.InjectNamespace(instance.GetNamespace()),
+		mf.InjectNamespace(instance.Spec.Namespace),
 	}
 
 	err := r.manifest.Transform(tfs...)

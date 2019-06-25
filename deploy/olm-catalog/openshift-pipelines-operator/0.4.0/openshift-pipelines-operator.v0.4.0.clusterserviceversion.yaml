@@ -6,7 +6,7 @@ metadata:
     capabilities: Basic Install
     categories: "Developer Tools, Integration & Delivery"
     description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
-    containerImage: REPLACE_IMAGE
+    containerImage: docker.io/piyushgarg/test-operator
     createdAt: 2019-03-15T19:44:21Z
     certified: "false"
     support: Red Hat, Inc.
@@ -264,20 +264,20 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: openshift-pipelines-operator
-                image: REPLACE_IMAGE
+                image: docker.io/piyushgarg/test-operator
                 imagePullPolicy: Always
                 name: openshift-pipelines-operator
                 resources: {}
               serviceAccountName: openshift-pipelines-operator
     strategy: deployment
   installModes:
-  - supported: true
+  - supported: false
     type: OwnNamespace
-  - supported: true
+  - supported: false
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: false
+  - supported: true
     type: AllNamespaces
   maturity: alpha
   provider:
