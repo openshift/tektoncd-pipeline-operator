@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: openshift-pipelines-operator
-  namespace: openshift-pipelines-operator
+  namespace: tekton-pipelines
 spec:
   replicas: 1
   selector:

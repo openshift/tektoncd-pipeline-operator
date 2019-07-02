@@ -22,7 +22,7 @@ metadata:
         }
       ]
   name: openshift-pipelines-operator.v0.3.1
-  namespace: placeholder
+  namespace: tekton-pipelines
 spec:
   version: 0.3.1
   maturity: alpha

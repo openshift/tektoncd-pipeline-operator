@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"tekton.dev/v1alpha1","kind":"Install","metadata":{"name":"example-install","namespace":"openshift-pipelines-operator"},"spec":{}}]'
+    alm-examples: '[{"apiVersion":"tekton.dev/v1alpha1","kind":"Install","metadata":{"name":"example-install","namespace":"tekton-pipelines"},"spec":{}}]'
     capabilities: Basic Install
     categories: "Developer Tools, Integration & Delivery"
     description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
@@ -12,7 +12,7 @@ metadata:
     support: Red Hat, Inc.
     repository: https://github.com/openshift/tektoncd-pipeline-operator
   name: openshift-pipelines-operator.v0.4.0
-  namespace: placeholder
+  namespace: tekton-pipelines
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:

@@ -108,9 +108,12 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
 1. Change directory to `${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator`
 
-1. Create `openshift-pipelines-operator` namespace
+1. Create `tekton-pipelines` namespace
 
-   `kubectl create namespace openshift-pipelines-operator`
+   `kubectl create namespace tekton-pipelines`
+
+1. Change the project to the newly created `tekton-pipelines` project 
+    `oc project tekton-pipelines `
 
 1. Apply operator crd
 
