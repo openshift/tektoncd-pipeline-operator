@@ -38,8 +38,8 @@ get-operator-version:
 	$(eval TEKTONCD_PIPELINE_OPERATOR_VERSION := $(shell cat $(package_yaml) | grep "currentCSV"| cut -d "." -f2- | cut -d "v" -f2 | tr -d '[:space:]'))
 
 ./out/test-namespace:
-	@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
-
+	#@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
+	@echo -n "openshift-pipelines-operator" > ./out/test-namespace
 .PHONY: test-e2e
 ## Runs the e2e tests locally
 test-e2e: ./vendor e2e-setup
@@ -47,16 +47,16 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	$(Q)operator-sdk test local ./test/e2e --image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator --namespace $(TEST_NAMESPACE) --go-test-flags "-v -timeout=15m"
-
+	## $(Q)operator-sdk test local ./test/e2e --image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator --namespace $(TEST_NAMESPACE) --go-test-flags "-v -timeout=15m"
+	$(Q)operator-sdk test local ./test/e2e --image nikhilvep/opo-iocib:1 --namespace $(TEST_NAMESPACE) --verbose --debug
 
 .PHONY: e2e-setup
 e2e-setup: e2e-cleanup 
-	$(Q)oc new-project $(TEST_NAMESPACE)
+	$(Q)oc create namespace $(TEST_NAMESPACE)
 
 .PHONY: e2e-cleanup
 e2e-cleanup: get-test-namespace
-	$(Q)-oc delete project $(TEST_NAMESPACE) --timeout=10s --wait
+	$(Q)-oc delete namespace $(TEST_NAMESPACE) --timeout=10s --wait
 
 .PHONY: test-olm-integration
 ## Runs the OLM integration tests without coverage
