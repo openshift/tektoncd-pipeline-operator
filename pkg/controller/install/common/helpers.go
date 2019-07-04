@@ -21,7 +21,7 @@ import (
 )
 
 // Set some data in a configmap, only overwriting common keys if they differ
-// keep the function here, could be use later
+// keep the function here, could be use later.
 func UpdateConfigMap(cm *unstructured.Unstructured, data map[string]string, log logr.Logger) {
 	for k, v := range data {
 		message := []interface{}{"map", cm.GetName(), k, v}
