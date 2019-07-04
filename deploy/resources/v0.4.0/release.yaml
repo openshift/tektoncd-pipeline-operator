@@ -472,6 +472,9 @@ metadata:
   namespace: tekton-pipelines
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: tekton-pipelines-controller
   template:
     metadata:
       labels:
@@ -522,6 +525,9 @@ metadata:
   namespace: tekton-pipelines
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: tekton-pipelines-webhook
   template:
     metadata:
       labels:
