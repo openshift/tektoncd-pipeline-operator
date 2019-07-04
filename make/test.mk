@@ -47,15 +47,23 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	$(Q)operator-sdk test local ./test/e2e --image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator --go-test-flags "-v -timeout=15m"
+	oc project $(OPENSHIFT_BUILD_NAMESPACE)
+	operator-sdk test local ./test/e2e --namespace $(OPENSHIFT_BUILD_NAMESPACE) --image registry.svc.ci.openshift.org/$(OPENSHIFT_BUILD_NAMESPACE)/stable:tektoncd-pipeline-operator --go-test-flags "-v -timeout=15m"
 
 .PHONY: e2e-setup
 e2e-setup: e2e-cleanup 
-	$(Q)oc new-project $(TEST_NAMESPACE)
+	# $(Q)oc new-project $(TEST_NAMESPACE)
+	oc new-project $(OPENSHIFT_BUILD_NAMESPACE)
 
 .PHONY: e2e-cleanup
 e2e-cleanup: get-test-namespace
-	$(Q)-oc delete project $(TEST_NAMESPACE) --timeout=10s --wait
+	# $(Q)-oc delete project $(TEST_NAMESPACE) --timeout=10s --wait
+	oc project $(OPENSHIFT_BUILD_NAMESPACE)
+	kubectl delete -f ./deploy/operator.yaml
+	kubectl delete -f ./deploy/role_binding.yaml
+	kubectl delete -f ./deploy/role.yaml
+	kubectl delete -f ./deploy/service_account.yaml
+	kubectl delete -f ./deploy/crds/openshift-pipelines-operator-tekton_v1alpha1_install_crd.yaml
 
 .PHONY: test-olm-integration
 ## Runs the OLM integration tests without coverage
