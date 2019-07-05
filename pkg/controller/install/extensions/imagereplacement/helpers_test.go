@@ -132,7 +132,9 @@ func runUpdateDeploymentImageTest(t *testing.T, tt imageReplacementTest) {
 	log := logf.Log.WithName(tt.name)
 	logf.SetLogger(logf.ZapLogger(true))
 
-	UpdateDeployment(&deployment, &tt.registry, log)
+	if err := UpdateDeployment(&deployment, &tt.registry, log); err != nil {
+		t.Fatalf("Expected success but got error: %s", err)
+	}
 
 	expecteds := tt.expected
 	// Assert container[*].image

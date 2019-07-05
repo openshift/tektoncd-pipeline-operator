@@ -22,10 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
-
-var log = logf.Log.WithName("common")
 
 type Activities []func(client.Client, *runtime.Scheme, *tektonv1alpha1.Install) (*Extension, error)
 type Extender func(*tektonv1alpha1.Install) error

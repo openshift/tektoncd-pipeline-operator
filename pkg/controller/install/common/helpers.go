@@ -32,6 +32,8 @@ func UpdateConfigMap(cm *unstructured.Unstructured, data map[string]string, log 
 			message = append(message, "previous", x)
 		}
 		log.Info("Setting", message...)
-		unstructured.SetNestedField(cm.Object, v, "data", k)
+		if err := unstructured.SetNestedField(cm.Object, v, "data", k); err != nil {
+			log.Info("Call unstructured.SetNestedField get exception: %s", err)
+		}
 	}
 }
