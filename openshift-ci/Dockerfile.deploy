@@ -1,6 +1,8 @@
 FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:latest
 
 LABEL com.redhat.delivery.appregistry=true
+LABEL maintainer "pipelines-dev <pipelines-dev@redhat.com>"
+LABEL author "pipelines-dev <pipelines-dev@redhat.com>"
 
 ENV OPERATOR=/usr/local/bin/openshift-pipelines-operator \
     USER_UID=1001 \

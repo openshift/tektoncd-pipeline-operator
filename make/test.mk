@@ -47,7 +47,7 @@ test-e2e: ./vendor e2e-setup
 ifeq ($(OPENSHIFT_VERSION),3)
 	$(Q)oc login -u system:admin
 endif
-	$(Q)operator-sdk test local ./test/e2e --image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator --namespace $(TEST_NAMESPACE) --verbose --debug
+	$(Q)operator-sdk test local ./test/e2e --image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator --namespace $(TEST_NAMESPACE) --debug --go-test-flags "-v -timeout=15m"
 
 .PHONY: e2e-setup
 e2e-setup: e2e-cleanup 

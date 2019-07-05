@@ -1,12 +1,12 @@
 FROM centos:7 as build-tools
-LABEL maintainer "Devtools <devtools@redhat.com>"
+LABEL maintainer "pipelines-dev <pipelines-dev@redhat.com>"
 LABEL author "Konrad Kleine <kkleine@redhat.com>"
 ENV LANG=en_US.utf8
 ENV GOPATH /tmp/go
 ARG GO_PACKAGE_PATH=github.com/openshift/tektoncd-pipeline-operator
 
-ENV GIT_COMMITTER_NAME openshiftpipelines
-ENV GIT_COMMITTER_EMAIL openshiftpipelines@redhat.com
+ENV GIT_COMMITTER_NAME pipelines-dev
+ENV GIT_COMMITTER_EMAIL pipelines-dev@redhat.com
 
 RUN yum install epel-release -y \
     && yum install --enablerepo=centosplus install -y --quiet \
