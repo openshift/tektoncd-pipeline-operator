@@ -4,36 +4,35 @@ import (
 	"testing"
 
 	"github.com/openshift/tektoncd-pipeline-operator/pkg/apis"
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
+	op "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
 	"github.com/openshift/tektoncd-pipeline-operator/test/testgroups"
-	framework "github.com/operator-framework/operator-sdk/pkg/test"
+	"github.com/operator-framework/operator-sdk/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestMain(m *testing.M) {
-	framework.MainEntry(m)
+	test.MainEntry(m)
 }
 
 func TestPipelineOperator(t *testing.T) {
 	initTestingFramework(t)
 
 	// Run test groups (test each CRDs)
-	t.Run("install-crd", testgroups.InstallCRDTestGroup)
+	t.Run("config-crd", testgroups.ClusterCRD)
 }
 
 func initTestingFramework(t *testing.T) {
-	installList := &v1alpha1.InstallList{
+	apiVersion := "operator.tekton.dev/v1alpha1"
+	kind := "Config"
+
+	configList := &op.ConfigList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Install",
-			APIVersion: "tekton.dev/v1alpha1",
+			Kind:       kind,
+			APIVersion: apiVersion,
 		},
 	}
 
-	err := framework.AddToFrameworkScheme(apis.AddToScheme, installList)
-	if err != nil {
-		t.Fatalf(
-			"failed to add 'tekton.dev/v1alpha1 Install' scheme to test framework: %v",
-			err,
-		)
+	if err := test.AddToFrameworkScheme(apis.AddToScheme, configList); err != nil {
+		t.Fatalf("failed to add '%s %s': %v", apiVersion, kind, err)
 	}
 }
