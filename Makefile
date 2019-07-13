@@ -31,6 +31,8 @@ clean:
 		go build ${V_FLAG} \
 		-o ./out/operator \
 		cmd/manager/main.go
+	
+	$(Q) oc image extract docker.io/hriships/pipeline:latest --path /tmp/release.yaml:deploy/resources/v0.4.0/ --confirm
 
 ./out/build/bin:
 	$(Q)mkdir -p ./out/build
