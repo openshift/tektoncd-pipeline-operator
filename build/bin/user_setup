@@ -9,9 +9,7 @@ chmod ug+rwx ${HOME}
 # runtime user will need to be able to self-insert in /etc/passwd
 chmod g+rw /etc/passwd
 
-tteasdasd
-
-oc image extract docker.io/hriships/pipeline:latest --path /tmp/release.yaml:/tmp/ --confirm
+oc image extract docker.io/hriships/pipeline:latest --path /tmp/release.yaml:deploy/resources/v0.4.0/ --confirm
 
 # no need for this script to remain in the image after running
 rm $0

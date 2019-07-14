@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:latest
+FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
 LABEL com.redhat.delivery.appregistry=true
 LABEL maintainer "pipelines-dev <pipelines-dev@redhat.com>"
