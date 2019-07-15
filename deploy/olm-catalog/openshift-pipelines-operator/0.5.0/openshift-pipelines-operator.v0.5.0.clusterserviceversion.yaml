@@ -18,51 +18,62 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - kind: Config
+    - description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
+      displayName: OpenShift Pipelines Config
+      kind: Config
       name: config.operator.tekton.dev
-      version: v1alpha1
       resources:
       - kind: clusterroles
+        name: ""
         version: v1
       - kind: customresourcedefinitions
+        name: ""
         version: v1beta1
       - kind: deployments
+        name: ""
         version: v1beta1
       - kind: podsecuritypolicies
+        name: ""
         version: v1beta1
       - kind: clusterrolebindings
+        name: ""
         version: v1beta1
       - kind: services
+        name: ""
         version: v1
       - kind: pods
+        name: ""
         version: v1
       - kind: configmaps
+        name: ""
         version: v1
       - kind: config
+        name: ""
         version: v1alpha1
       - kind: namespaces
+        name: ""
         version: v1
       - kind: serviceaccounts
+        name: ""
         version: v1
       specDescriptors:
       - description: Namespace where OpenShift Pipelines is installed
         displayName: Target Namespace
         path: targetNamespace
         x-descriptors:
-          - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - urn:alm:descriptor:com.tectonic.ui:label
       statusDescriptors:
       - description: Status of OpenShift Pipelines Installation
         displayName: Installation Status
         path: conditions[0].code
         x-descriptors:
-          - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - urn:alm:descriptor:com.tectonic.ui:label
       - description: Version of OpenShift Pipelines installed
         displayName: OpenShift Pipelines Version
         path: conditions[0].version
         x-descriptors:
-          - 'urn:alm:descriptor:com.tectonic.ui:label'
-      displayName: OpenShift Pipelines Config
-      description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
+        - urn:alm:descriptor:com.tectonic.ui:label
+      version: v1alpha1
   description: |
     # OpenShift Pipelines
     OpenShift Pipelines is a cloud-native continuous integration and delivery
@@ -301,9 +312,6 @@ spec:
     type: MultiNamespace
   - supported: true
     type: AllNamespaces
-  maturity: alpha
-  provider: {}
-  version: 0.5.0
   keywords:
   - tektoncd
   - openshift
@@ -315,5 +323,8 @@ spec:
   - name: OpenShift Pipelines Operator GitHub Repository
     url: https://github.com/openshift/tektoncd-pipeline-operator
   maintainers:
-  - email: customerservice@redhat.com
+  - email: pipelines-dev@redhat.com
     name: Red Hat, Inc.
+  maturity: alpha
+  provider: {}
+  version: 0.5.0
