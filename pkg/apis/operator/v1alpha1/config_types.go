@@ -9,6 +9,20 @@ import (
 type ConfigSpec struct {
 	// namespace where OpenShift pipelines will be installed
 	TargetNamespace string `json:"targetNamespace"`
+	// A means to override the corresponding deployment images in the upstream.
+	// If no registry is provided, the knative release images will be used.
+	// +optional
+	Registry Registry `json:"registry,omitempty"`
+}
+
+// Registry defines image overrides of knative images.
+// The default value is used as a default format to override for all knative deployments.
+// The override values are specific to each knative deployment.
+// +k8s:openapi-gen=true
+type Registry struct {
+	// A map of a container name or arg key to the full image location of the individual knative container.
+	// +optional
+	Override map[string]string `json:"override,omitempty"`
 }
 
 // ConfigStatus defines the observed state of Config

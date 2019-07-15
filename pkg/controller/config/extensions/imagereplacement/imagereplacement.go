@@ -17,8 +17,8 @@ package imagereplacement
 
 import (
 	mf "github.com/jcrossley3/manifestival"
-	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/install/common"
+	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config/common"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,11 +32,10 @@ var (
 	}
 	log            = logf.Log.WithName("image-replacement")
 	scheme         *runtime.Scheme
-	tektonPipeline *tektonv1alpha1.Install
+	tektonPipeline *tektonv1alpha1.Config
 )
 
-// Configure minikube if we're soaking in it
-func Configure(c client.Client, s *runtime.Scheme, install *tektonv1alpha1.Install) (*common.Extension, error) {
+func Configure(c client.Client, s *runtime.Scheme, install *tektonv1alpha1.Config) (*common.Extension, error) {
 	if install.Spec.Registry.Override != nil {
 		scheme = s
 		tektonPipeline = install

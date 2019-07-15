@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package install
+package config
 
 import (
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/install/extensions/imagereplacement"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config/extensions/imagereplacement"
 )
 
 func init() {

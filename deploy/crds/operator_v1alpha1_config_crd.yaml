@@ -23,6 +23,19 @@ spec:
           type: object
         spec:
           properties:
+            registry:
+              description: A means to override the registry for all knative images.
+              type: object
+              properties:
+                default:
+                  description: The default image reference template to use for all knative deployment containers.
+                    Takes the form of example-registry.io/custom/path/${NAME}:custom-tag
+                  type: string
+                override:
+                  description: A map of a container name to the full image location of the individual knative container.
+                  type: object
+                  additionalProperties:
+                    type: string
             targetNamespace:
               description: namespace where OpenShift pipelines will be installed
               type: string

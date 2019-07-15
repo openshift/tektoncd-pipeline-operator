@@ -3,7 +3,7 @@ package imagereplacement
 import (
 	"testing"
 
-	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/tekton/v1alpha1"
+	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

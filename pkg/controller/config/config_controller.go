@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config/common"
 )
 
 const (
@@ -44,6 +45,7 @@ var (
 	noAutoInstall   bool
 	recursive       bool
 	ctrlLog         = logf.Log.WithName("ctrl").WithName("config")
+	activities common.Activities
 )
 
 func init() {
@@ -209,14 +211,8 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 		return reconcile.Result{}, err
 	}
 
-	tfs := []mf.Transformer{
-		mf.InjectOwner(res),
-		mf.InjectNamespace(res.Spec.TargetNamespace),
-	}
-
-	if err := r.manifest.Transform(tfs...); err != nil {
-		log.Error(err, "failed to apply manifest transformations")
-		// ignoring failure to update
+	extensions, err := activities.Extend(r.client, r.scheme, res)
+	if err != nil {
 		_ = r.updateStatus(res, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
@@ -224,15 +220,25 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 		return reconcile.Result{}, err
 	}
 
-	if err := r.manifest.ApplyAll(); err != nil {
-		log.Error(err, "failed to apply release.yaml")
-		// ignoring failure to update
+ 	err = r.manifest.Transform(extensions.Transform(res)...)
+	if err == nil {
+		err = extensions.PreInstall(res)
+		if err == nil {
+			err = r.manifest.ApplyAll()
+			if err == nil {
+				err = extensions.PostInstall(res)
+			}
+		}
+	}
+
+	if err != nil {
 		_ = r.updateStatus(res, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
 			Version: tektonVersion})
 		return reconcile.Result{}, err
 	}
+
 	log.Info("successfully applied all resources")
 
 	// NOTE: manifest when updating (not installing) already installed resources
