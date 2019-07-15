@@ -21,4 +21,13 @@ const (
 
 	// TestOperatorName specifies the name of the operator being tested
 	TestOperatorName = "openshift-pipelines-operator"
+
+	// Name of the pipeline controller deployment
+	PipelineControllerName = "tekton-pipelines-controller"
+
+	// Name of the pipeline webhook deployment
+	PipelineWebhookName = "tekton-pipelines-webhook"
+
+	// Name of the cluster wide CR
+	ClusterCR = "cluster"
 )
