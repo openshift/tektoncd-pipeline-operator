@@ -48,13 +48,6 @@ rules:
   - create
   - delete
 - apiGroups:
-  - tekton.dev
-  resources:
-  - '*'
-  - installs
-  verbs:
-  - '*'
-- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
@@ -153,3 +146,15 @@ rules:
   - update
   - delete
   - use
+- apiGroups:
+  - operator.tekton.dev
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - tekton.dev
+  resources:
+  - '*'
+  verbs:
+  - '*'

@@ -38,25 +38,25 @@ get-operator-version:
 	$(eval TEKTONCD_PIPELINE_OPERATOR_VERSION := $(shell cat $(package_yaml) | grep "currentCSV"| cut -d "." -f2- | cut -d "v" -f2 | tr -d '[:space:]'))
 
 ./out/test-namespace:
-	@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
-
+	#@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
+	@echo -n "openshift-pipelines-operator" > ./out/test-namespace
 .PHONY: test-e2e
 ## Runs the e2e tests locally
 test-e2e: ./vendor e2e-setup
 	$(info Running E2E test: $@)
-ifeq ($(OPENSHIFT_VERSION),3)
-	$(Q)oc login -u system:admin
-endif
-	$(Q)operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-v -timeout=15m"
-
+	$(Q)operator-sdk test local ./test/e2e \
+		--image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator \
+	 	--namespace $(TEST_NAMESPACE) \
+		--go-test-flags "-v -timeout=15m" \
+	 	--debug
 
 .PHONY: e2e-setup
-e2e-setup: e2e-cleanup 
-	$(Q)oc new-project $(TEST_NAMESPACE)
+e2e-setup: e2e-cleanup
+	$(Q)oc create namespace $(TEST_NAMESPACE)
 
 .PHONY: e2e-cleanup
 e2e-cleanup: get-test-namespace
-	$(Q)-oc delete project $(TEST_NAMESPACE) --timeout=10s --wait
+	$(Q)-oc delete namespace $(TEST_NAMESPACE) --timeout=10s --wait
 
 .PHONY: test-olm-integration
 ## Runs the OLM integration tests without coverage
@@ -87,7 +87,7 @@ olm-integration-setup: olm-integration-cleanup
 
 .PHONY: push-operator-app-registry
 ifdef DO_NOT_PUSH_OPERATOR_IMAGE
-push-operator-app-registry: get-operator-version 
+push-operator-app-registry: get-operator-version
 else
 push-operator-app-registry: get-operator-version push-operator-image
 endif
@@ -103,7 +103,7 @@ endif
 test-operator-source: push-operator-app-registry
 	$(eval OPSRC_NAME := tektoncd-pipeline-operators-$(TAG))
 	$(eval OPSRC_DIR := test/operatorsource)
-	$(Q)oc project openshift-marketplace 
+	$(Q)oc project openshift-marketplace
 	$(Q)sed -e "s,REPLACE_NAMESPACE,$(TEKTONCD_PIPELINE_APPR_NAMESPACE)," ./$(OPSRC_DIR)/operatorsource.yaml | sed -e "s,REPLACE_OPERATOR_SOURCE_NAME,$(OPSRC_NAME)," | oc apply -f -
 	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(TEKTONCD_PIPELINE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/catalogsourceconfig.yaml | oc apply -f -
 	$(Q)sed -e "s,REPLACE_APPR_REPOSITORY,$(TEKTONCD_PIPELINE_APPR_REPOSITORY)," ./$(OPSRC_DIR)/subscription.yaml | oc apply -f -

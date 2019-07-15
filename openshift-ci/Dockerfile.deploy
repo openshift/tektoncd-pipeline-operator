@@ -1,12 +1,23 @@
 FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:latest
-LABEL com.redhat.delivery.appregistry=true
 
-LABEL maintainer "Devtools <devtools@redhat.com>"
-LABEL author "Devtools <devtools@redhat.com>"
+LABEL com.redhat.delivery.appregistry=true
+LABEL maintainer "pipelines-dev <pipelines-dev@redhat.com>"
+LABEL author "pipelines-dev <pipelines-dev@redhat.com>"
+
+ENV OPERATOR=/usr/local/bin/openshift-pipelines-operator \
+    USER_UID=1001 \
+    USER_NAME=openshift-pipelines-operator
 
 ENV LANG=en_US.utf8
 
-COPY operator /usr/local/bin/tektoncd-pipeline-operator
-USER 10001
+# install operator binary
+COPY operator ${OPERATOR}
 
-ENTRYPOINT [ "/usr/local/bin/tektoncd-pipeline-operator" ]
+COPY build/bin /usr/local/bin
+RUN  /usr/local/bin/user_setup
+
+COPY deploy/resources /deploy/resources
+
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+
+USER ${USER_UID}

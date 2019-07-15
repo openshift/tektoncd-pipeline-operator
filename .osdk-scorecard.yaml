@@ -1,4 +1,4 @@
-cr-manifest: "deploy/crds/openshift_v1alpha1_install_cr.yaml"
+cr-manifest: deploy/crds/operator_v1alpha1_config_cr.yaml
 init-timeout: 120
-csv-path: "deploy/olm-catalog/openshift-pipelines-operator/0.3.1/openshift-pipelines-operator.v0.3.1.clusterserviceversion.yaml"
+csv-path: deploy/olm-catalog/openshift-pipelines-operator/0.5.0/openshift-pipelines-operator.v0.5.0.clusterserviceversion.yaml
 namespace: openshift-pipelines-operator

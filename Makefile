@@ -13,7 +13,7 @@ include ./make/docker.mk
 
 .PHONY: build
 ## Build the operator
-build: ./out/operator
+build: ./out/operator ./out/build/bin manifests
 
 .PHONY: clean
 clean:
@@ -31,9 +31,15 @@ clean:
 		go build ${V_FLAG} \
 		-o ./out/operator \
 		cmd/manager/main.go
+
+./out/build/bin:
+	$(Q)mkdir -p ./out/build
+	$(Q)cp -r build/bin ./out/build/bin
+
+manifests:
 	$(Q)cp -r deploy/olm-catalog manifests && \
-		tar -zcvf manifests.tar.gz manifests && \
-		rm -rf manifests
+	tar -zcf manifests.tar.gz manifests && \
+	rm -rf manifests
 
 # TODO: Disable for now for CI to go over
 upgrade-build: #TODO: reenable it
