@@ -26,15 +26,14 @@ import (
 )
 
 const (
-	defaultResWatched = "cluster"
-	defaultTargetNs   = "openshift-pipelines"
-)
+	ClusterCRName   = "cluster"
+	DefaultTargetNs = "openshift-pipelines"
 
-const (
-	installedStatus  = "installed"
-	installingStatus = "installing"
-	unknownStatus    = "unknown"
-	errorStatus      = "error"
+	// Name of the pipeline controller deployment
+	PipelineControllerName = "tekton-pipelines-controller"
+
+	// Name of the pipeline webhook deployment
+	PipelineWebhookName = "tekton-pipelines-webhook"
 )
 
 var (
@@ -49,12 +48,12 @@ var (
 
 func init() {
 	flag.StringVar(
-		&resourceWatched, "watch-resource", defaultResWatched,
-		"cluster-wide resource that operator honours, default: "+defaultResWatched)
+		&resourceWatched, "watch-resource", ClusterCRName,
+		"cluster-wide resource that operator honours, default: "+ClusterCRName)
 
 	flag.StringVar(
-		&targetNamespace, "target-namespace", defaultTargetNs,
-		"Namespace where pipeline will be installed default: "+defaultTargetNs)
+		&targetNamespace, "target-namespace", DefaultTargetNs,
+		"Namespace where pipeline will be installed default: "+DefaultTargetNs)
 
 	defaultResDir := filepath.Join("deploy", "resources", tektonVersion)
 	flag.StringVar(
@@ -204,7 +203,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "install")
 
-	err := r.updateStatus(res, op.ConfigCondition{Code: installingStatus, Version: tektonVersion})
+	err := r.updateStatus(res, op.ConfigCondition{Code: op.InstallingStatus, Version: tektonVersion})
 	if err != nil {
 		log.Error(err, "failed to set status")
 		return reconcile.Result{}, err
@@ -219,7 +218,9 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 		log.Error(err, "failed to apply manifest transformations")
 		// ignoring failure to update
 		_ = r.updateStatus(res, op.ConfigCondition{
-			Code: errorStatus, Details: err.Error(), Version: tektonVersion})
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: tektonVersion})
 		return reconcile.Result{}, err
 	}
 
@@ -227,7 +228,9 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 		log.Error(err, "failed to apply release.yaml")
 		// ignoring failure to update
 		_ = r.updateStatus(res, op.ConfigCondition{
-			Code: errorStatus, Details: err.Error(), Version: tektonVersion})
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: tektonVersion})
 		return reconcile.Result{}, err
 	}
 	log.Info("successfully applied all resources")
@@ -240,7 +243,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 	}
 
 	err = r.updateStatus(res, op.ConfigCondition{
-		Code: installedStatus, Version: tektonVersion})
+		Code: op.InstalledStatus, Version: tektonVersion})
 	return reconcile.Result{}, err
 }
 
@@ -267,10 +270,9 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Confi
 func (r *ReconcileConfig) markInvalidResource(res *op.Config) {
 	err := r.updateStatus(res,
 		op.ConfigCondition{
-			Code:    errorStatus,
+			Code:    op.ErrorStatus,
 			Details: "metadata.name must be " + resourceWatched,
-			Version: unknownStatus,
-		})
+			Version: "unknown"})
 	if err != nil {
 		ctrlLog.Info("failed to update status as invalid")
 	}
@@ -331,7 +333,8 @@ func isUpToDate(r *op.Config) bool {
 	}
 
 	latest := c[0]
-	return latest.Version == tektonVersion && latest.Code == installedStatus
+	return latest.Version == tektonVersion &&
+		latest.Code == op.InstalledStatus
 }
 
 func requestLogger(req reconcile.Request, context string) logr.Logger {
