@@ -3,7 +3,8 @@ package testsuites
 import (
 	"testing"
 
-	"github.com/openshift/tektoncd-pipeline-operator/test/config"
+	op "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
+	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config"
 	"github.com/openshift/tektoncd-pipeline-operator/test/helpers"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 )
@@ -14,10 +15,16 @@ func ValidateAutoInstall(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	cr := helpers.WaitForClusterCR(t, config.ClusterCR)
+	cr := helpers.WaitForClusterCR(t, config.ClusterCRName)
 	helpers.ValidatePipelineSetup(t, cr,
 		config.PipelineControllerName,
 		config.PipelineWebhookName)
+
+	cr = helpers.WaitForClusterCR(t, config.ClusterCRName)
+	if code := cr.Status.Conditions[0].Code; code != op.InstalledStatus {
+		t.Errorf("Expected code to be %s but got %s", op.InstalledStatus, code)
+	}
+
 }
 
 // ValidateDeletion ensures that deleting the cluster CR  deletes the already
@@ -26,12 +33,12 @@ func ValidateDeletion(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	cr := helpers.WaitForClusterCR(t, config.ClusterCR)
+	cr := helpers.WaitForClusterCR(t, config.ClusterCRName)
 	helpers.ValidatePipelineSetup(t, cr,
 		config.PipelineControllerName,
 		config.PipelineWebhookName)
 
-	helpers.DeleteClusterCR(t, config.ClusterCR)
+	helpers.DeleteClusterCR(t, config.ClusterCRName)
 
 	helpers.ValidatePipelineCleanup(t, cr,
 		config.PipelineControllerName,
