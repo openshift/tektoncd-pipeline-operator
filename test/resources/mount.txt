@@ -1,7 +1,7 @@
-          volumeMounts:
-          - name: addon1
-            mountPath: /deploy/resources/addon1/addon1.yaml
-            subPath: addon1.yaml
+        volumeMounts:
+        - name: addon1
+          mountPath: /deploy/resources/addon1/addon1.yaml
+          subPath: addon1.yaml
       volumes:
       - name: addon1
         configMap:

@@ -1,0 +1,8 @@
+apiVersion: operator.tekton.dev/v1alpha1
+kind: Config
+metadata:
+  name: cluster
+spec:
+  targetNamespace: openshift-pipelines
+  addons:
+  - addon1
