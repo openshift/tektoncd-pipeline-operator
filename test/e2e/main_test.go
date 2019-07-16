@@ -3,10 +3,10 @@ package e2e
 import (
 	"testing"
 
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/apis"
-	op "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
-	"github.com/openshift/tektoncd-pipeline-operator/test/testgroups"
 	"github.com/operator-framework/operator-sdk/pkg/test"
+	"github.com/tektoncd/operator/pkg/apis"
+	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/test/testgroups"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

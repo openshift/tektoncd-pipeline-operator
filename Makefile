@@ -1,3 +1,6 @@
+export GO111MODULE:=on
+export GOCACHE=/tmp/.cache/go-build
+
 include ./make/verbose.mk
 .DEFAULT_GOAL := help
 include ./make/help.mk
@@ -12,6 +15,7 @@ include ./make/test.mk
 include ./make/docker.mk
 include ./make/csv.mk
 
+
 .PHONY: build
 ## Build the operator
 build: ./out/operator ./out/build/bin manifests
@@ -23,15 +27,15 @@ clean:
 	$(Q)-rm -rf ${V_FLAG} ./tmp
 	$(Q)go clean ${X_FLAG} ./...
 
-./vendor: Gopkg.toml Gopkg.lock
-	$(Q)dep ensure ${V_FLAG} -vendor-only
+.PHONY: ./vendor
+./vendor: go.mod go.sum
+	$(Q)go mod vendor
 
 ./out/operator: ./vendor $(shell find . -path ./vendor -prune -o -name '*.go' -print)
 	#$(Q)operator-sdk generate k8s
 	$(Q)CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
-		go build ${V_FLAG} \
-		-o ./out/operator \
-		cmd/manager/main.go
+		go build ${V_FLAG} -o ./out/operator \
+		./cmd/manager
 
 ./out/build/bin:
 	$(Q)mkdir -p ./out/build

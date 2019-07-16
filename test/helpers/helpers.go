@@ -8,10 +8,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	op "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
-	"github.com/openshift/tektoncd-pipeline-operator/test/config"
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
+	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/test/config"
 	"k8s.io/apimachinery/pkg/types"
 )
 
