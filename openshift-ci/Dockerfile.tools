@@ -37,11 +37,13 @@ ENV PATH=$PATH:$GOPATH/bin
 
 # download, verify and install openshift client tools (oc and kubectl)
 WORKDIR /tmp
-RUN curl -L -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.1.6/openshift-client-linux-4.1.6.tar.gz -o openshift-origin-client-tools.tar.gz \
-    && echo "8fa6cab18712dbf3ecd29f306eb951b0c38c445bacffe352e47a5649c835d69d openshift-origin-client-tools.tar.gz" > openshift-origin-client-tools.sha256 \
+RUN OPENSHIFT_CLIENT_VERSION=$(curl -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/release.txt|sed -n '/Version:/ { s/[ ]*Version:[ ]*// ;p}') \
+    && curl -L -O -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$OPENSHIFT_CLIENT_VERSION/openshift-client-linux-$OPENSHIFT_CLIENT_VERSION.tar.gz \
+    && curl -L -s https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$OPENSHIFT_CLIENT_VERSION/sha256sum.txt | \
+       grep openshift-client-linux-$OPENSHIFT_CLIENT_VERSION.tar.gz > openshift-origin-client-tools.sha256 \
     && sha256sum -c openshift-origin-client-tools.sha256 \
     && mkdir openshift-origin-client-tools \
-    && tar xzf openshift-origin-client-tools.tar.gz --directory openshift-origin-client-tools \
+    && tar xzf openshift-client-linux-$OPENSHIFT_CLIENT_VERSION.tar.gz --directory openshift-origin-client-tools \
     && mv /tmp/openshift-origin-client-tools/oc /usr/bin/oc \
     && mv /tmp/openshift-origin-client-tools/kubectl /usr/bin/kubectl \
     && rm -rf ./openshift* \
