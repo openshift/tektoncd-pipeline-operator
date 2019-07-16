@@ -32,12 +32,11 @@ spec:
         status:
           properties:
             conditions:
-              description: |
-                list of installation status in reverse chronological order
+              description: installation status sorted in reverse chronological order
               items:
                 properties:
                   code:
-                    description: Code to indicate status of installation
+                    description: Code indicates the status of installation of pipeline resources.
                     type: string
                   details:
                     description: Additional details about the Code
