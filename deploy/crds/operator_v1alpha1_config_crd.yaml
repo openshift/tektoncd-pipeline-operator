@@ -26,6 +26,9 @@ spec:
             targetNamespace:
               description: namespace where OpenShift pipelines will be installed
               type: string
+            addons:
+              description: list of addons installed with the base pipeline
+              type: array
           required:
           - targetNamespace
           type: object

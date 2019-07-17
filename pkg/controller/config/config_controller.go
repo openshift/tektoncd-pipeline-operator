@@ -91,6 +91,7 @@ func newReconciler(mgr manager.Manager, m mf.Manifest) reconcile.Reconciler {
 		client:   mgr.GetClient(),
 		scheme:   mgr.GetScheme(),
 		manifest: m,
+		addons:   make(map[string]mf.Manifest),
 	}
 }
 
@@ -145,6 +146,7 @@ type ReconcileConfig struct {
 	client   client.Client
 	scheme   *runtime.Scheme
 	manifest mf.Manifest
+	addons   map[string]mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -189,8 +191,29 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
+	err = r.deleteRemovedAddons(req, res)
+	if err != nil {
+		log.Error(err, "failed to delete removed addon")
+		return reconcile.Result{}, err
+	}
+
 	if isUpToDate(res) {
 		log.Info("skipping installation, resource already up to date")
+
+		// Cheking for new addons
+		tfs := []mf.Transformer{
+			mf.InjectOwner(res),
+			mf.InjectNamespace(res.Spec.TargetNamespace),
+		}
+		if err := r.installAddons(req, res, tfs); err != nil {
+			log.Error(err, "failed to install addons")
+			// ignoring failure to update
+			_ = r.updateStatus(res, op.ConfigCondition{
+				Code:    op.ErrorStatus,
+				Details: err.Error(),
+				Version: tektonVersion})
+			return reconcile.Result{}, err
+		}
 		return reconcile.Result{}, nil
 	}
 
@@ -234,19 +257,14 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 		return reconcile.Result{}, err
 	}
 
-	for _, path := range res.Spec.AddOns {
-		extension, err := mf.NewManifest(filepath.Join("deploy", "resources", path), true, r.client)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		err = extension.Transform(tfs...)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		err = extension.ApplyAll()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
+	if err := r.installAddons(req, res, tfs); err != nil {
+		log.Error(err, "failed to install addons")
+		// ignoring failure to update
+		_ = r.updateStatus(res, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: tektonVersion})
+		return reconcile.Result{}, err
 	}
 
 	log.Info("successfully applied all resources")
@@ -261,6 +279,49 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 	err = r.updateStatus(res, op.ConfigCondition{
 		Code: op.InstalledStatus, Version: tektonVersion})
 	return reconcile.Result{}, err
+}
+
+func (r *ReconcileConfig) installAddons(req reconcile.Request, res *op.Config, tfs []mf.Transformer) (error) {
+	log := requestLogger(req, "install addons")
+
+	for _, path := range res.Spec.AddOns {
+		_, ok := r.addons[path]
+		if !ok {
+			extension, err := mf.NewManifest(filepath.Join("deploy", "resources", path), true, r.client)
+			if err != nil {
+				log.Error(err, "failed to read addon  manifest")
+				// ignoring failure to update
+				_ = r.updateStatus(res, op.ConfigCondition{
+					Code:    op.ErrorStatus,
+					Details: err.Error(),
+					Version: tektonVersion})
+				return err
+			}
+			if err = extension.Transform(tfs...); err != nil {
+				log.Error(err, "failed to apply manifest transformations")
+				// ignoring failure to update
+				_ = r.updateStatus(res, op.ConfigCondition{
+					Code:    op.ErrorStatus,
+					Details: err.Error(),
+					Version: tektonVersion})
+				return err
+			}
+
+			if err = extension.ApplyAll(); err != nil {
+				log.Error(err, "failed to apply release.yaml")
+				// ignoring failure to update
+				_ = r.updateStatus(res, op.ConfigCondition{
+					Code:    op.ErrorStatus,
+					Details: err.Error(),
+					Version: tektonVersion})
+				return err
+			}
+			r.addons[path] = extension
+		}
+	}
+
+	log.Info("successfully installed all addons")
+	return nil
 }
 
 func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
@@ -280,6 +341,40 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Confi
 	// Return and don't requeue
 	return reconcile.Result{}, nil
 
+}
+
+func (r *ReconcileConfig) deleteRemovedAddons(req reconcile.Request, res *op.Config) (error) {
+	log := requestLogger(req, "delete addons")
+
+	log.Info("checking removed addons ")
+	for path, extension := range r.addons {
+		log.Info("checking addon: " + path)
+		exist := false
+		for _, entry := range res.Spec.AddOns {
+			if entry == path {
+				exist = true
+			}
+		}
+		if !exist {
+			log.Info("deleting addon: " + path)
+			delete(r.addons, path)
+
+			// Requested object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			propPolicy := client.PropagationPolicy(metav1.DeletePropagationForeground)
+
+			if err := extension.DeleteAll(propPolicy); err != nil {
+				log.Error(err, "failed to delete addon")
+				// ignoring failure to update
+				_ = r.updateStatus(res, op.ConfigCondition{
+					Code:    op.ErrorStatus,
+					Details: err.Error(),
+					Version: tektonVersion})
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // markInvalidResource sets the status of resourse as invalid
