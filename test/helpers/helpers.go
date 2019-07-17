@@ -7,7 +7,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
@@ -122,7 +121,7 @@ func ValidatePipelineCleanup(t *testing.T, cr *op.Config, deployments ...string)
 	}
 }
 
-func CreateCR(t *testing.T, name, namespace string, ctx *test.TestCtx) error {
+func CreateCR(t *testing.T, name, namespace string, ctx *test.TestCtx) {
 	cr := &op.Config{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec: op.ConfigSpec{
@@ -136,11 +135,7 @@ func CreateCR(t *testing.T, name, namespace string, ctx *test.TestCtx) error {
 	}
 
 	err := test.Global.Client.Create(context.TODO(), cr, &test.CleanupOptions{TestContext: ctx, Timeout: time.Second * 5, RetryInterval: time.Second * 1})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	AssertNoError(t, err)
 }
 
 func ValidatePipelineFailure(t *testing.T, cr *op.Config, name string) {
@@ -151,12 +146,9 @@ func ValidatePipelineFailure(t *testing.T, cr *op.Config, name string) {
 
 	deployment, err := kc.AppsV1().Deployments(ns).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			t.Fatal("Deployment %s is not find", name)
-		}
+		AssertNoError(t, err)
 	}
-
-	if int(deployment.Status.AvailableReplicas) == 1 {
-		t.Fatal("Deployment %s is ready but it's not expected", name)
+	if int(deployment.Status.UnavailableReplicas) != 1 {
+		t.Fatalf("Deployment %s is ready but it's not expected", name)
 	}
 }
