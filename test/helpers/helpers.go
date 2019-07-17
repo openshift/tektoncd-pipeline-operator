@@ -3,7 +3,7 @@ package helpers
 import (
 	"context"
 	"testing"
-
+	"time"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -52,7 +52,6 @@ func WaitForClusterCR(t *testing.T, name string) *op.Config {
 
 	objKey := types.NamespacedName{Name: name}
 	cr := &op.Config{}
-
 	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
 		err := test.Global.Client.Get(context.TODO(), objKey, cr)
 		if err != nil {
@@ -120,5 +119,44 @@ func ValidatePipelineCleanup(t *testing.T, cr *op.Config, deployments ...string)
 	for _, d := range deployments {
 		err := WaitForDeploymentDeletion(t, ns, d)
 		AssertNoError(t, err)
+	}
+}
+
+func CreateCR(t *testing.T, name, namespace string, ctx *test.TestCtx) error {
+	cr := &op.Config{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec: op.ConfigSpec{
+			TargetNamespace: namespace,
+			Registry: op.Registry{
+				Override: map[string]string{
+					"tekton-pipelines-controller": "quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.9.0",
+				},
+			},
+		},
+	}
+
+	err := test.Global.Client.Create(context.TODO(), cr, &test.CleanupOptions{TestContext: ctx, Timeout: time.Second * 5, RetryInterval: time.Second * 1})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ValidatePipelineFailure(t *testing.T, cr *op.Config, name string) {
+	t.Helper()
+
+	kc := test.Global.KubeClient
+	ns := cr.Spec.TargetNamespace
+
+	deployment, err := kc.AppsV1().Deployments(ns).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			t.Fatal("Deployment %s is not find", name)
+		}
+	}
+
+	if int(deployment.Status.AvailableReplicas) == 1 {
+		t.Fatal("Deployment %s is ready but it's not expected", name)
 	}
 }
