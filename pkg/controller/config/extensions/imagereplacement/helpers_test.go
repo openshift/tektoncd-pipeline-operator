@@ -148,6 +148,7 @@ func runUpdateDeploymentImageTest(t *testing.T, tt imageReplacementTest) {
 }
 
 func assertEqual(t *testing.T, actual, expected string) {
+	t.Helper()
 	if actual == expected {
 		return
 	}

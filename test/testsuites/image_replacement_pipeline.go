@@ -15,7 +15,7 @@ import (
 func ValidateManualInstall(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
-
+	helpers.DeleteClusterCR(t, config.ClusterCRName)
 	helpers.CreateCR(t, config.ClusterCRName, config.DefaultTargetNs, ctx)
 	cr := helpers.WaitForClusterCR(t, config.ClusterCRName)
 	helpers.ValidatePipelineSetup(t, cr,

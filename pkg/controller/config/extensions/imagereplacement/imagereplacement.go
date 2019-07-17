@@ -35,10 +35,10 @@ var (
 	tektonPipeline *tektonv1alpha1.Config
 )
 
-func Configure(c client.Client, s *runtime.Scheme, install *tektonv1alpha1.Config) (*common.Extension, error) {
-	if install.Spec.Registry.Override != nil {
+func Configure(c client.Client, s *runtime.Scheme, config *tektonv1alpha1.Config) (*common.Extension, error) {
+	if config.Spec.Registry.Override != nil {
 		scheme = s
-		tektonPipeline = install
+		tektonPipeline = config
 		return &extension, nil
 	}
 

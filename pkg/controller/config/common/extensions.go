@@ -33,9 +33,9 @@ type Extension struct {
 	PostInstalls []Extender
 }
 
-func (activities Activities) Extend(c client.Client, scheme *runtime.Scheme, install *tektonv1alpha1.Config) (result Extensions, err error) {
+func (activities Activities) Extend(c client.Client, scheme *runtime.Scheme, config *tektonv1alpha1.Config) (result Extensions, err error) {
 	for _, fn := range activities {
-		ext, err := fn(c, scheme, install)
+		ext, err := fn(c, scheme, config)
 		if err != nil {
 			return result, err
 		}
