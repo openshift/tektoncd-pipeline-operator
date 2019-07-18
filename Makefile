@@ -11,9 +11,12 @@ include ./make/lint.mk
 include ./make/test.mk
 include ./make/docker.mk
 
-.PHONY: build
+.PHONY: build  nightly-build
 ## Build the operator
 build: ./out/operator ./out/build/bin manifests
+
+nightly-build: ./build
+	oc image extract quay.io/hrishin/pipelines:nightly --path /tmp/release.yaml:deploy/resources/v0.4.0/ --confirm
 
 .PHONY: clean
 clean:
@@ -31,8 +34,6 @@ clean:
 		go build ${V_FLAG} \
 		-o ./out/operator \
 		cmd/manager/main.go
-	
-	$(Q) oc image extract docker.io/hriships/pipeline:latest --path /tmp/release.yaml:deploy/resources/v0.4.0/ --confirm
 
 ./out/build/bin:
 	$(Q)mkdir -p ./out/build
