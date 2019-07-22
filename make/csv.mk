@@ -22,10 +22,10 @@ tag-image: gen-tag
 
 
 .PHONY: gen-csv
-gen-csv:
+gen-csv: courier
 	$(eval OPERATOR_MANIFESTS := /tmp/artifacts/openshift-pipelines-operator)
 	$(eval CREATION_TIMESTAMP := $(shell date --date="@$(TAG)" '+%Y-%m-%d %H:%M:%S'))
-	operator-courier --verbose flatten manifests/ $(OPERATOR_MANIFESTS)
+	./out/venv3/bin/operator-courier --verbose flatten manifests/ $(OPERATOR_MANIFESTS)
 	cp -vf deploy/crds/*_crd.yaml $(OPERATOR_MANIFESTS)
 	@sed -i -e 's,REPLACE_NAME,$(OPERATOR_NAME),g' $(OPERATOR_MANIFESTS)/openshift-pipelines-operator.v$(OPERATOR_VERSION).clusterserviceversion-v$(OPERATOR_VERSION).yaml
 	@sed -i -e 's,REPLACE_VERSION,$(OPERATOR_VERSION),g' $(OPERATOR_MANIFESTS)/openshift-pipelines-operator.v$(OPERATOR_VERSION).clusterserviceversion-v$(OPERATOR_VERSION).yaml
@@ -34,15 +34,21 @@ gen-csv:
 	@sed -i -e 's,REPLACE_NAME,$(OPERATOR_NAME),g' $(OPERATOR_MANIFESTS)/openshift-pipelines-operator.package.yaml
 	@sed -i -e 's,REPLACE_VERSION,$(OPERATOR_VERSION),g' $(OPERATOR_MANIFESTS)/openshift-pipelines-operator.package.yaml
 	@sed -i -e 's,REPLACE_PACKAGE,$(QYAPP_REPOSITORY),' $(OPERATOR_MANIFESTS)/openshift-pipelines-operator.package.yaml
-	operator-courier --verbose verify --ui_validate_io $(OPERATOR_MANIFESTS)
+	./out/venv3/bin/operator-courier --verbose verify --ui_validate_io $(OPERATOR_MANIFESTS)
+	cp $(INSTALL_DIR)/operator-source.yaml /tmp/artifacts
+	@sed -i -e 's,REPLACE_NAMESPACE,$(QYAPP_NAMESPACE),g' /tmp/artifacts/operator-source.yaml
+	@sed -i -e 's,REPLACE_REPOSITORY,$(QYAPP_REPOSITORY),g' /tmp/artifacts/operator-source.yaml
 
 .PHONY: push-quay-app
 push-quay-app: gen-csv
 	$(eval QUAY_API_TOKEN := $(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user":{"username":"'${QUAY_USERNAME}'","password":"'${QUAY_PASSWORD}'"}}' | jq -r '.token'))
-	@operator-courier push $(OPERATOR_MANIFESTS) $(QYAPP_NAMESPACE) $(QYAPP_REPOSITORY) $(OPERATOR_VERSION)-$(TAG) "$(QUAY_API_TOKEN)"
+	@./out/venv3/bin/operator-courier push $(OPERATOR_MANIFESTS) $(QYAPP_NAMESPACE) $(QYAPP_REPOSITORY) $(OPERATOR_VERSION)-$(TAG) "$(QUAY_API_TOKEN)"
 
 .PHONY: gen-operator-source
 gen-operator-source: push-quay-app
 	cp $(INSTALL_DIR)/operator-source.yaml /tmp/artifacts
-	@sed -i -e 's,REPLACE_NAMESPACE,$(QYAPP_NAMESPACE),g' ./tmp/operator-source.yaml
-	@sed -i -e 's,REPLACE_REPOSITORY,$(QYAPP_REPOSITORY),g' ./tmp/operator-source.yaml
+	@sed -i -e 's,REPLACE_NAMESPACE,$(QYAPP_NAMESPACE),g' /tmp/artifacts/operator-source.yaml
+	@sed -i -e 's,REPLACE_REPOSITORY,$(QYAPP_REPOSITORY),g' /tmp/artifacts/operator-source.yaml
+
+.PHONY: test-csv
+test-csv: gen-csv
