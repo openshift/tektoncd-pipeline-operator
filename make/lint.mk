@@ -10,7 +10,8 @@ include ./make/go.mk
 # nomenclature as what courier is expecting
 .PHONY: lint
 ## Runs linters on Go code files and YAML files
-lint: lint-go-code lint-yaml
+##  gen-csv is added here to test gen-csv target
+lint: lint-go-code lint-yaml gen-csv
 
 YAML_FILES := $(shell find . -path ./vendor -prune -o -type f -regex ".*y[a]ml" -print)
 .PHONY: lint-yaml
