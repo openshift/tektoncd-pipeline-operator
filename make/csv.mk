@@ -22,7 +22,7 @@ tag-image: gen-tag
 
 
 .PHONY: gen-csv
-gen-csv: tag-image
+gen-csv:
 	$(eval OPERATOR_MANIFESTS := /tmp/artifacts/openshift-pipelines-operator)
 	$(eval CREATION_TIMESTAMP := $(shell date --date="@$(TAG)" '+%Y-%m-%d %H:%M:%S'))
 	operator-courier --verbose flatten manifests/ $(OPERATOR_MANIFESTS)
