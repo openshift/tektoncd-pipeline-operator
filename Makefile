@@ -10,6 +10,7 @@ include ./make/format.mk
 include ./make/lint.mk
 include ./make/test.mk
 include ./make/docker.mk
+include ./make/csv.mk
 
 .PHONY: build
 ## Build the operator
