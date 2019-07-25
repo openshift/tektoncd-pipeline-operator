@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: openshift-pipelines-operator
-  namespace: openshift-pipelines-operator
+  namespace: openshift-operators
 spec:
   replicas: 1
   selector:
