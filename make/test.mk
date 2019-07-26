@@ -39,7 +39,7 @@ get-operator-version:
 
 ./out/test-namespace:
 	#@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
-	@echo -n "openshift-pipelines-operator" > ./out/test-namespace
+	@echo -n "openshift-operators" > ./out/test-namespace
 .PHONY: test-e2e
 ## Runs the e2e tests locally
 test-e2e: ./vendor e2e-setup
