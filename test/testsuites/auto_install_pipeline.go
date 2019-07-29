@@ -3,10 +3,10 @@ package testsuites
 import (
 	"testing"
 
-	op "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config"
-	"github.com/openshift/tektoncd-pipeline-operator/test/helpers"
 	"github.com/operator-framework/operator-sdk/pkg/test"
+	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/pkg/controller/config"
+	"github.com/tektoncd/operator/test/helpers"
 )
 
 // ValidateAutoInstall creates an instance of install.tekton.dev

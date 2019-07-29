@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
-	op "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
+	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
