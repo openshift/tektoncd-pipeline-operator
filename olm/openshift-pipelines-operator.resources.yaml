@@ -85,7 +85,7 @@ data:
       kind: ClusterServiceVersion
       metadata:
         annotations:
-          alm-examples: '[{"apiVersion":"operator.tekton.dev/v1alpha1","kind":"Config","metadata":{"name":"cluster"},"spec":{"targetNamespace":"openshift-pipelines"}}]'
+          alm-examples: '[{"apiVersion":"operator.tekton.dev/v1alpha1","kind":"Config","metadata":{"name":"name.must.be-cluster"},"spec":{"targetNamespace":"openshift-pipelines"}}]'
           capabilities: Basic Install
           categories: Developer Tools, Integration & Delivery
           certified: "false"
@@ -409,10 +409,12 @@ data:
         - email: pipelines-dev@redhat.com
           name: Red Hat, Inc.
         maturity: alpha
-        provider: {}
+        provider:
+          name: Red Hat
         version: 0.5.0
   packages: |-
-    - packageName: openshift-pipelines-operator
       channels:
-      - name: alpha
-        currentCSV: openshift-pipelines-operator.v0.5.0
+      - currentCSV: openshift-pipelines-operator.v0.5.2
+        name: alpha
+      defaultChannel: alpha
+    - packageName: openshift-pipelines-operator
