@@ -3,8 +3,8 @@ package testgroups
 import (
 	"testing"
 
-	"github.com/openshift/tektoncd-pipeline-operator/test/helpers"
-	"github.com/openshift/tektoncd-pipeline-operator/test/testsuites"
+	"github.com/tektoncd/operator/test/helpers"
+	"github.com/tektoncd/operator/test/testsuites"
 
 	"github.com/operator-framework/operator-sdk/pkg/test"
 )

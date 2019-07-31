@@ -17,8 +17,8 @@ package imagereplacement
 
 import (
 	mf "github.com/jcrossley3/manifestival"
-	tektonv1alpha1 "github.com/openshift/tektoncd-pipeline-operator/pkg/apis/operator/v1alpha1"
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config/common"
+	tektonv1alpha1 "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/pkg/controller/config/common"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"

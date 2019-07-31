@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config/common"
+	"github.com/tektoncd/operator/pkg/controller/config/common"
 )
 
 const (

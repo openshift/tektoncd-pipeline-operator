@@ -16,7 +16,7 @@ limitations under the License.
 package config
 
 import (
-	"github.com/openshift/tektoncd-pipeline-operator/pkg/controller/config/extensions/imagereplacement"
+	"github.com/tektoncd/operator/pkg/controller/config/extensions/imagereplacement"
 )
 
 func init() {
