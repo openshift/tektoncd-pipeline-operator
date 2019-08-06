@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 indent() {
-  INDENT="      "
-  sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
-}
+    INDENT="      "
+    sed -e "s/^/${INDENT}/" \
+        -e "1s/^${INDENT}/${INDENT:0:-2}- /"
+  }
 
 listCSV() {
   for index in ${!CSVDIRS[*]}
@@ -14,7 +15,7 @@ listCSV() {
 
 CRDDIR=${DIR:-$(cd $(dirname "$0")/../deploy/crds && pwd)}
 PKGDIR=${DIR:-$(cd $(dirname "$0")/../deploy/olm-catalog/openshift-pipelines-operator && pwd)}
-CSVDIRS[0]=${DIR:-$(cd ${PKGDIR}/0.5.0 && pwd)}
+CSVDIRS[0]=${DIR:-$(cd ${PKGDIR}/0.5.2 && pwd)}
 
 
 NAME=${NAME:-openshift-pipelines-operator-registry}

@@ -61,7 +61,7 @@ cd ${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator
 ```
 2. Build go and the container image
 ```
-operator-sdk build ${YOUR_REGISTORY}/openshift-pipelines-operator:${IMAGE_TAG}
+make osdk-image tag=${YOUR_REGISTORY}/openshift-pipelines-operator:${IMAGE_TAG}
 ```
 3. Push the container image
 ```

@@ -203,6 +203,37 @@ data:
 # size of the PVC volume
 # size: 5Gi
 
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tekton-pipelines-admin
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "namespaces", "secrets", "events", "serviceaccounts", "configmaps", "persistentvolumeclaims"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/finalizers"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["tekton.dev"]
+    resources: ["tasks", "clustertasks", "taskruns", "pipelines", "pipelineruns", "pipelineresources"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["tekton.dev"]
+    resources: ["taskruns/finalizers", "pipelineruns/finalizers"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["tekton.dev"]
+    resources: ["tasks/status", "clustertasks/status", "taskruns/status", "pipelines/status", "pipelineruns/status", "pipelineresources/status"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["tekton-pipelines"]
+    verbs: ["use"]
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -436,64 +467,6 @@ metadata:
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-apiVersion: apps/v1beta1
-kind: Deployment
-metadata:
-  name: tekton-pipelines-controller
-  namespace: tekton-pipelines
-spec:
-  replicas: 1
-  template:
-    metadata:
-      annotations:
-        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
-      labels:
-        app: tekton-pipelines-controller
-    spec:
-      serviceAccountName: tekton-pipelines-controller
-      containers:
-        - name: tekton-pipelines-controller
-          image:  quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.5.2
-          args: [
-            "-logtostderr",
-            "-stderrthreshold", "INFO",
-            "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.5.2",
-            "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.5.2",
-            "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.5.2",
-            "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.5.2",
-            "-bash-noop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-bash:v0.5.2",
-            "-gsutil-image","quay.io/openshift-pipeline/tektoncd-pipeline-gsutil:v0.5.2",
-            "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.5.2",
-            "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.5.2",
-            "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.5.2",
-          ]
-          env:
-            - name: SYSTEM_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-          volumeMounts:
-            - name: config-logging
-              mountPath: /etc/config-logging
-      volumes:
-        - name: config-logging
-          configMap:
-            name: config-logging
-
----
-# Copyright 2019 The Tekton Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
 #     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -657,38 +630,6 @@ spec:
   version: v1alpha1
 
 ---
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: tekton-pipelines-admin
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "pods/log", "namespaces", "secrets", "events", "serviceaccounts", "configmaps", "persistentvolumeclaims"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["apps"]
-    resources: ["deployments/finalizers"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["admissionregistration.k8s.io"]
-    resources: ["mutatingwebhookconfigurations"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["tekton.dev"]
-    resources: ["tasks", "clustertasks", "taskruns", "pipelines", "pipelineruns", "pipelineresources"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["tekton.dev"]
-    resources: ["taskruns/finalizers", "pipelineruns/finalizers"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["tekton.dev"]
-    resources: ["tasks/status", "clustertasks/status", "taskruns/status", "pipelines/status", "pipelineruns/status", "pipelineresources/status"]
-    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["policy"]
-    resources: ["podsecuritypolicies"]
-    resourceNames: ["tekton-pipelines"]
-    verbs: ["use"]
-
----
 # Copyright 2019 The Tekton Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -755,7 +696,65 @@ spec:
         - name: webhook
           # This is the Go import path for the binary that is containerized
           # and substituted here.
-          image:  quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.5.2
+          image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.5.2
+          env:
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: config-logging
+              mountPath: /etc/config-logging
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging
+
+---
+# Copyright 2019 The Tekton Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: tekton-pipelines-controller
+  namespace: tekton-pipelines
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+      labels:
+        app: tekton-pipelines-controller
+    spec:
+      serviceAccountName: tekton-pipelines-controller
+      containers:
+        - name: tekton-pipelines-controller
+          image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.5.2
+          args: [
+            "-logtostderr",
+            "-stderrthreshold", "INFO",
+            "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.5.2",
+            "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.5.2",
+            "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.5.2",
+            "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.5.2",
+            "-bash-noop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-bash:v0.5.2",
+            "-gsutil-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gsutil:v0.5.2",
+            "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.5.2",
+            "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.5.2",
+            "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.5.2",
+          ]
           env:
             - name: SYSTEM_NAMESPACE
               valueFrom:

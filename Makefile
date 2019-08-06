@@ -48,3 +48,11 @@ manifests:
 
 # TODO: Disable for now for CI to go over
 upgrade-build: #TODO: reenable it
+
+.PHONY: osdk-image
+osdk-image:
+	$(Q)rm -rf build/_output/bin
+	$(eval IMAGE_TAG := quay.io/rhpipeline/openshift-pipelines-operator:test)
+	$(Q)operator-sdk build \
+	--go-build-args "-o build/_output/bin/openshift-pipelines-operator" \
+	$(IMAGE_TAG)
