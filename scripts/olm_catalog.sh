@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 indent() {
-    INDENT="      "
+    local INDENT="      "
     sed -e "s/^/${INDENT}/" \
         -e "1s/^${INDENT}/${INDENT:0:-2}- /"
   }
