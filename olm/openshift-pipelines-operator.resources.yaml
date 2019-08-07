@@ -85,23 +85,24 @@ data:
       kind: ClusterServiceVersion
       metadata:
         annotations:
-          alm-examples: '[{"apiVersion":"operator.tekton.dev/v1alpha1","kind":"Config","metadata":{"name":"cluster"},"spec":{"targetNamespace":"openshift-pipelines"}}]'
+          alm-examples: '[{"apiVersion":"operator.tekton.dev/v1alpha1","kind":"Config","metadata":{"name":"name.must.be-cluster"},"spec":{"targetNamespace":"openshift-pipelines"}}]'
           capabilities: Basic Install
           categories: Developer Tools, Integration & Delivery
           certified: "false"
-          containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.5.0
+          containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.5.2
           createdAt: "2019-03-15T19:44:21Z"
           description: OpenShift Pipelines is a cloud-native CI/CD solution for building
             pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
           repository: https://github.com/openshift/tektoncd-pipeline-operator
           support: Red Hat, Inc.
-        name: openshift-pipelines-operator.v0.5.0
+        name: openshift-pipelines-operator.v0.5.2
         namespace: placeholder
       spec:
         apiservicedefinitions: {}
         customresourcedefinitions:
           owned:
-          - description: OpenShift Pipelines is a cloud-native CI/CD solution for building pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
+          - description: OpenShift Pipelines is a cloud-native CI/CD solution for building
+              pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
             displayName: OpenShift Pipelines Config
             kind: Config
             name: config.operator.tekton.dev
@@ -187,7 +188,7 @@ data:
           ### CLI
           Tekton Pipelines cli project provides a CLI for interacting with OpenShift Pipelines.
 
-          [Download Tekton CLI](https://github.com/tektoncd/cli/releases/tag/v0.1.0)
+          [Download Tekton CLI](https://github.com/tektoncd/cli/releases/latest)
 
           [Tekton CLI Project](https://github.com/tektoncd/cli)
         displayName: OpenShift Pipelines Operator
@@ -380,7 +381,7 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: openshift-pipelines-operator
-                      image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.5.0
+                      image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.5.2
                       imagePullPolicy: Always
                       name: openshift-pipelines-operator
                       resources: {}
@@ -409,10 +410,12 @@ data:
         - email: pipelines-dev@redhat.com
           name: Red Hat, Inc.
         maturity: alpha
-        provider: {}
-        version: 0.5.0
+        provider:
+          name: Red Hat
+        version: 0.5.2
   packages: |-
-    - packageName: openshift-pipelines-operator
-      channels:
+    - channels:
       - name: alpha
-        currentCSV: openshift-pipelines-operator.v0.5.0
+        currentCSV: openshift-pipelines-operator.v0.5.2
+      defaultChannel: alpha
+      packageName: openshift-pipelines-operator

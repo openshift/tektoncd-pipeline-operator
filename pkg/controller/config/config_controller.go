@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	tektonVersion   = "v0.4.0"
+	tektonVersion   = "v0.5.2"
 	resourceWatched string
 	resourceDir     string
 	targetNamespace string

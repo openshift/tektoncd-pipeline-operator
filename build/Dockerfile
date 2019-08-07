@@ -5,7 +5,7 @@ ENV OPERATOR=/usr/local/bin/openshift-pipelines-operator \
     USER_NAME=openshift-pipelines-operator
 
 # install operator binary
-COPY build/_output/bin/tektoncd-pipeline-operator ${OPERATOR}
+COPY build/_output/bin/openshift-pipelines-operator ${OPERATOR}
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
