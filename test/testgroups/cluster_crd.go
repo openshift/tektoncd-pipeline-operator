@@ -3,12 +3,11 @@ package testgroups
 import (
 	"testing"
 
+	"github.com/operator-framework/operator-sdk/pkg/test"
+	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/tektoncd/operator/test/config"
 	"github.com/tektoncd/operator/test/helpers"
 	"github.com/tektoncd/operator/test/testsuites"
-
-	"github.com/operator-framework/operator-sdk/pkg/test"
-	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 )
 
 // ClusterCRD is the test group for testing config.operator.tekton.dev CRD
@@ -21,6 +20,7 @@ func ClusterCRD(t *testing.T) {
 
 	t.Run("auto-installs-pipelines", testsuites.ValidateAutoInstall)
 	t.Run("delete-pipelines", testsuites.ValidateDeletion)
+	t.Run("invalid-config", testsuites.CheckInvalidConfig)
 }
 
 func deployOperator(t *testing.T, ctx *test.TestCtx) error {

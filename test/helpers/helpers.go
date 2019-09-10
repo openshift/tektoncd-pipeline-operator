@@ -11,6 +11,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	ctrllercfg "github.com/tektoncd/operator/pkg/controller/config"
 	"github.com/tektoncd/operator/test/config"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -21,6 +22,20 @@ func AssertNoError(t *testing.T, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func CreateConfigCR(t *testing.T, ctx *test.TestCtx, name, targetNs string) {
+	cr := &op.Config{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: op.ConfigSpec {
+		 TargetNamespace: targetNs,
+		},
+	}
+
+	err := test.Global.Client.Create(context.TODO(), cr, &test.CleanupOptions{TestContext: ctx,})
+	AssertNoError(t, err)
 }
 
 // WaitForDeploymentDeletion checks to see if a given deployment is deleted
@@ -47,7 +62,7 @@ func WaitForDeploymentDeletion(t *testing.T, namespace, name string) error {
 	return err
 }
 
-func WaitForClusterCR(t *testing.T, name string) *op.Config {
+func WaitForClusterCR(t *testing.T, name string, completesReconcile bool) *op.Config {
 	t.Helper()
 
 	objKey := types.NamespacedName{Name: name}
@@ -63,7 +78,19 @@ func WaitForClusterCR(t *testing.T, name string) *op.Config {
 			return false, err
 		}
 
-		return true, nil
+		if completesReconcile {
+			if cr.IsUpToDateWith(ctrllercfg.TektonVersion) {
+				return true, nil
+			}
+
+			return false, nil
+		}
+
+		if cr.IsMarkedInValid(ctrllercfg.UnknownVersion) {
+			return true, nil
+		}
+
+		return false, nil
 	})
 
 	AssertNoError(t, err)

@@ -4,14 +4,13 @@ import (
 	"context"
 	"flag"
 	"path/filepath"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
-	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -34,10 +34,12 @@ const (
 
 	// Name of the pipeline webhook deployment
 	PipelineWebhookName = "tekton-pipelines-webhook"
+
+	TektonVersion  = "v0.5.2"
+	UnknownVersion = "unknown"
 )
 
 var (
-	tektonVersion   = "v0.5.2"
 	resourceWatched string
 	resourceDir     string
 	targetNamespace string
@@ -55,7 +57,7 @@ func init() {
 		&targetNamespace, "target-namespace", DefaultTargetNs,
 		"Namespace where pipeline will be installed default: "+DefaultTargetNs)
 
-	defaultResDir := filepath.Join("deploy", "resources", tektonVersion)
+	defaultResDir := filepath.Join("deploy", "resources", TektonVersion)
 	flag.StringVar(
 		&resourceDir, "resource-dir", defaultResDir,
 		"Path to resource manifests, default: "+defaultResDir)
@@ -108,12 +110,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	err = c.Watch(
 		&source.Kind{Type: &op.Config{}},
 		&handler.EnqueueRequestForObject{},
-		predicate.GenerationChangedPredicate{},
+		predicate.ResourceVersionChangedPredicate{},
 	)
 	if err != nil {
 		return err
 	}
 
+	// Watch for changes to secondary resource Deployment
 	err = c.Watch(
 		&source.Kind{Type: &appsv1.Deployment{}},
 		&handler.EnqueueRequestForOwner{
@@ -157,51 +160,65 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 
 	log.Info("reconciling config change")
 
-	res := &op.Config{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: req.Name}, res)
-
-	// ignore all resources except the `resourceWatched`
-	if req.Name != resourceWatched {
-		log.Info("ignoring incorrect object")
-
-		// handle resources that are not interesting as error
-		if !errors.IsNotFound(err) {
-			r.markInvalidResource(res)
-		}
-		return reconcile.Result{}, nil
-	}
+	config := &op.Config{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: req.Name}, config)
 
 	// handle deletion of resource
 	if errors.IsNotFound(err) {
 		// User deleted the cluster resource so delete the pipeine resources
 		log.Info("resource has been deleted")
-		return r.reconcileDeletion(req, res)
+		return r.reconcileDeletion(req, config)
 	}
 
 	// Error reading the object - requeue the request.
 	if err != nil {
 		log.Error(err, "requeueing event since there was an error reading object")
-		return reconcile.Result{}, err
+		return reconcile.Result{Requeue: true}, err
 	}
 
-	if isUpToDate(res) {
+	// ignore all resources except the `resourceWatched`
+	if req.Name != resourceWatched {
+		log.Info("ignoring incorrect object")
+		// handle resources that are not interesting as error
+		r.markInvalidResource(config)
+		return reconcile.Result{}, nil
+	}
+
+	// reconcile valid config resource
+	if config.IsUpToDateWith(TektonVersion) {
 		log.Info("skipping installation, resource already up to date")
 		return reconcile.Result{}, nil
 	}
 
-	log.Info("installing pipelines", "path", resourceDir)
+	if !config.IsInstalled(TektonVersion) {
+		log.Info("installing pipelines", "path", resourceDir)
+		return r.reconcileInstall(req, config)
+	}
 
-	return r.reconcileInstall(req, res)
+	if err = r.updateStatus(config, op.ConfigCondition{Code: op.ReadyStatus, Version: TektonVersion}); err != nil {
+		return reconcile.Result{}, err
+	}
 
+	log.Info("successfully configured pipelines", "version", TektonVersion)
+	return reconcile.Result{}, nil
 }
 
 func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "install")
 
-	err := r.updateStatus(res, op.ConfigCondition{Code: op.InstallingStatus, Version: tektonVersion})
-	if err != nil {
-		log.Error(err, "failed to set status")
-		return reconcile.Result{}, err
+	if res.IsInstalling(TektonVersion) {
+		if deployed, err := r.verifyDeployments(log, res); !deployed || err != nil {
+			return reconcile.Result{}, err
+		}
+
+		err := r.updateStatus(res, op.ConfigCondition{Code: op.InstalledStatus, Version: TektonVersion})
+		if err != nil {
+			log.Error(err, "failed to set status")
+			return reconcile.Result{Requeue: true}, err
+		}
+
+		log.Info("successfully installed pipeline resources")
+		return reconcile.Result{}, nil
 	}
 
 	tfs := []mf.Transformer{
@@ -211,11 +228,10 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 
 	if err := r.manifest.Transform(tfs...); err != nil {
 		log.Error(err, "failed to apply manifest transformations")
-		// ignoring failure to update
 		_ = r.updateStatus(res, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
-			Version: tektonVersion})
+			Version: TektonVersion})
 		return reconcile.Result{}, err
 	}
 
@@ -225,21 +241,42 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 		_ = r.updateStatus(res, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
-			Version: tektonVersion})
-		return reconcile.Result{}, err
-	}
-	log.Info("successfully applied all resources")
-
-	// NOTE: manifest when updating (not installing) already installed resources
-	// modifies the `res` but does not refersh it, hence refresh manually
-	if err := r.refreshCR(res); err != nil {
-		log.Error(err, "status update failed to refresh object")
+			Version: TektonVersion})
 		return reconcile.Result{}, err
 	}
 
-	err = r.updateStatus(res, op.ConfigCondition{
-		Code: op.InstalledStatus, Version: tektonVersion})
-	return reconcile.Result{}, err
+	err := r.updateStatus(res, op.ConfigCondition{Code: op.InstallingStatus, Version: TektonVersion})
+	if err != nil {
+		log.Error(err, "failed to set installing pipeline status")
+		return reconcile.Result{Requeue: true}, err
+	}
+
+	log.Info("successfully applied pipeline resources")
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileConfig) verifyDeployments(logger logr.Logger, res *op.Config) (bool, error) {
+	log.Info("verifying pipeline deployments")
+
+	deployments := appsv1.DeploymentList{}
+	listOpts := client.ListOptions{
+		Namespace: res.Spec.TargetNamespace,
+	}
+	err := r.client.List(context.TODO(), &listOpts, &deployments)
+	if err != nil {
+		log.Error(err, "failed to get the deployments ", err.Error())
+		return false, err
+	}
+
+	for _, d := range deployments.Items {
+		if d.Status.Replicas != d.Status.AvailableReplicas {
+			log.Info("deployment is not up & running : ", d.Name)
+			return false, nil
+		}
+		log.Info("deployment up & running : ", d.Name)
+	}
+
+	return true, nil
 }
 
 func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
@@ -263,11 +300,12 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Confi
 
 // markInvalidResource sets the status of resourse as invalid
 func (r *ReconcileConfig) markInvalidResource(res *op.Config) {
+
 	err := r.updateStatus(res,
 		op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: "metadata.name must be " + resourceWatched,
-			Version: "unknown"})
+			Version: UnknownVersion})
 	if err != nil {
 		ctrlLog.Info("failed to update status as invalid")
 	}
@@ -276,10 +314,14 @@ func (r *ReconcileConfig) markInvalidResource(res *op.Config) {
 // updateStatus set the status of res to s and refreshes res to the lastest version
 func (r *ReconcileConfig) updateStatus(res *op.Config, c op.ConfigCondition) error {
 
+	conditions := res.Status.Conditions
+	if len(conditions) != 0 && reflect.DeepEqual(c, conditions[0]) {
+		return nil
+	}
+
 	// NOTE: need to use a deepcopy since Status().Update() seems to reset the
 	// APIVersion of the res to "" making the object invalid; may be a mechanism
 	// to prevent us from using stale version of the object
-
 	tmp := res.DeepCopy()
 	tmp.Status.Conditions = append([]op.ConfigCondition{c}, tmp.Status.Conditions...)
 
@@ -288,19 +330,7 @@ func (r *ReconcileConfig) updateStatus(res *op.Config, c op.ConfigCondition) err
 		return err
 	}
 
-	if err := r.refreshCR(res); err != nil {
-		log.Error(err, "status update failed to refresh object")
-		return err
-	}
 	return nil
-}
-
-func (r *ReconcileConfig) refreshCR(res *op.Config) error {
-	objKey := types.NamespacedName{
-		Namespace: res.Namespace,
-		Name:      res.Name,
-	}
-	return r.client.Get(context.TODO(), objKey, res)
 }
 
 func createCR(c client.Client) error {
@@ -314,22 +344,11 @@ func createCR(c client.Client) error {
 
 	err := c.Create(context.TODO(), cr)
 	if errors.IsAlreadyExists(err) {
-		log.Info("skipped creation", "reason", "resoure already exists")
+		log.Info("skipped creation", "reason", "resource already exists")
 		return nil
 	}
 
 	return err
-}
-
-func isUpToDate(r *op.Config) bool {
-	c := r.Status.Conditions
-	if len(c) == 0 {
-		return false
-	}
-
-	latest := c[0]
-	return latest.Version == tektonVersion &&
-		latest.Code == op.InstalledStatus
 }
 
 func requestLogger(req reconcile.Request, context string) logr.Logger {

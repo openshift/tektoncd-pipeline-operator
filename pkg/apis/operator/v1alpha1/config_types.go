@@ -24,9 +24,10 @@ type ConfigStatus struct {
 type ConfigCondition struct {
 	// Code indicates the status of installation of pipeline resources
 	// Valid values are:
-	//   - "error"
 	//   - "installing"
 	//   - "installed"
+	//   - "ready"
+	//   - "error"
 	Code InstallStatus `json:"code"`
 
 	// Additional details about the Code
@@ -41,11 +42,14 @@ type ConfigCondition struct {
 type InstallStatus string
 
 const (
-	// InstalledStatus indicates that the pipeline resources are installed
-	InstalledStatus InstallStatus = "installed"
-
 	// InstallingStatus indicates that the pipeline resources are being installed
 	InstallingStatus InstallStatus = "installing"
+
+	// InstalledStatus indicates that the pipeline resources are installed successfully
+	InstalledStatus InstallStatus = "installed"
+
+	// ReadyStatus indicates that the pipeline is ready to use
+	ReadyStatus InstallStatus = "ready"
 
 	// ErrorStatus indicates that there was an error installing pipeline resources
 	// Check details field for additional details
@@ -77,4 +81,58 @@ type ConfigList struct {
 
 func init() {
 	SchemeBuilder.Register(&Config{}, &ConfigList{})
+}
+
+//IsUpToDateWith return true of config resource reached to its final state
+//The state could be either Success or Error one
+func (c *Config) IsUpToDateWith(version string) bool {
+	cond := c.Status.Conditions
+	if len(cond) == 0 {
+		return false
+	}
+
+	latest := cond[0]
+	return latest.Version == version && (latest.Code == ReadyStatus || latest.Code == ErrorStatus)
+}
+
+//IsMarkedInValid return true of config resource marked as invalid
+func (c *Config) IsMarkedInValid(version string) bool {
+	cond := c.Status.Conditions
+	if len(cond) == 0 {
+		return false
+	}
+
+	latest := cond[0]
+	return latest.Code == ErrorStatus && latest.Version == version
+}
+
+//IsInstalling returns true if config installation is in progress
+func (c *Config) IsInstalling(version string) bool {
+	cond := c.Status.Conditions
+	if len(cond) == 0 {
+		return false
+	}
+
+	return c.conditionFor(version, InstallingStatus)
+}
+
+//IsInstalled returns true if config is installed
+func (c *Config) IsInstalled(version string) bool {
+	cond := c.Status.Conditions
+	if len(cond) == 0 {
+		return false
+	}
+
+	return c.conditionFor(version, InstalledStatus)
+}
+
+func (c *Config) conditionFor(version string, status InstallStatus) bool {
+	for i := len(c.Status.Conditions) - 1; i >= 0; i-- {
+		cond := c.Status.Conditions[i]
+		if cond.Version == version && cond.Code == status {
+			return true
+		}
+	}
+
+	return false
 }
