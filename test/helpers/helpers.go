@@ -175,7 +175,6 @@ func validateServiceMonitor(t *testing.T, cr *op.Config) {
 	}
 
 	for _, sm := range monitors.Items {
-		t.Logf("sm %v", sm)
 		if len(sm.OwnerReferences) == 0 {
 			continue
 		}
