@@ -24,6 +24,8 @@ func ValidateAutoInstall(t *testing.T) {
 	helpers.ValidatePipelineSetup(t, cr,
 		config.PipelineControllerName,
 		config.PipelineWebhookName)
+
+	helpers.ValidateMetricsSetup(t, cr)
 }
 
 // ValidateDeletion ensures that deleting the cluster CR  deletes the already

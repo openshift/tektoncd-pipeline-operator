@@ -26,6 +26,11 @@ import (
 )
 
 const (
+	TektonVersion  = "v0.5.2"
+	UnknownVersion = "unknown"
+)
+
+const (
 	ClusterCRName   = "cluster"
 	DefaultTargetNs = "openshift-pipelines"
 
@@ -34,14 +39,12 @@ const (
 
 	// Name of the pipeline webhook deployment
 	PipelineWebhookName = "tekton-pipelines-webhook"
-
-	TektonVersion  = "v0.5.2"
-	UnknownVersion = "unknown"
 )
 
 var (
 	resourceWatched string
 	resourceDir     string
+	postInstallDir  string
 	targetNamespace string
 	noAutoInstall   bool
 	recursive       bool
@@ -75,6 +78,11 @@ func init() {
 		"targetNamespace", targetNamespace,
 		"no-auto-install", noAutoInstall,
 	)
+
+	postInstallResourceDir := filepath.Join("deploy", "post-install")
+	flag.StringVar(
+		&postInstallDir, "post-install-dir", postInstallResourceDir,
+		"Directory path to post install related manifests, default: "+postInstallResourceDir)
 }
 
 // Add creates a new Config Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -195,6 +203,11 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return r.reconcileInstall(req, config)
 	}
 
+	if !config.AppliedPostInstallConfig(TektonVersion) {
+		log.Info("applying post install configurations")
+		return r.configurePostInstall(req, config)
+	}
+
 	if err = r.updateStatus(config, op.ConfigCondition{Code: op.ReadyStatus, Version: TektonVersion}); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -277,6 +290,50 @@ func (r *ReconcileConfig) verifyDeployments(logger logr.Logger, res *op.Config) 
 	}
 
 	return true, nil
+}
+
+func (r *ReconcileConfig) configurePostInstall(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
+	log := requestLogger(req, "post-install")
+
+	postInstallManifests, err := mf.NewManifest(postInstallDir, false, r.client)
+	if err != nil {
+		log.Error(err, "failed to load the post-install resources")
+		_ = r.updateStatus(res, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: TektonVersion})
+		return reconcile.Result{}, err
+	}
+	err = postInstallManifests.Transform([]mf.Transformer{
+		mf.InjectOwner(res),
+		mf.InjectNamespace(res.Spec.TargetNamespace),
+	}...)
+	if err != nil {
+		log.Error(err, "failed to transform post-install resources")
+		_ = r.updateStatus(res, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: TektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	if err := postInstallManifests.ApplyAll(); err != nil {
+		log.Error(err, "failed to apply post-install resources")
+		_ = r.updateStatus(res, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: TektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	err = r.updateStatus(res, op.ConfigCondition{Code: op.PostInstallConfigStatus, Version: TektonVersion})
+	if err != nil {
+		log.Error(err, "failed to set the post-install configuration status")
+		return reconcile.Result{Requeue: true}, err
+	}
+
+	log.Info("successfully applied post-install resources")
+	return reconcile.Result{}, nil
 }
 
 func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Config) (reconcile.Result, error) {

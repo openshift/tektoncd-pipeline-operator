@@ -48,6 +48,9 @@ const (
 	// InstalledStatus indicates that the pipeline resources are installed successfully
 	InstalledStatus InstallStatus = "installed"
 
+	// PostInstallConfigStatus indicates remaining configurations after installation is applied
+	PostInstallConfigStatus InstallStatus = "post-install-config"
+
 	// ReadyStatus indicates that the pipeline is ready to use
 	ReadyStatus InstallStatus = "ready"
 
@@ -124,6 +127,16 @@ func (c *Config) IsInstalled(version string) bool {
 	}
 
 	return c.conditionFor(version, InstalledStatus)
+}
+
+//AppliedPostInstallConfig returns true if post install config is applied
+func (c *Config) AppliedPostInstallConfig(version string) bool {
+	cond := c.Status.Conditions
+	if len(cond) == 0 {
+		return false
+	}
+
+	return c.conditionFor(version, PostInstallConfigStatus)
 }
 
 func (c *Config) conditionFor(version string, status InstallStatus) bool {

@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: controller
+  annotations:
+    networkoperator.openshift.io/ignore-errors: ""
+  name: openshift-pipeline-monitor
+  namespace: openshift-pipelines
+spec:
+  endpoints:
+    - interval: 15s
+      port: metrics
+  namespaceSelector:
+    matchNames:
+      - openshift-pipelines
+  selector:
+    matchLabels:
+      app: tekton-pipelines-controller

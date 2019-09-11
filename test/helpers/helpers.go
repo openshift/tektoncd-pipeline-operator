@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	versioned "github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -14,6 +16,7 @@ import (
 	ctrllercfg "github.com/tektoncd/operator/pkg/controller/config"
 	"github.com/tektoncd/operator/test/config"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // AssertNoError confirms the error returned is nil
@@ -148,4 +151,98 @@ func ValidatePipelineCleanup(t *testing.T, cr *op.Config, deployments ...string)
 		err := WaitForDeploymentDeletion(t, ns, d)
 		AssertNoError(t, err)
 	}
+}
+
+func ValidateMetricsSetup(t *testing.T, cr *op.Config) {
+	t.Helper()
+	validateServiceMonitor(t, cr)
+	validateRBACRoleForMetrics(t, cr)
+	validateRBACRoleBindingForMetrics(t, cr)
+}
+
+func validateServiceMonitor(t *testing.T, cr *op.Config) {
+	t.Helper()
+
+	monClient, err := versioned.NewForConfig(test.Global.KubeConfig)
+	if err != nil {
+		t.Errorf("Failed to get the ServiceMonitor client %v \n", err.Error())
+		return
+	}
+	monitors, err := monClient.ServiceMonitors(cr.Spec.TargetNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		t.Errorf("Failed to get the ServiceMonitor %v \n", err.Error())
+		return
+	}
+
+	for _, sm := range monitors.Items {
+		t.Logf("sm %v", sm)
+		if len(sm.OwnerReferences) == 0 {
+			continue
+		}
+		if matchOwner(sm.OwnerReferences, cr) {
+			return
+		}
+	}
+
+	t.Fatalf("Expected service monitor with owner %s of kind %s but its not found\n", cr.Name, cr.Kind)
+}
+
+func validateRBACRoleForMetrics(t *testing.T, cr *op.Config) {
+	t.Helper()
+
+	roles := rbacv1.RoleList{}
+	listOpts := client.ListOptions{
+		Namespace: cr.Spec.TargetNamespace,
+	}
+	err := test.Global.Client.List(context.TODO(), &listOpts, &roles)
+	if err != nil {
+		t.Errorf("Failed to get RBAC roles %v", err.Error())
+		return
+	}
+
+	for _, r := range roles.Items {
+		if len(r.OwnerReferences) == 0 {
+			continue
+		}
+
+		if(matchOwner(r.OwnerReferences, cr)) {
+			return
+		}
+	}
+	t.Fatalf("Expected RBAC role with owner %s but its not found\n", cr.Name)
+}
+
+func validateRBACRoleBindingForMetrics(t *testing.T, cr *op.Config) {
+	t.Helper()
+
+	roleBindings := rbacv1.RoleBindingList{}
+	listOpts := client.ListOptions{
+		Namespace: cr.Spec.TargetNamespace,
+	}
+	err := test.Global.Client.List(context.TODO(), &listOpts, &roleBindings)
+	if err != nil {
+		t.Errorf("Failed to get RBAC role bindings %v", err.Error())
+		return
+	}
+
+	for _, r := range roleBindings.Items {
+		if len(r.OwnerReferences) == 0 {
+			continue
+		}
+
+		if(matchOwner(r.OwnerReferences, cr)) {
+			return
+		}
+	}
+	t.Errorf("Expected RBAC role bindings with owner %s but its not found\n", cr.Name)
+}
+
+func matchOwner(owners []metav1.OwnerReference, cr *op.Config) bool {
+	for _, o := range owners {
+		if o.Name == cr.Name{
+			return true
+		}
+	}
+
+	return false
 }

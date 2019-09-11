@@ -31,11 +31,11 @@ github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
-# github.com/coreos/prometheus-operator v0.29.0 => github.com/coreos/prometheus-operator v0.29.0
-github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1
+# github.com/coreos/prometheus-operator v0.31.1 => github.com/coreos/prometheus-operator v0.29.0
 github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1
-github.com/coreos/prometheus-operator/pkg/apis/monitoring
+github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1
 github.com/coreos/prometheus-operator/pkg/client/versioned/scheme
+github.com/coreos/prometheus-operator/pkg/apis/monitoring
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -139,7 +139,6 @@ github.com/operator-framework/operator-sdk/pkg/log/zap
 github.com/operator-framework/operator-sdk/pkg/metrics
 github.com/operator-framework/operator-sdk/pkg/restmapper
 github.com/operator-framework/operator-sdk/version
-github.com/operator-framework/operator-sdk/pkg/predicate
 github.com/operator-framework/operator-sdk/pkg/test
 github.com/operator-framework/operator-sdk/pkg/test/e2eutil
 github.com/operator-framework/operator-sdk/internal/pkg/scaffold
@@ -312,6 +311,7 @@ gopkg.in/yaml.v2
 # k8s.io/api v0.0.0-20190612125737-db0771252981 => k8s.io/api v0.0.0-20190222213804-5cb15d344471
 k8s.io/api/core/v1
 k8s.io/api/apps/v1
+k8s.io/api/rbac/v1
 k8s.io/api/admissionregistration/v1alpha1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1beta1
@@ -333,7 +333,6 @@ k8s.io/api/events/v1beta1
 k8s.io/api/extensions/v1beta1
 k8s.io/api/networking/v1
 k8s.io/api/policy/v1beta1
-k8s.io/api/rbac/v1
 k8s.io/api/rbac/v1alpha1
 k8s.io/api/rbac/v1beta1
 k8s.io/api/scheduling/v1alpha1
@@ -490,6 +489,7 @@ sigs.k8s.io/controller-runtime/pkg/runtime/scheme
 sigs.k8s.io/controller-runtime/pkg/client
 sigs.k8s.io/controller-runtime/pkg/controller
 sigs.k8s.io/controller-runtime/pkg/handler
+sigs.k8s.io/controller-runtime/pkg/predicate
 sigs.k8s.io/controller-runtime/pkg/reconcile
 sigs.k8s.io/controller-runtime/pkg/source
 sigs.k8s.io/controller-runtime/pkg/cache
@@ -501,9 +501,8 @@ sigs.k8s.io/controller-runtime/pkg/recorder
 sigs.k8s.io/controller-runtime/pkg/runtime/inject
 sigs.k8s.io/controller-runtime/pkg/webhook/admission
 sigs.k8s.io/controller-runtime/pkg/webhook/admission/types
-sigs.k8s.io/controller-runtime/pkg/event
-sigs.k8s.io/controller-runtime/pkg/predicate
 sigs.k8s.io/controller-runtime/pkg/internal/controller
+sigs.k8s.io/controller-runtime/pkg/event
 sigs.k8s.io/controller-runtime/pkg/source/internal
 sigs.k8s.io/controller-runtime/pkg/cache/internal
 sigs.k8s.io/controller-runtime/pkg/patch

@@ -11,6 +11,7 @@ COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
 
 COPY deploy/resources /deploy/resources
+COPY deploy/post-install /deploy/post-install
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
