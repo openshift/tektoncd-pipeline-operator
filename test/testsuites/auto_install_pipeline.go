@@ -20,6 +20,8 @@ func ValidateAutoInstall(t *testing.T) {
 		config.PipelineControllerName,
 		config.PipelineWebhookName)
 
+	helpers.ValidateSCCAdded(t, cr.Spec.TargetNamespace, config.PipelineControllerName)
+
 	cr = helpers.WaitForClusterCR(t, config.ClusterCRName)
 	if code := cr.Status.Conditions[0].Code; code != op.InstalledStatus {
 		t.Errorf("Expected code to be %s but got %s", op.InstalledStatus, code)
@@ -43,4 +45,5 @@ func ValidateDeletion(t *testing.T) {
 	helpers.ValidatePipelineCleanup(t, cr,
 		config.PipelineControllerName,
 		config.PipelineWebhookName)
+	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, config.PipelineControllerName)
 }

@@ -11,10 +11,10 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.Config":          schema_pkg_apis_operator_v1alpha1_Config(ref),
-		"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigCondition": schema_pkg_apis_operator_v1alpha1_ConfigCondition(ref),
-		"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigSpec":      schema_pkg_apis_operator_v1alpha1_ConfigSpec(ref),
-		"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigStatus":    schema_pkg_apis_operator_v1alpha1_ConfigStatus(ref),
+		"./pkg/apis/operator/v1alpha1.Config":          schema_pkg_apis_operator_v1alpha1_Config(ref),
+		"./pkg/apis/operator/v1alpha1.ConfigCondition": schema_pkg_apis_operator_v1alpha1_ConfigCondition(ref),
+		"./pkg/apis/operator/v1alpha1.ConfigSpec":      schema_pkg_apis_operator_v1alpha1_ConfigSpec(ref),
+		"./pkg/apis/operator/v1alpha1.ConfigStatus":    schema_pkg_apis_operator_v1alpha1_ConfigStatus(ref),
 	}
 }
 
@@ -45,19 +45,19 @@ func schema_pkg_apis_operator_v1alpha1_Config(ref common.ReferenceCallback) comm
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigSpec"),
+							Ref: ref("./pkg/apis/operator/v1alpha1.ConfigSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigStatus"),
+							Ref: ref("./pkg/apis/operator/v1alpha1.ConfigStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigSpec", "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/operator/v1alpha1.ConfigSpec", "./pkg/apis/operator/v1alpha1.ConfigStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -83,7 +83,7 @@ func schema_pkg_apis_operator_v1alpha1_ConfigCondition(ref common.ReferenceCallb
 					},
 					"version": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The version of tekton pipelines",
+							Description: "The version of OpenShift pipelines",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -104,7 +104,7 @@ func schema_pkg_apis_operator_v1alpha1_ConfigSpec(ref common.ReferenceCallback) 
 				Properties: map[string]spec.Schema{
 					"targetNamespace": {
 						SchemaProps: spec.SchemaProps{
-							Description: "namespace where tekton pipelines will be installed",
+							Description: "namespace where OpenShift pipelines will be installed",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -130,7 +130,7 @@ func schema_pkg_apis_operator_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigCondition"),
+										Ref: ref("./pkg/apis/operator/v1alpha1.ConfigCondition"),
 									},
 								},
 							},
@@ -140,6 +140,6 @@ func schema_pkg_apis_operator_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/tektoncd/operator/pkg/apis/operator/v1alpha1.ConfigCondition"},
+			"./pkg/apis/operator/v1alpha1.ConfigCondition"},
 	}
 }

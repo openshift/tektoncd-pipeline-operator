@@ -33,6 +33,7 @@ clean:
 
 ./out/operator: ./vendor $(shell find . -path ./vendor -prune -o -name '*.go' -print)
 	#$(Q)operator-sdk generate k8s
+	$(Q)go version
 	$(Q)CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
 		go build ${V_FLAG} -o ./out/operator \
 		./cmd/manager
