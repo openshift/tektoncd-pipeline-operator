@@ -61,11 +61,11 @@ cd ${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator
 ```
 2. Build go and the container image
 ```
-make osdk-image tag=${YOUR_REGISTORY}/openshift-pipelines-operator:${IMAGE_TAG}
+make osdk-image IMAGE_TAG=${YOUR_REGISTRY}/openshift-pipelines-operator:${YOUR_IMAGE_TAG}
 ```
 3. Push the container image
 ```
-docker push ${YOUR-REGISTORY}/openshift-pipelines-operator:${IMAGE-TAG}
+docker push ${YOUR_REGISTRY}/openshift-pipelines-operator:${YOUR_IMAGE_TAG}
 ```
 4. Edit the 'image' value in deploy/operator.yaml to match to your image
 
