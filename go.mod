@@ -1,10 +1,9 @@
 module github.com/tektoncd/operator
 
 require (
-	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/jcrossley3/manifestival v0.0.0-20190621184852-78b6b04ae6ff
-	github.com/operator-framework/operator-sdk v0.9.1-0.20190715204459-936584d47ff9
+	github.com/operator-framework/operator-sdk v0.10.1-0.20191002141136-1a5772eb7185
 	github.com/prometheus/common v0.2.0
 	github.com/spf13/pflag v1.0.3
 	k8s.io/api v0.0.0-20190612125737-db0771252981
@@ -14,6 +13,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.1.12
 	sigs.k8s.io/controller-tools v0.1.10 // indirect
 )
+
+// ### test lint ###
 
 // Pinned to kubernetes-1.13.4
 replace (
@@ -32,4 +33,4 @@ replace (
 
 replace github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.9.0
 
-replace git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
+go 1.13
