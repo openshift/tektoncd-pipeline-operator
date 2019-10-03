@@ -108,9 +108,9 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
 1. Change directory to `${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator`
 
-1. Create `openshift-pipelines-operator` namespace
+1. Create `openshift-operators` namespace
 
-   `kubectl create namespace openshift-pipelines-operator`
+   `kubectl create namespace openshift-operators`
 
 1. Apply operator crd
 
@@ -118,7 +118,7 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
 1. Deploy the operator
 
-    `kubectl apply -f deploy/ -n openshift-pipelines-operator`
+    `kubectl apply -f deploy/ -n openshift-operators`
 
 1. Install pipeline by creating an `Install` CR
 
@@ -128,6 +128,10 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
 1. Install minikube [see above](#install-minikube)
 1. Install olm [see above](#install-olm)
+1. Create `openshift-operators` namespace
+
+   `kubectl create namespace openshift-operators`
+
 1. Add local catalog source
 
     `kubectl apply -f  olm/openshift-pipelines-operator.resources.yaml`
@@ -137,15 +141,15 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
 1. Subscribe to `Openshift Pipelines Operator`
     1. Open [web console]
-    1. Select [`openshift-pipelines-operator` namespace](http://localhost:9000/status/ns/openshift-pipelines-operator)
-    1. Select [`Catalog > Operator Management`](http://0.0.0.0:9000/operatormanagement/ns/openshift-pipelines-operator)
-    1. Select [`Catalog > Operator Management > Operator Catalogs`](http://0.0.0.0:9000/operatormanagement/ns/openshift-pipelines-operator/catalogsources)
+    1. Select [`openshift-operators` namespace](http://0.0.0.0:9000/status/ns/openshift-operators)
+    1. Select [`Catalog > Operator Management`](http://0.0.0.0:9000/operatormanagement/ns/openshift-operators)
+    1. Select [`Catalog > Operator Management > Operator Catalogs`](http://0.0.0.0:9000/operatormanagement/ns/openshift-operators/catalogsources)
     1. Scroll down to `Openshift Pipelines Operator` under `Openshift Pipelines Operator Registry`
 
         **NOTE:** it will take a few minutes to appear after applying the `catalogsource`
 
     1. Click `Create Subscription` button
-        1. ensure `namespace` in yaml is `openshift-pipelines-operator` e.g.
+        1. ensure `namespace` in yaml is `openshift-operator` e.g.
             <details>
               <summary> sample subscription </summary>
 
@@ -154,10 +158,10 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
                 kind: Subscription
                 metadata:
                   generateName: openshift-pipelines-operator-
-                  namespace: openshift-pipelines-operator
+                  namespace: openshift-operators
                 spec:
                   source: openshift-pipelines-operator-registry
-                  sourceNamespace: openshift-pipelines-operator
+                  sourceNamespace: openshift-operators
                   name: openshift-pipelines-operator
                   startingCSV: openshift-pipelines-operator.v0.3.1
                   channel: alpha
