@@ -3,10 +3,12 @@ package config
 import (
 	"context"
 	"flag"
+	"fmt"
 	"path/filepath"
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
+	sec "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
@@ -31,13 +33,15 @@ const (
 
 	// Name of the pipeline controller deployment
 	PipelineControllerName = "tekton-pipelines-controller"
+	PipelineControllerSA   = "tekton-pipelines-controller"
 
 	// Name of the pipeline webhook deployment
 	PipelineWebhookName = "tekton-pipelines-webhook"
+	sccAnnotationKey    = "operator.tekton.dev"
 )
 
 var (
-	tektonVersion   = "v0.5.2"
+	tektonVersion   = "v0.7.0"
 	resourceWatched string
 	resourceDir     string
 	targetNamespace string
@@ -87,10 +91,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager, m mf.Manifest) reconcile.Reconciler {
+	secClient, _ := sec.NewForConfig(mgr.GetConfig())
 	return &ReconcileConfig{
-		client:   mgr.GetClient(),
-		scheme:   mgr.GetScheme(),
-		manifest: m,
+		client:    mgr.GetClient(),
+		scheme:    mgr.GetScheme(),
+		secClient: secClient,
+		manifest:  m,
 	}
 }
 
@@ -142,9 +148,10 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client   client.Client
-	scheme   *runtime.Scheme
-	manifest mf.Manifest
+	client    client.Client
+	secClient *sec.SecurityV1Client
+	scheme    *runtime.Scheme
+	manifest  mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -157,8 +164,8 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 
 	log.Info("reconciling config change")
 
-	res := &op.Config{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: req.Name}, res)
+	cfg := &op.Config{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: req.Name}, cfg)
 
 	// ignore all resources except the `resourceWatched`
 	if req.Name != resourceWatched {
@@ -166,7 +173,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 
 		// handle resources that are not interesting as error
 		if !errors.IsNotFound(err) {
-			r.markInvalidResource(res)
+			r.markInvalidResource(cfg)
 		}
 		return reconcile.Result{}, nil
 	}
@@ -174,8 +181,8 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 	// handle deletion of resource
 	if errors.IsNotFound(err) {
 		// User deleted the cluster resource so delete the pipeine resources
-		log.Info("resource has been deleted")
-		return r.reconcileDeletion(req, res)
+		log.Info("resource has been deleted", "config", cfg.Spec, "status", cfg.Status)
+		return r.reconcileDeletion(req, cfg)
 	}
 
 	// Error reading the object - requeue the request.
@@ -184,35 +191,35 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
-	if isUpToDate(res) {
+	if isUpToDate(cfg) {
 		log.Info("skipping installation, resource already up to date")
 		return reconcile.Result{}, nil
 	}
 
 	log.Info("installing pipelines", "path", resourceDir)
 
-	return r.reconcileInstall(req, res)
+	return r.reconcileInstall(req, cfg)
 
 }
 
-func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
+func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "install")
 
-	err := r.updateStatus(res, op.ConfigCondition{Code: op.InstallingStatus, Version: tektonVersion})
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstallingStatus, Version: tektonVersion})
 	if err != nil {
 		log.Error(err, "failed to set status")
 		return reconcile.Result{}, err
 	}
 
 	tfs := []mf.Transformer{
-		mf.InjectOwner(res),
-		mf.InjectNamespace(res.Spec.TargetNamespace),
+		mf.InjectOwner(cfg),
+		mf.InjectNamespace(cfg.Spec.TargetNamespace),
 	}
 
 	if err := r.manifest.Transform(tfs...); err != nil {
 		log.Error(err, "failed to apply manifest transformations")
 		// ignoring failure to update
-		_ = r.updateStatus(res, op.ConfigCondition{
+		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
 			Version: tektonVersion})
@@ -222,7 +229,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 	if err := r.manifest.ApplyAll(); err != nil {
 		log.Error(err, "failed to apply release.yaml")
 		// ignoring failure to update
-		_ = r.updateStatus(res, op.ConfigCondition{
+		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
 			Version: tektonVersion})
@@ -231,21 +238,129 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, res *op.Config
 	log.Info("successfully applied all resources")
 
 	// NOTE: manifest when updating (not installing) already installed resources
-	// modifies the `res` but does not refersh it, hence refresh manually
-	if err := r.refreshCR(res); err != nil {
+	// modifies the `cfg` but does not refersh it, hence refresh manually
+	if err := r.refreshCR(cfg); err != nil {
 		log.Error(err, "status update failed to refresh object")
 		return reconcile.Result{}, err
 	}
 
-	err = r.updateStatus(res, op.ConfigCondition{
-		Code: op.InstalledStatus, Version: tektonVersion})
+	// add pipeline-controller to scc; scc privileged needs to be updated and
+	// can't be just oc applied
+	controller := types.NamespacedName{Namespace: cfg.Spec.TargetNamespace, Name: PipelineControllerName}
+	ctrlSA, err := r.serviceAccountNameForDeployment(controller)
+	if err != nil {
+		log.Error(err, "failed to find controller service account")
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: tektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	if err := r.addPrivilegedSCC(ctrlSA); err != nil {
+		log.Error(err, "failed to update scc")
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: tektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: tektonVersion})
 	return reconcile.Result{}, err
 }
 
-func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Config) (reconcile.Result, error) {
+func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.NamespacedName) (string, error) {
+	d := appsv1.Deployment{}
+	if err := r.client.Get(context.Background(), deployment, &d); err != nil {
+		return "", err
+	}
+
+	sa := d.Spec.Template.Spec.ServiceAccountName
+	fullSA := fmt.Sprintf("system:serviceaccount:%s:%s", deployment.Namespace, sa)
+	return fullSA, nil
+
+}
+
+func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
+	log := ctrlLog.WithName("scc").WithName("add")
+	privileged, err := r.secClient.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+	if err != nil {
+		log.Error(err, "scc privileged get error")
+		return err
+	}
+
+	newList, changed := addToList(privileged.Users, sa)
+	_, annotated := privileged.Annotations[sccAnnotationKey]
+	if !changed && annotated {
+		log.Info("scc already in added to the list", "action", "none")
+		return nil
+	}
+
+	log.Info("privileged scc needs updation")
+	privileged.Annotations[sccAnnotationKey] = sa
+	privileged.Users = newList
+
+	updated, err := r.secClient.SecurityContextConstraints().Update(privileged)
+	log.Info("added SA to scc", "updated", updated.Users)
+	return err
+}
+
+func (r *ReconcileConfig) removePrivilegedSCC() error {
+	log := ctrlLog.WithName("scc").WithName("remove")
+	privileged, err := r.secClient.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+	if err != nil {
+		log.Error(err, "scc privileged get error")
+		return err
+	}
+
+	sa, annotated := privileged.Annotations[sccAnnotationKey]
+	if !annotated {
+		log.Info("sa already not in privileged SCC", "action", "none")
+		return nil
+	}
+
+	newList, changed := removeFromList(privileged.Users, sa)
+	if !changed {
+		log.Info("sa already not in privileged SCC", "action", "none")
+		return nil
+	}
+
+	log.Info("privileged scc needs updation")
+	delete(privileged.Annotations, sccAnnotationKey)
+	privileged.Users = newList
+
+	updated, err := r.secClient.SecurityContextConstraints().Update(privileged)
+	log.Info("removed SA from scc", "updated", updated.Users)
+	return err
+}
+
+func removeFromList(list []string, item string) ([]string, bool) {
+	for i, v := range list {
+		if v == item {
+			return append(list[:i], list[i+1:]...), true
+		}
+	}
+	return list, false
+}
+
+func addToList(list []string, item string) ([]string, bool) {
+	for _, v := range list {
+		if v == item {
+			return list, false
+		}
+	}
+	return append(list, item), true
+}
+
+func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "delete")
 
 	log.Info("deleting pipeline resources")
+
+	if err := r.removePrivilegedSCC(); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	// Requested object not found, could have been deleted after reconcile request.
 	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -258,12 +373,11 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, res *op.Confi
 
 	// Return and don't requeue
 	return reconcile.Result{}, nil
-
 }
 
 // markInvalidResource sets the status of resourse as invalid
-func (r *ReconcileConfig) markInvalidResource(res *op.Config) {
-	err := r.updateStatus(res,
+func (r *ReconcileConfig) markInvalidResource(cfg *op.Config) {
+	err := r.updateStatus(cfg,
 		op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: "metadata.name must be " + resourceWatched,
@@ -273,14 +387,14 @@ func (r *ReconcileConfig) markInvalidResource(res *op.Config) {
 	}
 }
 
-// updateStatus set the status of res to s and refreshes res to the lastest version
-func (r *ReconcileConfig) updateStatus(res *op.Config, c op.ConfigCondition) error {
+// updateStatus set the status of cfg to s and refreshes cfg to the lastest version
+func (r *ReconcileConfig) updateStatus(cfg *op.Config, c op.ConfigCondition) error {
 
 	// NOTE: need to use a deepcopy since Status().Update() seems to reset the
-	// APIVersion of the res to "" making the object invalid; may be a mechanism
+	// APIVersion of the cfg to "" making the object invalid; may be a mechanism
 	// to prevent us from using stale version of the object
 
-	tmp := res.DeepCopy()
+	tmp := cfg.DeepCopy()
 	tmp.Status.Conditions = append([]op.ConfigCondition{c}, tmp.Status.Conditions...)
 
 	if err := r.client.Status().Update(context.TODO(), tmp); err != nil {
@@ -288,19 +402,19 @@ func (r *ReconcileConfig) updateStatus(res *op.Config, c op.ConfigCondition) err
 		return err
 	}
 
-	if err := r.refreshCR(res); err != nil {
+	if err := r.refreshCR(cfg); err != nil {
 		log.Error(err, "status update failed to refresh object")
 		return err
 	}
 	return nil
 }
 
-func (r *ReconcileConfig) refreshCR(res *op.Config) error {
+func (r *ReconcileConfig) refreshCR(cfg *op.Config) error {
 	objKey := types.NamespacedName{
-		Namespace: res.Namespace,
-		Name:      res.Name,
+		Namespace: cfg.Namespace,
+		Name:      cfg.Name,
 	}
-	return r.client.Get(context.TODO(), objKey, res)
+	return r.client.Get(context.TODO(), objKey, cfg)
 }
 
 func createCR(c client.Client) error {

@@ -8,6 +8,7 @@ include ./make/out.mk
 # Quay App Registry
 TEKTONCD_PIPELINE_APPR_NAMESPACE ?= odcqe
 TEKTONCD_PIPELINE_APPR_REPOSITORY ?= tektoncd-pipeline
+TARGET_NAMESPACE := openshift-pipelines
 
 export DEPLOYED_NAMESPACE:=
 
@@ -39,8 +40,8 @@ get-operator-version:
 
 .PHONY: ./out/test-namespace
 ./out/test-namespace:
-	#@echo -n "test-namespace-$(shell uuidgen | tr '[:upper:]' '[:lower:]')" > ./out/test-namespace
 	@echo -n "openshift-operators" > ./out/test-namespace
+
 .PHONY: test-e2e
 ## Runs the e2e tests locally
 test-e2e: e2e-setup
@@ -48,19 +49,14 @@ test-e2e: e2e-setup
 	$(Q) rm -rf vendor/
 	$(Q)operator-sdk test local ./test/e2e \
 		--image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator \
-	 	--namespace $(TEST_NAMESPACE) \
+		--namespace $(TEST_NAMESPACE) \
 		--go-test-flags "-v -timeout=15m" \
 	 	--debug
 
 .PHONY: e2e-setup
-e2e-setup: e2e-cleanup
-	##$(Q)oc create namespace $(TEST_NAMESPACE)
-	oc project $(TEST_NAMESPACE)
-
-.PHONY: e2e-cleanup
-e2e-cleanup: get-test-namespace
-	## skip deleting project as the project is openshift-operators
-	##$(Q)-oc delete namespace $(TEST_NAMESPACE) --timeout=10s --wait
+e2e-setup: get-test-namespace
+	$(Q)-oc create namespace $(TEST_NAMESPACE)
+	$(Q) oc project $(TEST_NAMESPACE)
 
 .PHONY: test-olm-integration
 ## Runs the OLM integration tests without coverage

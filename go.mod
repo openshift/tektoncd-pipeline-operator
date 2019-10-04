@@ -3,6 +3,8 @@ module github.com/tektoncd/operator
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/jcrossley3/manifestival v0.0.0-20190621184852-78b6b04ae6ff
+	github.com/openshift/api v3.9.1-0.20190911180052-9f80b7806f58+incompatible
+	github.com/openshift/client-go v0.0.0-20190813201236-5a5508328169
 	github.com/operator-framework/operator-sdk v0.10.1-0.20191002141136-1a5772eb7185
 	github.com/prometheus/common v0.2.0
 	github.com/spf13/pflag v1.0.3
