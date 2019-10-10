@@ -132,6 +132,10 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
    `kubectl create namespace openshift-operators`
 
+2. Generate local catalog source
+
+    `NAMESPACE=operators ./scripts/olm_catalog.sh > olm/openshift-pipelines-operator.resources.yaml`
+
 1. Add local catalog source
 
     `kubectl apply -f  olm/openshift-pipelines-operator.resources.yaml`
@@ -231,6 +235,6 @@ It asssumes you have already followed install [minikube](#install-minikube) and 
 
 1. 1. Build local catalog source **localOperators**
 
-    `./scripts/olm_catalog.sh > olm/openshift-pipelines-operator.resources.yaml`
+    `NAMESPACE=operators ./scripts/olm_catalog.sh > olm/openshift-pipelines-operator.resources.yaml`
 
 [web console]: http://localhost:9000
