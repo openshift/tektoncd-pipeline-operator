@@ -5,7 +5,6 @@ import (
 	"flag"
 	"regexp"
 
-	sec "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -52,14 +51,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	secClient, _ := sec.NewForConfig(mgr.GetConfig())
 	kc, _ := k8s.NewForConfig(mgr.GetConfig())
 
 	return &ReconcileRBAC{
-		client:    mgr.GetClient(),
-		scheme:    mgr.GetScheme(),
-		secClient: secClient,
-		kc:        kc,
+		client: mgr.GetClient(),
+		scheme: mgr.GetScheme(),
+		kc:     kc,
 	}
 }
 
@@ -91,10 +88,9 @@ var _ reconcile.Reconciler = &ReconcileRBAC{}
 type ReconcileRBAC struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client    client.Client
-	scheme    *runtime.Scheme
-	secClient *sec.SecurityV1Client
-	kc        *k8s.Clientset
+	client client.Client
+	scheme *runtime.Scheme
+	kc     *k8s.Clientset
 }
 
 func ignoreNotFound(err error) error {
@@ -111,6 +107,7 @@ func ignoreNotFound(err error) error {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, error) {
 	log := ctrlLog.WithValues("req.name", req.Name)
+
 	if ignore, _ := regexp.MatchString(IgnorePattern, req.Name); ignore {
 		return reconcile.Result{}, nil
 	}
@@ -173,6 +170,7 @@ func (r *ReconcileRBAC) ensureSA(ns *corev1.Namespace) (*corev1.ServiceAccount, 
 func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
 	log := ctrlLog.WithName("rb").WithValues("ns", sa.Namespace)
 
+	log.Info("finding role-binding edit")
 	rbacClient := r.kc.RbacV1()
 	editRB, rbErr := rbacClient.RoleBindings(sa.Namespace).Get("edit", metav1.GetOptions{})
 	if rbErr != nil && !errors.IsNotFound(rbErr) {
@@ -180,6 +178,7 @@ func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
 		return rbErr
 	}
 
+	log.Info("finding cluster role edit")
 	if _, err := rbacClient.ClusterRoles().Get("edit", metav1.GetOptions{}); err != nil {
 		log.Error(err, "finding edit cluster role failed")
 		return err
@@ -188,6 +187,7 @@ func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
 	if rbErr != nil && errors.IsNotFound(rbErr) {
 		return r.createRoleBinding(sa)
 	}
+
 	log.Info("found rbac", "subjects", editRB.Subjects)
 	return r.updateRoleBinding(editRB, sa)
 }
@@ -195,6 +195,7 @@ func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
 func (r *ReconcileRBAC) createRoleBinding(sa *corev1.ServiceAccount) error {
 	log := ctrlLog.WithName("rb").WithName("new")
 
+	log.Info("create new rolebinding edit")
 	rbacClient := r.kc.RbacV1()
 	rb := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: "edit", Namespace: sa.Namespace},
@@ -219,6 +220,7 @@ func (r *ReconcileRBAC) updateRoleBinding(rb *rbacv1.RoleBinding, sa *corev1.Ser
 		return nil
 	}
 
+	log.Info("update existing rolebinding edit")
 	rbacClient := r.kc.RbacV1()
 	rb.Subjects = append(rb.Subjects, subject)
 	_, err := rbacClient.RoleBindings(sa.Namespace).Update(rb)
