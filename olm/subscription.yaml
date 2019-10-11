@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: sthaha-pipelines-subsription
+  namespace: openshift-operators
+spec:
+  channel: dev-preview
+  name: openshift-pipelines-operator
+  source: sthaha-operators
+  sourceNamespace: openshift-marketplace
