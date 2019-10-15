@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/tektoncd/operator/pkg/controller/rbac"
+	"github.com/tektoncd/operator/pkg/controller/transform"
 	"path/filepath"
 
 	"github.com/go-logr/logr"
@@ -214,6 +216,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		mf.InjectNamespace(cfg.Spec.TargetNamespace),
+		transform.InjectDefaultSA(rbac.DefaultSA),
 	}
 
 	if err := r.manifest.Transform(tfs...); err != nil {
