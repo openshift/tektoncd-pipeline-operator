@@ -3,9 +3,10 @@ package testsuites
 import (
 	"testing"
 
+	"github.com/tektoncd/operator/pkg/controller/flags"
+
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
-	"github.com/tektoncd/operator/pkg/controller/config"
 	"github.com/tektoncd/operator/test/helpers"
 )
 
@@ -15,14 +16,14 @@ func ValidateAutoInstall(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	cr := helpers.WaitForClusterCR(t, config.ClusterCRName)
+	cr := helpers.WaitForClusterCR(t, flags.ClusterCRName)
 	helpers.ValidatePipelineSetup(t, cr,
-		config.PipelineControllerName,
-		config.PipelineWebhookName)
+		flags.PipelineControllerName,
+		flags.PipelineWebhookName)
 
-	helpers.ValidateSCCAdded(t, cr.Spec.TargetNamespace, config.PipelineControllerName)
+	helpers.ValidateSCCAdded(t, cr.Spec.TargetNamespace, flags.PipelineControllerName)
 
-	cr = helpers.WaitForClusterCR(t, config.ClusterCRName)
+	cr = helpers.WaitForClusterCR(t, flags.ClusterCRName)
 	if code := cr.Status.Conditions[0].Code; code != op.InstalledStatus {
 		t.Errorf("Expected code to be %s but got %s", op.InstalledStatus, code)
 	}
@@ -35,15 +36,15 @@ func ValidateDeletion(t *testing.T) {
 	ctx := test.NewTestCtx(t)
 	defer ctx.Cleanup()
 
-	cr := helpers.WaitForClusterCR(t, config.ClusterCRName)
+	cr := helpers.WaitForClusterCR(t, flags.ClusterCRName)
 	helpers.ValidatePipelineSetup(t, cr,
-		config.PipelineControllerName,
-		config.PipelineWebhookName)
+		flags.PipelineControllerName,
+		flags.PipelineWebhookName)
 
-	helpers.DeleteClusterCR(t, config.ClusterCRName)
+	helpers.DeleteClusterCR(t, flags.ClusterCRName)
 
 	helpers.ValidatePipelineCleanup(t, cr,
-		config.PipelineControllerName,
-		config.PipelineWebhookName)
-	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, config.PipelineControllerName)
+		flags.PipelineControllerName,
+		flags.PipelineWebhookName)
+	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, flags.PipelineControllerName)
 }

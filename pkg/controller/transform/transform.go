@@ -26,14 +26,12 @@ func InjectDefaultSA(defaultSA string) mf.Transformer {
 		}
 
 		cm.Data["default-service-account"] = defaultSA
-
 		unstrObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(cm)
 		if err != nil {
 			return err
 		}
 
 		u.SetUnstructuredContent(unstrObj)
-
 		return nil
 	}
 }

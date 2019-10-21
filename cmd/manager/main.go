@@ -13,6 +13,7 @@ import (
 
 	"github.com/tektoncd/operator/pkg/apis"
 	"github.com/tektoncd/operator/pkg/controller"
+	optrFlags "github.com/tektoncd/operator/pkg/controller/flags"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -54,6 +55,7 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	pflag.Parse()
+	optrFlags.Parse()
 
 	// Use a zap logr.Logger implementation. If none of the zap
 	// flags are configured (or if the zap flag set is not being
