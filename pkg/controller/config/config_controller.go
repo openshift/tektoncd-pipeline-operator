@@ -2,9 +2,10 @@ package config
 
 import (
 	"context"
-	"flag"
 	"fmt"
-	"path/filepath"
+
+	"github.com/tektoncd/operator/pkg/controller/transform"
+	"github.com/tektoncd/operator/pkg/flag"
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
@@ -27,62 +28,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-const (
-	ClusterCRName   = "cluster"
-	DefaultTargetNs = "openshift-pipelines"
-
-	// Name of the pipeline controller deployment
-	PipelineControllerName = "tekton-pipelines-controller"
-	PipelineControllerSA   = "tekton-pipelines-controller"
-
-	// Name of the pipeline webhook deployment
-	PipelineWebhookName = "tekton-pipelines-webhook"
-	sccAnnotationKey    = "operator.tekton.dev"
-)
-
 var (
-	tektonVersion   = "v0.7.0"
-	resourceWatched string
-	resourceDir     string
-	targetNamespace string
-	noAutoInstall   bool
-	recursive       bool
-	ctrlLog         = logf.Log.WithName("ctrl").WithName("config")
+	ctrlLog = logf.Log.WithName("ctrl").WithName("config")
 )
 
 func init() {
-	flag.StringVar(
-		&resourceWatched, "watch-resource", ClusterCRName,
-		"cluster-wide resource that operator honours, default: "+ClusterCRName)
-
-	flag.StringVar(
-		&targetNamespace, "target-namespace", DefaultTargetNs,
-		"Namespace where pipeline will be installed default: "+DefaultTargetNs)
-
-	defaultResDir := filepath.Join("deploy", "resources", tektonVersion)
-	flag.StringVar(
-		&resourceDir, "resource-dir", defaultResDir,
-		"Path to resource manifests, default: "+defaultResDir)
-
-	flag.BoolVar(
-		&noAutoInstall, "no-auto-install", false,
-		"Do not automatically install tekton pipelines, default: false")
-
-	flag.BoolVar(
-		&recursive, "recursive", false,
-		"If enabled apply manifest file in resource directory recursively")
-
 	ctrlLog.Info("configuration",
-		"resource-watched", resourceWatched,
-		"targetNamespace", targetNamespace,
-		"no-auto-install", noAutoInstall,
+		"resource-watched", flag.ResourceWatched,
+		"targetNamespace", flag.TargetNamespace,
+		"no-auto-install", flag.NoAutoInstall,
 	)
 }
 
 // Add creates a new Config Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	m, err := mf.NewManifest(resourceDir, recursive, mgr.GetClient())
+	m, err := mf.NewManifest(flag.ResourceDir, flag.Recursive, mgr.GetClient())
 	if err != nil {
 		return err
 	}
@@ -130,7 +91,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	if noAutoInstall {
+	if flag.NoAutoInstall {
 		return nil
 	}
 
@@ -168,7 +129,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: req.Name}, cfg)
 
 	// ignore all resources except the `resourceWatched`
-	if req.Name != resourceWatched {
+	if req.Name != flag.ResourceWatched {
 		log.Info("ignoring incorrect object")
 
 		// handle resources that are not interesting as error
@@ -196,7 +157,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, nil
 	}
 
-	log.Info("installing pipelines", "path", resourceDir)
+	log.Info("installing pipelines", "path", flag.ResourceDir)
 
 	return r.reconcileInstall(req, cfg)
 
@@ -205,7 +166,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "install")
 
-	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstallingStatus, Version: tektonVersion})
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstallingStatus, Version: flag.TektonVersion})
 	if err != nil {
 		log.Error(err, "failed to set status")
 		return reconcile.Result{}, err
@@ -214,6 +175,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		mf.InjectNamespace(cfg.Spec.TargetNamespace),
+		transform.InjectDefaultSA(flag.DefaultSA),
 	}
 
 	if err := r.manifest.Transform(tfs...); err != nil {
@@ -222,7 +184,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
-			Version: tektonVersion})
+			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 
@@ -232,7 +194,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
-			Version: tektonVersion})
+			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	log.Info("successfully applied all resources")
@@ -246,14 +208,14 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 
 	// add pipeline-controller to scc; scc privileged needs to be updated and
 	// can't be just oc applied
-	controller := types.NamespacedName{Namespace: cfg.Spec.TargetNamespace, Name: PipelineControllerName}
+	controller := types.NamespacedName{Namespace: cfg.Spec.TargetNamespace, Name: flag.PipelineControllerName}
 	ctrlSA, err := r.serviceAccountNameForDeployment(controller)
 	if err != nil {
 		log.Error(err, "failed to find controller service account")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
-			Version: tektonVersion})
+			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 
@@ -262,11 +224,11 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
 			Details: err.Error(),
-			Version: tektonVersion})
+			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: tektonVersion})
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
 	return reconcile.Result{}, err
 }
 
@@ -291,14 +253,14 @@ func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
 	}
 
 	newList, changed := addToList(privileged.Users, sa)
-	_, annotated := privileged.Annotations[sccAnnotationKey]
+	_, annotated := privileged.Annotations[flag.SccAnnotationKey]
 	if !changed && annotated {
 		log.Info("scc already in added to the list", "action", "none")
 		return nil
 	}
 
 	log.Info("privileged scc needs updation")
-	privileged.Annotations[sccAnnotationKey] = sa
+	privileged.Annotations[flag.SccAnnotationKey] = sa
 	privileged.Users = newList
 
 	updated, err := r.secClient.SecurityContextConstraints().Update(privileged)
@@ -314,7 +276,7 @@ func (r *ReconcileConfig) removePrivilegedSCC() error {
 		return err
 	}
 
-	sa, annotated := privileged.Annotations[sccAnnotationKey]
+	sa, annotated := privileged.Annotations[flag.SccAnnotationKey]
 	if !annotated {
 		log.Info("sa already not in privileged SCC", "action", "none")
 		return nil
@@ -327,7 +289,7 @@ func (r *ReconcileConfig) removePrivilegedSCC() error {
 	}
 
 	log.Info("privileged scc needs updation")
-	delete(privileged.Annotations, sccAnnotationKey)
+	delete(privileged.Annotations, flag.SccAnnotationKey)
 	privileged.Users = newList
 
 	updated, err := r.secClient.SecurityContextConstraints().Update(privileged)
@@ -380,7 +342,7 @@ func (r *ReconcileConfig) markInvalidResource(cfg *op.Config) {
 	err := r.updateStatus(cfg,
 		op.ConfigCondition{
 			Code:    op.ErrorStatus,
-			Details: "metadata.name must be " + resourceWatched,
+			Details: "metadata.name must be " + flag.ResourceWatched,
 			Version: "unknown"})
 	if err != nil {
 		ctrlLog.Info("failed to update status as invalid")
@@ -418,12 +380,12 @@ func (r *ReconcileConfig) refreshCR(cfg *op.Config) error {
 }
 
 func createCR(c client.Client) error {
-	log := ctrlLog.WithName("create-cr").WithValues("name", resourceWatched)
+	log := ctrlLog.WithName("create-cr").WithValues("name", flag.ResourceWatched)
 	log.Info("creating a clusterwide resource of config crd")
 
 	cr := &op.Config{
-		ObjectMeta: metav1.ObjectMeta{Name: resourceWatched},
-		Spec:       op.ConfigSpec{TargetNamespace: targetNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: flag.ResourceWatched},
+		Spec:       op.ConfigSpec{TargetNamespace: flag.TargetNamespace},
 	}
 
 	err := c.Create(context.TODO(), cr)
@@ -442,7 +404,7 @@ func isUpToDate(r *op.Config) bool {
 	}
 
 	latest := c[0]
-	return latest.Version == tektonVersion &&
+	return latest.Version == flag.TektonVersion &&
 		latest.Code == op.InstalledStatus
 }
 

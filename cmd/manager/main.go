@@ -13,6 +13,7 @@ import (
 
 	"github.com/tektoncd/operator/pkg/apis"
 	"github.com/tektoncd/operator/pkg/controller"
+	operator "github.com/tektoncd/operator/pkg/flag"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -52,6 +53,9 @@ func main() {
 	// Add flags registered by imported packages (e.g. glog and
 	// controller-runtime)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+
+	// Add all flags that the operator supports
+	pflag.CommandLine.AddFlagSet(operator.FlagSet())
 
 	pflag.Parse()
 
