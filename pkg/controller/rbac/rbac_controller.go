@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/tektoncd/operator/pkg/controller/flags"
+	"github.com/tektoncd/operator/pkg/flag"
 
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	corev1 "k8s.io/api/core/v1"
@@ -46,7 +46,7 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	if _, err := regexp.Compile(flags.IgnorePattern); err != nil {
+	if _, err := regexp.Compile(flag.IgnorePattern); err != nil {
 		ctrlLog.Error(err, "Ignore regex is invalid")
 		return err
 	}
@@ -92,7 +92,7 @@ func ignoreNotFound(err error) error {
 func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, error) {
 	log := ctrlLog.WithValues("req.name", req.Name)
 
-	if ignore, _ := regexp.MatchString(flags.IgnorePattern, req.Name); ignore {
+	if ignore, _ := regexp.MatchString(flag.IgnorePattern, req.Name); ignore {
 		return reconcile.Result{}, nil
 	}
 
@@ -129,9 +129,9 @@ func (r *ReconcileRBAC) getNS(req reconcile.Request) (*corev1.Namespace, error) 
 func (r *ReconcileRBAC) ensureSA(ns *corev1.Namespace) (*corev1.ServiceAccount, error) {
 	log := ctrlLog.WithName("sa")
 
-	log.Info("finding sa", "sa", flags.PipelineSA, "ns", ns.Name)
+	log.Info("finding sa", "sa", flag.PipelineSA, "ns", ns.Name)
 	sa := &corev1.ServiceAccount{}
-	saType := types.NamespacedName{Name: flags.PipelineSA, Namespace: ns.Name}
+	saType := types.NamespacedName{Name: flag.PipelineSA, Namespace: ns.Name}
 	if err := r.client.Get(context.TODO(), saType, sa); err == nil {
 		return sa, err
 	} else if !errors.IsNotFound(err) {
@@ -139,10 +139,10 @@ func (r *ReconcileRBAC) ensureSA(ns *corev1.Namespace) (*corev1.ServiceAccount, 
 	}
 
 	// create sa if not found
-	log.Info("creating sa", "sa", flags.PipelineSA, "ns", ns.Name)
+	log.Info("creating sa", "sa", flag.PipelineSA, "ns", ns.Name)
 	sa = &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      flags.PipelineSA,
+			Name:      flag.PipelineSA,
 			Namespace: ns.Name,
 		},
 	}

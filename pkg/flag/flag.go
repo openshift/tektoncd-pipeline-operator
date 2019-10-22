@@ -1,8 +1,9 @@
-package flags
+package flag
 
 import (
-	"flag"
 	"path/filepath"
+
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -23,9 +24,11 @@ const (
 )
 
 var (
+	flagSet *pflag.FlagSet
+
+	TektonVersion   = "v0.7.0"
 	PipelineSA      string
 	IgnorePattern   string
-	TektonVersion   = "v0.7.0"
 	ResourceWatched string
 	ResourceDir     string
 	TargetNamespace string
@@ -33,32 +36,37 @@ var (
 	Recursive       bool
 )
 
-func Parse() {
-	flag.StringVar(
+func init() {
+	flagSet = pflag.NewFlagSet("operator", pflag.ExitOnError)
+	flagSet.StringVar(
 		&PipelineSA, "rbac-sa", DefaultSA,
 		"service account that is auto created; default: "+DefaultSA)
-	flag.StringVar(
+	flagSet.StringVar(
 		&IgnorePattern, "ignore-ns-matching", DefaultIgnorePattern,
 		"Namespaces to ignore where SA will be auto-created; default: "+DefaultIgnorePattern)
 
-	flag.StringVar(
+	flagSet.StringVar(
 		&ResourceWatched, "watch-resource", ClusterCRName,
 		"cluster-wide resource that operator honours, default: "+ClusterCRName)
 
-	flag.StringVar(
+	flagSet.StringVar(
 		&TargetNamespace, "target-namespace", DefaultTargetNs,
 		"Namespace where pipeline will be installed default: "+DefaultTargetNs)
 
 	defaultResDir := filepath.Join("deploy", "resources", TektonVersion)
-	flag.StringVar(
+	flagSet.StringVar(
 		&ResourceDir, "resource-dir", defaultResDir,
 		"Path to resource manifests, default: "+defaultResDir)
 
-	flag.BoolVar(
+	flagSet.BoolVar(
 		&NoAutoInstall, "no-auto-install", false,
 		"Do not automatically install tekton pipelines, default: false")
 
-	flag.BoolVar(
+	flagSet.BoolVar(
 		&Recursive, "recursive", false,
 		"If enabled apply manifest file in resource directory recursively")
+}
+
+func FlagSet() *pflag.FlagSet {
+	return flagSet
 }
