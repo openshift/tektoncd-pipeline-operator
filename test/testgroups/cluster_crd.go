@@ -21,6 +21,7 @@ func ClusterCRD(t *testing.T) {
 
 	t.Run("auto-installs-pipelines", testsuites.ValidateAutoInstall)
 	t.Run("auto-create-sa", testsuites.ValidateDefaultSA)
+	t.Run("Run-E2E-pipelines-test", testsuites.ValidateE2EPipelines)
 	t.Run("delete-pipelines", testsuites.ValidateDeletion)
 }
 
