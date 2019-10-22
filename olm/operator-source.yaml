@@ -1,0 +1,15 @@
+#
+# NOTE: this is an example Operator Source that can be
+# used as a template for creating your own operator source.
+#
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+  name: sthaha-operators
+  namespace: openshift-marketplace
+spec:
+  type: appregistry
+  endpoint: https://quay.io/cnr
+  registryNamespace: sthaha
+  displayName: "John Doe Operators"
+  publisher: "John Doe"
