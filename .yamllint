@@ -10,7 +10,8 @@ rules:
   document-end: disable
   document-start: disable
   empty-lines: enable
-  empty-values: enable
+  empty-values:
+    level: warning
   hyphens: enable
   key-duplicates: enable
   key-ordering: disable
