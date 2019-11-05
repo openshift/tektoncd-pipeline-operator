@@ -6,9 +6,9 @@
 1. Checkout release branch
 1. Copy the release yaml from the pipelines repo to operator
    deploy/resources/<version>
-1. modify operator config_controller.go to update the <version>
+1. update operator version pkg/flag/flag.go
 1. test the operator using `up local`
-1. build image
+1. build image (make sure that the project base diretory name is `openshift-pipelines-operator`)
 
   ```
   operator-sdk build quay.io/openshift-pipeline/openshift-pipelines-operator:v0.7.0
