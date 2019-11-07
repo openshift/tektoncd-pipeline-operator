@@ -50,16 +50,10 @@ channels:
 See existing pacakge in community operators for reference
 
 
-1. flatten  to generate bundle
-```
-operator-courier flatten \
-  deploy/olm-catalog/openshift-pipelines-operator \
-  tmp/openshift-pipelines-operator
-```
 1. verify that
 ```
 operator-courier verify --ui_validate_io \
-  tmp/openshift-pipelines-operator
+  deploy/olm-catalog/openshift-pipelines-operator
 ```
 
 1. operator-courier use that to push the app bundle
@@ -70,10 +64,10 @@ You can obtain quay token by running `./scripts/get-quay-token` in
 operator-courier repo. see [Push to quay.io](https://github.com/operator-framework/community-operators/blob/master/docs/testing-operators.md#push-to-quayio)
 
 ```
-export OPERATOR_DIR=tmp/openshift-pipelines-operator
+export OPERATOR_DIR=deploy/olm-catalog/openshift-pipelines-operator
 export QUAY_NAMESPACE=<QUAY_USER>
 export PACKAGE_NAME=openshift-pipelines-operator
-export PACKAGE_VERSION=0.7.0
+export PACKAGE_VERSION=0.8.0
 export TOKEN="basic <your-token here>"
 ```
 

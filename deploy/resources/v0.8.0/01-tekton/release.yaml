@@ -800,7 +800,7 @@ spec:
       serviceAccountName: tekton-pipelines-controller
       containers:
       - name: tekton-pipelines-controller
-        image:  quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.8.0
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.8.0
         args: [
           "-logtostderr",
           "-stderrthreshold", "INFO",
@@ -809,7 +809,7 @@ spec:
           "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.8.0",
           "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.8.0",
           "-bash-noop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-bash:v0.8.0",
-          "-gsutil-image","quay.io/openshift-pipeline/tektoncd-pipeline-gsutil:v0.8.0",
+          "-gsutil-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gsutil:v0.8.0",
           "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.8.0",
           "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.8.0",
           "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.8.0",
@@ -876,7 +876,7 @@ spec:
       - name: webhook
         # This is the Go import path for the binary that is containerized
         # and substituted here.
-        image:  quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.8.0
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.8.0
         volumeMounts:
         - name: config-logging
           mountPath: /etc/config-logging

@@ -259,6 +259,7 @@ spec:
               containers:
               - command:
                 - openshift-pipelines-operator
+                - --recursive
                 env:
                 - name: WATCH_NAMESPACE
                   valueFrom:

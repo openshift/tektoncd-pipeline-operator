@@ -19,6 +19,7 @@ spec:
         image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.8.0
         command:
         - openshift-pipelines-operator
+        - --recursive
         imagePullPolicy: Always
         env:
         - name: WATCH_NAMESPACE
