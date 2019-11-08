@@ -1,0 +1,8 @@
+apiVersion: tekton.dev/v1alpha1
+kind: ClusterTask
+metadata:
+  name: echo
+spec:
+  steps:
+  - image: ubuntu
+    command: ['echo', 'Hello Tekton']
