@@ -13,7 +13,6 @@ RUN yum install epel-release -y
 RUN yum --enablerepo=centosplus install -y  \
     findutils \
     git \
-    golang \
     make \
     procps-ng \
     tar \
@@ -23,6 +22,11 @@ RUN yum --enablerepo=centosplus install -y  \
     yamllint \
     python3-virtualenv \
     && yum clean all
+
+RUN wget https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz; \
+    tar -C /usr/local -xzf go1.13.4.linux-amd64.tar.gz
+
+ENV PATH=$PATH:/usr/local/go/bin
 
 # install dep
 RUN mkdir -p $GOPATH/bin && chmod a+rwx $GOPATH \
