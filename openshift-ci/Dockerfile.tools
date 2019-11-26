@@ -1,4 +1,4 @@
-FROM centos:7 as build-tools
+FROM centos:8 as build-tools
 LABEL maintainer "pipelines-dev <pipelines-dev@redhat.com>"
 LABEL author "Konrad Kleine <kkleine@redhat.com>"
 ENV LANG=en_US.utf8
@@ -8,8 +8,9 @@ ARG GO_PACKAGE_PATH=github.com/openshift/tektoncd-pipeline-operator
 ENV GIT_COMMITTER_NAME pipelines-dev
 ENV GIT_COMMITTER_EMAIL pipelines-dev@redhat.com
 
-RUN yum install epel-release -y \
-    && yum install --enablerepo=centosplus install -y --quiet \
+RUN yum install epel-release -y
+
+RUN yum --enablerepo=centosplus install -y  \
     findutils \
     git \
     golang \
@@ -19,15 +20,14 @@ RUN yum install epel-release -y \
     wget \
     which \
     bc \
-    kubectl \
     yamllint \
-    python36-virtualenv \
+    python3-virtualenv \
     && yum clean all
 
 # install dep
 RUN mkdir -p $GOPATH/bin && chmod a+rwx $GOPATH \
-    && curl -L -s https://github.com/golang/dep/releases/download/v0.5.1/dep-linux-amd64 -o dep \
-    && echo "7479cca72da0596bb3c23094d363ea32b7336daa5473fa785a2099be28ecd0e3  dep" > dep-linux-amd64.sha256 \
+    && curl -L -s https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 -o dep \
+    && echo "40a78c13753f482208d3f4bea51244ca60a914341050c588dad1f00b1acc116c dep" > dep-linux-amd64.sha256 \
     && sha256sum -c dep-linux-amd64.sha256 \
     && rm dep-linux-amd64.sha256 \
     && chmod +x ./dep \
@@ -52,7 +52,7 @@ RUN OPENSHIFT_CLIENT_VERSION=$(curl -s https://mirror.openshift.com/pub/openshif
 # install operator-sdk (from git with no history and only the tag)
 RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && cd $GOPATH/src/github.com/operator-framework \
-    && git clone --depth 1 -b v0.9.0 https://github.com/operator-framework/operator-sdk \
+    && git clone --depth 1 -b v0.10.0 https://github.com/operator-framework/operator-sdk \
     && cd operator-sdk \
     && GO111MODULE=on make install
 
