@@ -21,6 +21,12 @@ RUN yum --enablerepo=centosplus install -y  \
     bc \
     yamllint \
     python3-virtualenv \
+    cpp \
+    gcc \
+    kernel-headers \
+    openssl-devel \
+    libxcrypt-devel \
+    glibc-devel \
     && yum clean all
 
 RUN wget https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz; \
