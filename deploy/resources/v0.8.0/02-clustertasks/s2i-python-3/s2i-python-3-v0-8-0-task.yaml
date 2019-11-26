@@ -6,7 +6,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: ClusterTask
 metadata:
-  name: s2i-python-3-0.8.0
+  name: s2i-python-3-v0-8-0
 spec:
   inputs:
     resources:

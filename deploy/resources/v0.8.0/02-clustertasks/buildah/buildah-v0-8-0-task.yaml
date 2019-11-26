@@ -6,7 +6,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: ClusterTask
 metadata:
-  name: buildah-0.8.0
+  name: buildah-v0-8-0
 spec:
   inputs:
     params:

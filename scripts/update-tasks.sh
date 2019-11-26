@@ -81,7 +81,7 @@ EOF
 
 get_tasks() {
   local dest_dir="$1"; shift
-  local version="$1"; shift
+  local version="${1//./-}"; shift
 
   local catalog="$1"; shift
   local catalog_version="$1"; shift
