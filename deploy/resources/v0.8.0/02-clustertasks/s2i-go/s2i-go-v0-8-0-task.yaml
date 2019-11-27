@@ -28,14 +28,14 @@ spec:
   steps:
     - name: generate
       image: quay.io/openshift-pipeline/s2i
-      workingdir: /workspace/source
+      workingDir: /workspace/source
       command: ['s2i', 'build', '$(inputs.params.PATH_CONTEXT)', 'registry.access.redhat.com/devtools/go-toolset-rhel7', '--as-dockerfile', '/gen-source/Dockerfile.gen']
       volumeMounts:
         - name: gen-source
           mountPath: /gen-source
     - name: build
       image: quay.io/buildah/stable
-      workingdir: /gen-source
+      workingDir: /gen-source
       command: ['buildah', 'bud', '--tls-verify=$(inputs.params.TLSVERIFY)', '--layers', '-f', '/gen-source/Dockerfile.gen', '-t', '$(outputs.resources.image.url)', '.']
       volumeMounts:
         - name: varlibcontainers

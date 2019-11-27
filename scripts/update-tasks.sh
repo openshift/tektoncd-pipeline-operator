@@ -73,9 +73,13 @@ download_task() {
 # source: $task_url
 #
 ---
-$(curl -sLf "$task_url" | sed -e 's|^kind: Task|kind: ClusterTask|g' )
+$(curl -sLf "$task_url" |
+  sed -e 's|^kind: Task|kind: ClusterTask|g' \
+      -e "s|^\(\s\+\)workingdir:\(.*\)|\1workingDir:\2|g"  )
 EOF
 
+ # NOTE: helps when the original and the generated need to compared
+ # curl -sLf "$task_url"  -o "$task_path.orig"
 
 }
 
@@ -119,7 +123,9 @@ create_version() {
   local version="$1"; shift
   local task_version_path="$(dirname $task_path)/$task-$version-task.yaml"
 
-  sed -e "s|^\(\s\+name:\)\s\+\($task\)|\1 \2-$version|g"  $task_path  > "$task_version_path"
+  sed \
+    -e "s|^\(\s\+name:\)\s\+\($task\)|\1 \2-$version|g"  \
+    $task_path  > "$task_version_path"
 }
 
 
@@ -144,11 +150,9 @@ main() {
   dest_dir="$dest_dir/02-clustertasks"
   mkdir -p "$dest_dir" || die 1 "failed to create catalog dir ${catalog_dir}"
 
-  #create_version s2i "$dest_dir" "$version"  \
-    #"$TEKTON_CATALOG"   "$catalog_version"  TEKTON_CATALOG_TASKS
-
   get_tasks "$dest_dir" "$version"  \
     "$TEKTON_CATALOG"   "$catalog_version"  TEKTON_CATALOG_TASKS
+
   get_tasks "$dest_dir" "$version"  \
     "$OPENSHIFT_CATALOG"   "$catalog_version"  OPENSHIFT_CATALOG_TASKS
 
