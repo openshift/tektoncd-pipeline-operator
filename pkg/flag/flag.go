@@ -18,9 +18,12 @@ const (
 	PipelineControllerName = "tekton-pipelines-controller"
 	PipelineControllerSA   = "tekton-pipelines-controller"
 
-	// Name of the pipeline webhook deployment
 	PipelineWebhookName = "tekton-pipelines-webhook"
 	SccAnnotationKey    = "operator.tekton.dev"
+
+	// Name of the trigger deployment
+	TriggerControllerName = "tekton-triggers-controller"
+	TriggerWebhookName = "tekton-triggers-webhook"
 )
 
 var (

@@ -17,9 +17,14 @@ func ValidateAutoInstall(t *testing.T) {
 	defer ctx.Cleanup()
 
 	cr := helpers.WaitForClusterCR(t, flag.ClusterCRName)
+
 	helpers.ValidatePipelineSetup(t, cr,
 		flag.PipelineControllerName,
 		flag.PipelineWebhookName)
+
+	helpers.ValidatePipelineSetup(t, cr,
+		flag.TriggerControllerName,
+		flag.TriggerWebhookName)
 
 	helpers.ValidateSCCAdded(t, cr.Spec.TargetNamespace, flag.PipelineControllerName)
 
@@ -37,14 +42,24 @@ func ValidateDeletion(t *testing.T) {
 	defer ctx.Cleanup()
 
 	cr := helpers.WaitForClusterCR(t, flag.ClusterCRName)
+
 	helpers.ValidatePipelineSetup(t, cr,
 		flag.PipelineControllerName,
 		flag.PipelineWebhookName)
+
+	helpers.ValidatePipelineSetup(t, cr,
+		flag.TriggerControllerName,
+		flag.TriggerWebhookName)
 
 	helpers.DeleteClusterCR(t, flag.ClusterCRName)
 
 	helpers.ValidatePipelineCleanup(t, cr,
 		flag.PipelineControllerName,
 		flag.PipelineWebhookName)
+
+	helpers.ValidatePipelineCleanup(t, cr,
+		flag.TriggerControllerName,
+		flag.TriggerWebhookName)
+
 	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, flag.PipelineControllerName)
 }
