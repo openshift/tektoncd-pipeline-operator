@@ -29,8 +29,6 @@ You must install these tools:
 1. [`go`](https://golang.org/doc/install): The language Tektoncd-pipeline-operator is
    built in
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
-1. [`dep`](https://github.com/golang/dep): For managing external Go
-   dependencies. - Please Install dep v0.5.0 or greater.
 1. [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/): For
    interacting with your kube cluster
 1. operator-sdk: https://github.com/operator-framework/operator-sdk
