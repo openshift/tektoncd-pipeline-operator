@@ -357,6 +357,7 @@ func (r *ReconcileConfig) updateStatus(cfg *op.Config, c op.ConfigCondition) err
 	// to prevent us from using stale version of the object
 
 	tmp := cfg.DeepCopy()
+	tmp.Status.OperatorUUID = flag.OperatorUUID
 	tmp.Status.Conditions = append([]op.ConfigCondition{c}, tmp.Status.Conditions...)
 
 	if err := r.client.Status().Update(context.TODO(), tmp); err != nil {
@@ -397,15 +398,21 @@ func createCR(c client.Client) error {
 	return err
 }
 
-func isUpToDate(r *op.Config) bool {
-	c := r.Status.Conditions
+func isUpToDate(cfg *op.Config) bool {
+	c := cfg.Status.Conditions
 	if len(c) == 0 {
 		return false
 	}
 
 	latest := c[0]
 	return latest.Version == flag.TektonVersion &&
-		latest.Code == op.InstalledStatus
+		latest.Code == op.InstalledStatus &&
+		matchesUUID(cfg.Status.OperatorUUID)
+}
+
+func matchesUUID(target string) bool {
+	uuid := flag.OperatorUUID
+	return uuid == "" || uuid == target
 }
 
 func requestLogger(req reconcile.Request, context string) logr.Logger {

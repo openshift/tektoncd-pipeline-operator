@@ -12,6 +12,9 @@ RUN  /usr/local/bin/user_setup
 
 COPY deploy/resources /deploy/resources
 
+# UBI8 image missing uuidgen
+RUN cat /proc/sys/kernel/random/uuid > /deploy/uuid
+
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
 USER ${USER_UID}
