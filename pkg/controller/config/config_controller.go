@@ -18,6 +18,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,8 +60,7 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return nil, err
 	}
 
-	addonsPath := filepath.Join(flag.ResourceDir, "addons")
-	addons, err := mf.NewManifest(addonsPath, flag.Recursive, mgr.GetClient())
+	addons, err := readAddons(mgr)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +77,44 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		pipeline:  pipeline,
 		addons:    addons,
 	}, nil
+}
+
+// this will read all the addons files
+func readAddons(mgr manager.Manager) (mf.Manifest, error) {
+	// read addons
+	addonsPath := filepath.Join(flag.ResourceDir, "addons")
+	addons, err := mf.NewManifest(addonsPath, flag.Recursive, mgr.GetClient())
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+
+	// add optionals to addons if any
+	optionalResources, err := readOptional(mgr)
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	addons.Resources = append(addons.Resources, optionalResources...)
+
+	return addons, nil
+}
+
+func readOptional(mgr manager.Manager) ([]unstructured.Unstructured, error) {
+	// check consolesample CRD available
+	consoleCRDinstalled, err := validate.CRD(mgr.GetConfig(), "consoleyamlsamples.console.openshift.io")
+	if err != nil {
+		return []unstructured.Unstructured{}, err
+	}
+
+	// read optionals only if CRD available
+	if consoleCRDinstalled {
+		optionalPath := filepath.Join(flag.ResourceDir, "optional")
+		optionalAddons, err := mf.NewManifest(optionalPath, flag.Recursive, mgr.GetClient())
+		if err != nil {
+			return []unstructured.Unstructured{}, err
+		}
+		return optionalAddons.Resources, nil
+	}
+	return []unstructured.Unstructured{}, err
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
