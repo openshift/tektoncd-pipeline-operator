@@ -3,9 +3,8 @@ package config
 import (
 	"context"
 	"fmt"
-
-	"github.com/tektoncd/operator/pkg/controller/transform"
-	"github.com/tektoncd/operator/pkg/flag"
+	"path/filepath"
+	"time"
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
@@ -13,8 +12,10 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/pkg/controller/transform"
+	"github.com/tektoncd/operator/pkg/controller/validate"
+	"github.com/tektoncd/operator/pkg/flag"
 	appsv1 "k8s.io/api/apps/v1"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,22 +44,33 @@ func init() {
 // Add creates a new Config Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	m, err := mf.NewManifest(flag.ResourceDir, flag.Recursive, mgr.GetClient())
+	rec, err := newReconciler(mgr)
 	if err != nil {
 		return err
 	}
-	return add(mgr, newReconciler(mgr, m))
+	return add(mgr, rec)
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, m mf.Manifest) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
+	pplnPath := filepath.Join(flag.ResourceDir, "pipelines")
+	ppln, err := mf.NewManifest(pplnPath, flag.Recursive, mgr.GetClient())
+	if err != nil {
+		return nil, err
+	}
+	addonsPath := filepath.Join(flag.ResourceDir, "addons")
+	addons, err := mf.NewManifest(addonsPath, flag.Recursive, mgr.GetClient())
+	if err != nil {
+		return nil, err
+	}
 	secClient, _ := sec.NewForConfig(mgr.GetConfig())
 	return &ReconcileConfig{
 		client:    mgr.GetClient(),
 		scheme:    mgr.GetScheme(),
 		secClient: secClient,
-		manifest:  m,
-	}
+		pipeline:  ppln,
+		addons:    addons,
+	}, nil
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -112,7 +124,8 @@ type ReconcileConfig struct {
 	client    client.Client
 	secClient *sec.SecurityV1Client
 	scheme    *runtime.Scheme
-	manifest  mf.Manifest
+	pipeline  mf.Manifest
+	addons    mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -152,34 +165,46 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
-	if isUpToDate(cfg) {
+	if stateCheck(cfg, op.InstalledStatus) {
 		log.Info("skipping installation, resource already up to date")
 		return reconcile.Result{}, nil
 	}
-
+	if stateCheck(cfg, op.ValidatedPipeline) {
+		log.Info("pipelines installed, installing addons")
+		return r.reconcileAddons(req, cfg)
+	}
+	if stateCheck(cfg, op.WaitingPipelineValidation) {
+		log.Info("pipelines installed, validating pipeline core")
+		return r.validatePipeline(req, cfg)
+	}
+	if stateCheck(cfg, op.AppliedPipeline) {
+		log.Info("pipelines installed, validating pipeline core")
+		return r.validatePipeline(req, cfg)
+	}
 	log.Info("installing pipelines", "path", flag.ResourceDir)
-
 	return r.reconcileInstall(req, cfg)
-
 }
 
-func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
-	log := requestLogger(req, "install")
-
-	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstallingStatus, Version: flag.TektonVersion})
-	if err != nil {
-		log.Error(err, "failed to set status")
-		return reconcile.Result{}, err
-	}
-
+func transformManifest(cfg *op.Config, m *mf.Manifest) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		mf.InjectNamespace(cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
 	}
+	return m.Transform(tfs...)
+}
 
-	if err := r.manifest.Transform(tfs...); err != nil {
-		log.Error(err, "failed to apply manifest transformations")
+func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
+	log := requestLogger(req, "install-pipeline-core")
+
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstallingPipeline, Version: flag.TektonVersion})
+	if err != nil {
+		log.Error(err, "failed to set status")
+		return reconcile.Result{}, err
+	}
+
+	if err := transformManifest(cfg, &r.pipeline); err != nil {
+		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.ErrorStatus,
@@ -188,7 +213,7 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 		return reconcile.Result{}, err
 	}
 
-	if err := r.manifest.ApplyAll(); err != nil {
+	if err := r.pipeline.ApplyAll(); err != nil {
 		log.Error(err, "failed to apply release.yaml")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -228,6 +253,101 @@ func (r *ReconcileConfig) reconcileInstall(req reconcile.Request, cfg *op.Config
 		return reconcile.Result{}, err
 	}
 
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
+	return reconcile.Result{}, err
+}
+
+func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
+	log := requestLogger(req, "validate-pipeline")
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.WaitingPipelineValidation, Version: flag.TektonVersion})
+	if err != nil {
+		log.Error(err, "failed to set status")
+		return reconcile.Result{}, err
+	}
+
+	log.Info("validating pipelines")
+	pplnCtrl, err := validate.Deployment(context.TODO(),
+		r.client,
+		flag.PipelineControllerName,
+		cfg.Spec.TargetNamespace,
+	)
+	if err != nil {
+		log.Error(err, "failed to validate pipeline deployment")
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+	pplnWebhook, err := validate.Deployment(context.TODO(),
+		r.client,
+		flag.PipelineWebhookName,
+		cfg.Spec.TargetNamespace,
+	)
+	if err != nil {
+		log.Error(err, "failed to validate pipeline deployment")
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+	if !pplnCtrl || !pplnWebhook {
+		log.Info("pipeline controller or/and pipeline webhook is not up")
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: 5 * time.Second,
+		}, nil
+	}
+
+	// NOTE: manifest when updating (not installing) already installed resources
+	// modifies the `cfg` but does not refersh it, hence refresh manually
+	if err := r.refreshCR(cfg); err != nil {
+		log.Error(err, "status update failed to refresh object")
+		return reconcile.Result{}, err
+	}
+
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.ValidatedPipeline, Version: flag.TektonVersion})
+	return reconcile.Result{}, err
+}
+
+func (r *ReconcileConfig) reconcileAddons(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
+	log := requestLogger(req, "install-pipeline-addons")
+
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstallingAddons, Version: flag.TektonVersion})
+	if err != nil {
+		log.Error(err, "failed to set status")
+		return reconcile.Result{}, err
+	}
+
+	if err := transformManifest(cfg, &r.addons); err != nil {
+		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
+		// ignoring failure to update
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	if err := r.addons.ApplyAll(); err != nil {
+		log.Error(err, "failed to apply addons yaml manifest")
+		// ignoring failure to update
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.ErrorStatus,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+	log.Info("successfully applied all resources")
+
+	// NOTE: manifest when updating (not installing) already installed resources
+	// modifies the `cfg` but does not refersh it, hence refresh manually
+	if err := r.refreshCR(cfg); err != nil {
+		log.Error(err, "status update failed to refresh object")
+		return reconcile.Result{}, err
+	}
+
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
 	return reconcile.Result{}, err
 }
@@ -241,7 +361,6 @@ func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.Names
 	sa := d.Spec.Template.Spec.ServiceAccountName
 	fullSA := fmt.Sprintf("system:serviceaccount:%s:%s", deployment.Namespace, sa)
 	return fullSA, nil
-
 }
 
 func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
@@ -328,8 +447,13 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 	propPolicy := client.PropagationPolicy(metav1.DeletePropagationForeground)
 
-	if err := r.manifest.DeleteAll(propPolicy); err != nil {
-		log.Error(err, "failed to delete pipeline resources")
+	if err := r.addons.DeleteAll(propPolicy); err != nil {
+		log.Error(err, "failed to delete pipeline addons")
+		return reconcile.Result{}, err
+	}
+
+	if err := r.pipeline.DeleteAll(propPolicy); err != nil {
+		log.Error(err, "failed to delete pipeline core")
 		return reconcile.Result{}, err
 	}
 
@@ -398,16 +522,19 @@ func createCR(c client.Client) error {
 	return err
 }
 
-func isUpToDate(cfg *op.Config) bool {
+func stateCheck(cfg *op.Config, code op.InstallStatus) bool {
+	if !matchesUUID(cfg.Status.OperatorUUID) {
+		return false
+	}
 	c := cfg.Status.Conditions
 	if len(c) == 0 {
 		return false
 	}
-
-	latest := c[0]
-	return latest.Version == flag.TektonVersion &&
-		latest.Code == op.InstalledStatus &&
-		matchesUUID(cfg.Status.OperatorUUID)
+	latest := cfg.Status.Conditions[0]
+	if latest.Version != flag.TektonVersion {
+		return false
+	}
+	return latest.Code == code
 }
 
 func matchesUUID(target string) bool {

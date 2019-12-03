@@ -45,15 +45,35 @@ type ConfigCondition struct {
 type InstallStatus string
 
 const (
-	// InstalledStatus indicates that the pipeline resources are installed
-	InstalledStatus InstallStatus = "installed"
+	// InstallingPipeline indicates that the core pipeline resources
+	// are being installed
+	InstallingPipeline InstallStatus = "installing-pipeline"
 
-	// InstallingStatus indicates that the pipeline resources are being installed
-	InstallingStatus InstallStatus = "installing"
+	// AppliedPipeline indicates that the core pipeline resources
+	// have been applied on the cluster
+	AppliedPipeline InstallStatus = "applied-core-pipeline"
+
+	// WaitingPipelineValidation indicates that core pipeline deployments are being
+	// ensured to be running
+	WaitingPipelineValidation InstallStatus = "waiting-pipeline-validation"
+
+	// ValidatedPipeline indicates that core pipeline resources have been
+	// installed successfully
+	ValidatedPipeline InstallStatus = "validated-pipeline"
+
+	// InstallingAddons indicate that additional pipeline resources (triggers, default tasks)
+	// are being installed
+	InstallingAddons InstallStatus = "installing-addons"
+
+	// InstalledStatus indicates that all pipeline resources are installed successfully
+	InstalledStatus InstallStatus = "installed"
 
 	// ErrorStatus indicates that there was an error installing pipeline resources
 	// Check details field for additional details
 	ErrorStatus InstallStatus = "error"
+
+	// InstallingStatus indicates that the pipeline resources are being installed
+
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
