@@ -49,11 +49,16 @@ spec:
                 - version
                 type: object
               type: array
+            operatorUUID:
+              type: string
+              description: UUID of the operator that installed the pipeline
           type: object
   additionalPrinterColumns:
   - JSONPath: ".status.conditions[0].code"
     name: status
     type: string
+    description: status of pipeline installation
+
   version: v1alpha1
   versions:
   - name: v1alpha1

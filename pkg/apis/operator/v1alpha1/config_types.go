@@ -15,6 +15,10 @@ type ConfigSpec struct {
 // +k8s:openapi-gen=true
 type ConfigStatus struct {
 
+	// OperatorUUID is the  uuid (auto-generated) of the operator that
+	// installed the pipeline
+	OperatorUUID string `json:"operatorUUID,omitempty"`
+
 	// installation status sorted in reverse chronological order
 	Conditions []ConfigCondition `json:"conditions,omitempty"`
 }

@@ -1,6 +1,7 @@
 package flag
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/pflag"
@@ -23,7 +24,7 @@ const (
 
 	// Name of the trigger deployment
 	TriggerControllerName = "tekton-triggers-controller"
-	TriggerWebhookName = "tekton-triggers-webhook"
+	TriggerWebhookName    = "tekton-triggers-webhook"
 )
 
 var (
@@ -37,9 +38,11 @@ var (
 	TargetNamespace string
 	NoAutoInstall   bool
 	Recursive       bool
+	OperatorUUID    string
 )
 
 func init() {
+	OperatorUUID = os.Getenv("OPERATOR_UUID")
 	flagSet = pflag.NewFlagSet("operator", pflag.ExitOnError)
 	flagSet.StringVar(
 		&PipelineSA, "rbac-sa", DefaultSA,
