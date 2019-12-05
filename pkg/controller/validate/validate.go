@@ -9,21 +9,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func ignoreNotFound(err error) error {
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
 func Deployment(ctx context.Context, c client.Client, name, namespace string) (bool, error) {
-	dp := &v1.Deployment{}
+	dp := v1.Deployment{}
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
-	err := c.Get(ctx, key, dp)
+	err := c.Get(ctx, key, &dp)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
+		return false, ignoreNotFound(err)
 	}
-	if dp.Status.AvailableReplicas == *dp.Spec.Replicas {
-		return true, nil
-	}
-	return false, nil
+
+	expected := *dp.Spec.Replicas
+	actual := dp.Status.AvailableReplicas
+	return actual == expected, nil
 }
