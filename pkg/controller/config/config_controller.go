@@ -238,7 +238,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	}
 
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
-	return reconcile.Result{}, err
+	return reconcile.Result{Requeue: true}, err
 }
 
 func (r *ReconcileConfig) validateVersion(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
@@ -249,6 +249,7 @@ func (r *ReconcileConfig) validateVersion(req reconcile.Request, cfg *op.Config)
 	if !uptoDate {
 		return r.applyPipeline(req, cfg)
 	}
+	// NOTE: do not requeue
 	return reconcile.Result{}, nil
 }
 
@@ -289,7 +290,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	}
 
 	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
-	return reconcile.Result{}, err
+	return reconcile.Result{Requeue: true}, err
 }
 
 func transformManifest(cfg *op.Config, m *mf.Manifest) error {
@@ -347,7 +348,7 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 	}
 
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.ValidatedPipeline, Version: flag.TektonVersion})
-	return reconcile.Result{}, err
+	return reconcile.Result{Requeue: true}, err
 }
 
 func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.NamespacedName) (string, error) {
