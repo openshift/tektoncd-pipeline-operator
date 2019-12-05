@@ -62,9 +62,17 @@ const (
 	// installed successfully
 	ValidatedPipeline InstallStatus = "validated-pipeline"
 
-	// ErrorStatus indicates that there was an error installing pipeline resources
+	// PipelineError indicates that there was an error installing pipeline resources
 	// Check details field for additional details
-	ErrorStatus InstallStatus = "error"
+	PipelineError InstallStatus = "error-pipeline"
+
+	// InvalidResource indicates that the resource specification is invalid
+	// Check details field for additional details
+	InvalidResource InstallStatus = "invalid-resource"
+
+	// AddonsError indicates that there was an error installing addons
+	// Check details field for additional details
+	AddonsError InstallStatus = "error-addons"
 
 	// InstalledStatus indicates that all pipeline resources are installed successfully
 	InstalledStatus InstallStatus = "installed"

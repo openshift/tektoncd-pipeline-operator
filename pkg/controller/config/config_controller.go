@@ -172,12 +172,12 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 	}
 
 	switch cfg.InstallStatus() {
-	case op.EmptyStatus, op.ErrorStatus:
+	case op.EmptyStatus, op.PipelineError:
 		return r.applyPipeline(req, cfg)
-
 	case op.AppliedPipeline:
 		return r.validatePipeline(req, cfg)
-	case op.ValidatedPipeline:
+
+	case op.ValidatedPipeline, op.AddonsError:
 		return r.applyAddons(req, cfg)
 	case op.InstalledStatus:
 		return r.validateVersion(req, cfg)
@@ -191,7 +191,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.PipelineError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -201,19 +201,12 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		log.Error(err, "failed to apply release.yaml")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.PipelineError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	log.Info("successfully applied all pipeline resources")
-
-	// NOTE: manifest when updating (not installing) already installed resources
-	// modifies the `cfg` but does not refersh it, hence refresh manually
-	if err := r.refreshCR(cfg); err != nil {
-		log.Error(err, "status update failed to refresh object")
-		return reconcile.Result{}, err
-	}
 
 	// add pipeline-controller to scc; scc privileged needs to be updated and
 	// can't be just oc applied
@@ -222,7 +215,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	if err != nil {
 		log.Error(err, "failed to find controller service account")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.PipelineError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -231,7 +224,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	if err := r.addPrivilegedSCC(ctrlSA); err != nil {
 		log.Error(err, "failed to update scc")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.PipelineError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -265,7 +258,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.AddonsError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -275,19 +268,12 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		log.Error(err, "failed to apply addons yaml manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.AddonsError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	log.Info("successfully applied all resources")
-
-	// NOTE: manifest when updating (not installing) already installed resources
-	// modifies the `cfg` but does not refersh it, hence refresh manually
-	if err := r.refreshCR(cfg); err != nil {
-		log.Error(err, "status update failed to refresh object")
-		return reconcile.Result{}, err
-	}
 
 	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
@@ -314,7 +300,7 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 	if err != nil {
 		log.Error(err, "failed to validate pipeline deployment")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.PipelineError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -327,7 +313,7 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 	if err != nil {
 		log.Error(err, "failed to validate pipeline deployment")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.PipelineError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -338,13 +324,6 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 			Requeue:      true,
 			RequeueAfter: 5 * time.Second,
 		}, nil
-	}
-
-	// NOTE: manifest when updating (not installing) already installed resources
-	// modifies the `cfg` but does not refersh it, hence refresh manually
-	if err := r.refreshCR(cfg); err != nil {
-		log.Error(err, "status update failed to refresh object")
-		return reconcile.Result{}, err
 	}
 
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.ValidatedPipeline, Version: flag.TektonVersion})
@@ -464,7 +443,7 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 func (r *ReconcileConfig) markInvalidResource(cfg *op.Config) {
 	err := r.updateStatus(cfg,
 		op.ConfigCondition{
-			Code:    op.ErrorStatus,
+			Code:    op.InvalidResource,
 			Details: "metadata.name must be " + flag.ResourceWatched,
 			Version: "unknown"})
 	if err != nil {
