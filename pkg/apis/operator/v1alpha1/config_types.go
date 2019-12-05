@@ -45,15 +45,37 @@ type ConfigCondition struct {
 type InstallStatus string
 
 const (
-	// InstalledStatus indicates that the pipeline resources are installed
-	InstalledStatus InstallStatus = "installed"
 
-	// InstallingStatus indicates that the pipeline resources are being installed
-	InstallingStatus InstallStatus = "installing"
+	// EmptyStatus indicates that the core pipeline resources have not even been
+	// applied
+	EmptyStatus InstallStatus = "empty"
 
-	// ErrorStatus indicates that there was an error installing pipeline resources
+	// InstallingPipeline indicates that the core pipeline resources
+	// are being installed
+	//InstallingPipeline InstallStatus = "installing-pipeline"
+
+	// AppliedPipeline indicates that the core pipeline resources
+	// have been applied on the cluster
+	AppliedPipeline InstallStatus = "applied-pipeline"
+
+	// ValidatedPipeline indicates that core pipeline resources have been
+	// installed successfully
+	ValidatedPipeline InstallStatus = "validated-pipeline"
+
+	// PipelineError indicates that there was an error installing pipeline resources
 	// Check details field for additional details
-	ErrorStatus InstallStatus = "error"
+	PipelineError InstallStatus = "error-pipeline"
+
+	// InvalidResource indicates that the resource specification is invalid
+	// Check details field for additional details
+	InvalidResource InstallStatus = "invalid-resource"
+
+	// AddonsError indicates that there was an error installing addons
+	// Check details field for additional details
+	AddonsError InstallStatus = "error-addons"
+
+	// InstalledStatus indicates that all pipeline resources are installed successfully
+	InstalledStatus InstallStatus = "installed"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -81,4 +103,17 @@ type ConfigList struct {
 
 func init() {
 	SchemeBuilder.Register(&Config{}, &ConfigList{})
+}
+
+func (c *Config) InstallStatus() InstallStatus {
+	con := c.Status.Conditions
+	if len(con) == 0 {
+		return EmptyStatus
+	}
+	return con[0].Code
+}
+
+func (c *Config) HasInstalledVersion(target string) bool {
+	return c.InstallStatus() == InstalledStatus &&
+		c.Status.Conditions[0].Version == target
 }

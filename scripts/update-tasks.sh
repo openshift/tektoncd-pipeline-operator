@@ -147,7 +147,7 @@ main() {
 
   mkdir -p "$dest_dir" || die 1 "failed to create ${dest_dir}"
 
-  dest_dir="$dest_dir/02-clustertasks"
+  dest_dir="$dest_dir/addons/clustertasks"
   mkdir -p "$dest_dir" || die 1 "failed to create catalog dir ${catalog_dir}"
 
   get_tasks "$dest_dir" "$version"  \
