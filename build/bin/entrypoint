@@ -9,6 +9,4 @@ if ! whoami &>/dev/null; then
   fi
 fi
 
-export OPERATOR_UUID=$(cat /deploy/uuid)
-
 exec ${OPERATOR} $@
