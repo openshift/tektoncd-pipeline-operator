@@ -1,8 +1,9 @@
 package flag
 
 import (
-	"os"
+	"io/ioutil"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/pflag"
 )
@@ -25,6 +26,8 @@ const (
 	// Name of the trigger deployment
 	TriggerControllerName = "tekton-triggers-controller"
 	TriggerWebhookName    = "tekton-triggers-webhook"
+
+	uuidPath = "deploy/uuid"
 )
 
 var (
@@ -42,7 +45,12 @@ var (
 )
 
 func init() {
-	OperatorUUID = os.Getenv("OPERATOR_UUID")
+	// if the uuid file exists then initialize OperatorUUID else
+	// keep the default 0 value ""
+	if uuid, err := ioutil.ReadFile(uuidPath); err == nil {
+		OperatorUUID = strings.TrimSuffix(string(uuid), "\n")
+	}
+
 	flagSet = pflag.NewFlagSet("operator", pflag.ExitOnError)
 	flagSet.StringVar(
 		&PipelineSA, "rbac-sa", DefaultSA,
