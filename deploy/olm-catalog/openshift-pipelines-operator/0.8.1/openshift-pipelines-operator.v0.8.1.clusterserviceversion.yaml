@@ -378,5 +378,7 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  replaces: openshift-pipelines-operator.v0.8.0
+  replaces: openshift-pipelines-operator.v0.7.0
+  skips:
+  - openshift-pipelines-operator.v0.8.0
   version: 0.8.1
