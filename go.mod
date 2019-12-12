@@ -5,7 +5,7 @@ require (
 	github.com/jcrossley3/manifestival v0.0.0-20190621184852-78b6b04ae6ff
 	github.com/openshift/api v3.9.1-0.20190911180052-9f80b7806f58+incompatible
 	github.com/openshift/client-go v0.0.0-20190813201236-5a5508328169
-	github.com/operator-framework/operator-sdk v0.10.1-0.20191002141136-1a5772eb7185
+	github.com/operator-framework/operator-sdk v0.10.1
 	github.com/prometheus/common v0.2.0
 	github.com/spf13/pflag v1.0.3
 	k8s.io/api v0.0.0-20190612125737-db0771252981
@@ -32,7 +32,5 @@ replace (
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.1.12
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.1.11-0.20190411181648-9d55346c2bde
 )
-
-replace github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.9.0
 
 go 1.13
