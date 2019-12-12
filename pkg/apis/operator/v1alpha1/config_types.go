@@ -58,13 +58,17 @@ const (
 	// have been applied on the cluster
 	AppliedPipeline InstallStatus = "applied-pipeline"
 
+	// PipelineError indicates that there was an error installing pipeline resources
+	// Check details field for additional details
+	PipelineApplyError InstallStatus = "error-pipeline-apply"
+
 	// ValidatedPipeline indicates that core pipeline resources have been
 	// installed successfully
 	ValidatedPipeline InstallStatus = "validated-pipeline"
 
-	// PipelineError indicates that there was an error installing pipeline resources
+	// PipelineVali indicates that there was an error installing pipeline resources
 	// Check details field for additional details
-	PipelineError InstallStatus = "error-pipeline"
+	PipelineValidateError InstallStatus = "error-pipeline-validate"
 
 	// InvalidResource indicates that the resource specification is invalid
 	// Check details field for additional details
