@@ -12,9 +12,9 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
-	"github.com/tektoncd/operator/pkg/controller/transform"
-	"github.com/tektoncd/operator/pkg/controller/validate"
 	"github.com/tektoncd/operator/pkg/flag"
+	"github.com/tektoncd/operator/pkg/utils/transform"
+	"github.com/tektoncd/operator/pkg/utils/validate"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,10 +171,11 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
+	log.Info("reconciling at status: " + string(cfg.InstallStatus()))
 	switch cfg.InstallStatus() {
-	case op.EmptyStatus, op.PipelineError:
+	case op.EmptyStatus, op.PipelineApplyError:
 		return r.applyPipeline(req, cfg)
-	case op.AppliedPipeline:
+	case op.AppliedPipeline, op.PipelineValidateError:
 		return r.validatePipeline(req, cfg)
 
 	case op.ValidatedPipeline, op.AddonsError:
@@ -191,7 +192,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineError,
+			Code:    op.PipelineApplyError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -201,7 +202,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		log.Error(err, "failed to apply release.yaml")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineError,
+			Code:    op.PipelineApplyError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -215,7 +216,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	if err != nil {
 		log.Error(err, "failed to find controller service account")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineError,
+			Code:    op.PipelineApplyError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
@@ -224,11 +225,12 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	if err := r.addPrivilegedSCC(ctrlSA); err != nil {
 		log.Error(err, "failed to update scc")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineError,
+			Code:    op.PipelineApplyError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
+	log.Info("successfully updated SCC privileged")
 
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
@@ -292,42 +294,72 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 	log := requestLogger(req, "validate-pipeline")
 	log.Info("validating pipelines")
 
+	running, err := r.validateDeployments(req, cfg)
+	if err != nil {
+		log.Error(err, "failed to validate pipeline controller deployments")
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.PipelineValidateError,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	if !running {
+		return reconcile.Result{Requeue: true, RequeueAfter: 15 * time.Second}, nil
+	}
+
+	found, err := validate.Webhook(context.TODO(), r.client, flag.PipelineWebhookConfiguration)
+	if err != nil {
+		log.Error(err, "failed to validate mutating webhook")
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.PipelineValidateError,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{RequeueAfter: 15 * time.Second}, err
+	}
+	if !found {
+		return reconcile.Result{Requeue: true, RequeueAfter: 15 * time.Second}, nil
+	}
+
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.ValidatedPipeline, Version: flag.TektonVersion})
+	if err != nil {
+		return reconcile.Result{}, err
+
+	}
+	// requeue with delay for services to be up and running
+	return reconcile.Result{Requeue: true, RequeueAfter: 15 * time.Second}, nil
+}
+
+func (r *ReconcileConfig) validateDeployments(req reconcile.Request, cfg *op.Config) (bool, error) {
+	log := requestLogger(req, "validate-pipeline").WithName("deployments")
+	log.Info("validating pipelines controller")
+
 	controller, err := validate.Deployment(context.TODO(),
 		r.client,
 		flag.PipelineControllerName,
 		cfg.Spec.TargetNamespace,
 	)
 	if err != nil {
-		log.Error(err, "failed to validate pipeline deployment")
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
+		log.Error(err, "validating controller deployment error")
+		return false, err
 	}
+
+	log.Info("validating webhook")
 	webhook, err := validate.Deployment(context.TODO(),
 		r.client,
 		flag.PipelineWebhookName,
 		cfg.Spec.TargetNamespace,
 	)
 	if err != nil {
-		log.Error(err, "failed to validate pipeline deployment")
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
-	}
-	if !controller || !webhook {
-		log.Info("pipeline controller or/and pipeline webhook is not up")
-		return reconcile.Result{
-			Requeue:      true,
-			RequeueAfter: 5 * time.Second,
-		}, nil
+		log.Error(err, "validating webhook deployment error")
+		return false, err
 	}
 
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.ValidatedPipeline, Version: flag.TektonVersion})
-	return reconcile.Result{Requeue: true}, err
+	if !controller || !webhook {
+		log.Info("controller or webhook not yet running")
+	}
+
+	return controller && webhook, nil
 }
 
 func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.NamespacedName) (string, error) {

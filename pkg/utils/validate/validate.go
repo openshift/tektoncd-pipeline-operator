@@ -3,9 +3,9 @@ package validate
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
+	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -30,4 +30,11 @@ func Deployment(ctx context.Context, c client.Client, name, namespace string) (b
 	expected := *dp.Spec.Replicas
 	actual := dp.Status.AvailableReplicas
 	return actual == expected, nil
+}
+
+func Webhook(ctx context.Context, c client.Client, name string) (bool, error) {
+	webhook := admissionregistration.MutatingWebhookConfiguration{}
+	key := client.ObjectKey{Name: name}
+	err := c.Get(ctx, key, &webhook)
+	return err == nil, ignoreNotFound(err)
 }
