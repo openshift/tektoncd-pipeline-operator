@@ -16,7 +16,7 @@ spec:
       serviceAccountName: openshift-pipelines-operator
       containers:
       - name: openshift-pipelines-operator
-        image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.8.1
+        image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.8.2
         command:
         - openshift-pipelines-operator
         - --recursive
