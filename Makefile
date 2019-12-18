@@ -57,3 +57,86 @@ osdk-image:
 	$(Q)operator-sdk build \
 	--go-build-args "-o build/_output/bin/openshift-pipelines-operator" \
 	$(IMAGE_TAG)
+
+##########------------------------------------------------------------##########
+##########- Operator Release------------------------------------------##########
+##########------------------------------------------------------------##########
+
+.PHONY: opo-up-local
+opo-test-e2e-up-local:
+	operator-sdk test local ./test/e2e/ --up-local --namespace openshift-operators  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
+
+.PHONY: opo-test-e2e
+opo-test-e2e:
+	operator-sdk test local ./test/e2e/ --namespace openshift-operators  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
+
+# make targets for release
+.PHONY: opo-clean
+opo-clean:
+	rm -rf build/_output
+
+.PHONY: opo-image
+opo-image: opo-clean
+ifndef VERSION
+	@echo VERSION not set
+	@exit 1
+endif
+	operator-sdk build quay.io/openshift-pipeline/openshift-pipelines-operator:v${VERSION}
+
+.PHONY: opo-image-push
+opo-image-push: opo-image
+ifndef VERSION
+	@echo VERSION not set
+	@exit 1
+endif
+	docker push quay.io/openshift-pipeline/openshift-pipelines-operator:v${VERSION}
+
+.PHONY: opo-build-push-update
+opo-build-push-update: opo-image
+ifndef VERSION
+	@echo VERSION not set
+	@exit 1
+endif
+	sed -i 's/image:.*/image: quay.io\/openshift-pipeline\/openshift-pipelines-operator:'v${VERSION}'/' deploy/operator.yaml
+
+.PHONY: opo-new-csv
+opo-new-csv:
+ifndef VERSION
+	@echo VERSION not set
+	@exit 1
+endif
+ifndef FROM_VERSION
+	@echo FROM_VERSION not set
+	@exit 1
+endif
+ifndef CHANNEL
+	@echo CHANNEL not set
+	@exit 1
+endif
+	operator-sdk olm-catalog gen-csv \
+      --csv-channel dev-preview \
+      --csv-version ${VERSION} \
+      --from-version ${FROM_VERSION} \
+      --operator-name  openshift-pipelines-operator \
+      --update-crds
+
+.PHONY: opo-push-quay-app
+opo-push-quay-app:
+ifndef VERSION
+	@echo VERSION not set
+	@exit 1
+endif
+ifndef QUAY_NAMESPACE
+	@echo QUAY_NAMESPACE not set
+	@exit 1
+endif
+ifndef TOKEN
+	@echo TOKEN not set
+	@exit 1
+endif
+	operator-courier --verbose push  \
+		./deploy/olm-catalog/openshift-pipelines-operator \
+		${QUAY_NAMESPACE} \
+		openshift-pipelines-operator \
+		${VERSION}  \
+		"${TOKEN}"
