@@ -21,11 +21,7 @@ VENDOR_BUILD ?=
 
 .PHONY: build
 ## Build the operator
-build_prod: ./out/operator
-
-.PHONY: build
-## Build the operator
-build: ./out/operator ./out/build/bin manifests
+build: ./out/operator
 
 .PHONY: clean
 clean:
