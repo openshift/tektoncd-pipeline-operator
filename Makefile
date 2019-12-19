@@ -15,6 +15,13 @@ include ./make/test.mk
 include ./make/docker.mk
 include ./make/csv.mk
 
+BUILD_DIR ?= ./out/
+BUILD_OUT_FILE ?= operator
+VENDOR_BUILD ?= 
+
+.PHONY: build
+## Build the operator
+build_prod: ./out/operator
 
 .PHONY: build
 ## Build the operator
@@ -35,7 +42,7 @@ clean:
 	#$(Q)operator-sdk generate k8s
 	$(Q)go version
 	$(Q)CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
-		go build ${V_FLAG} -o ./out/operator \
+		go build ${V_FLAG} ${VENDOR_BUILD} -o ${BUILD_DIR}${BUILD_OUT_FILE} \
 		./cmd/manager
 
 ./out/build/bin:
