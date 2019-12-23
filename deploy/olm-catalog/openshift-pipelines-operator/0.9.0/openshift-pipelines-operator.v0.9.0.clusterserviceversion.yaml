@@ -10,9 +10,9 @@ metadata:
     createdAt: "2019-03-15T19:44:21Z"
     description: OpenShift Pipelines is a cloud-native CI/CD solution for building
       pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
+    operators.operatorframework.io/internal-objects: '["config.operator.tekton.dev"]'
     repository: https://github.com/openshift/tektoncd-pipeline-operator
     support: Red Hat, Inc.
-    operators.operatorframework.io/internal-objects: '["config.operator.tekton.dev"]'
   name: openshift-pipelines-operator.v0.9.0
   namespace: placeholder
 spec:
@@ -319,6 +319,12 @@ spec:
           - '*'
           verbs:
           - '*'
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleyamlsamples
+          verbs:
+          - '*'
         serviceAccountName: openshift-pipelines-operator
       deployments:
       - name: openshift-pipelines-operator
@@ -348,7 +354,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: openshift-pipelines-operator
-                image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.8.1
+                image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.9.0
                 imagePullPolicy: Always
                 name: openshift-pipelines-operator
                 resources: {}
