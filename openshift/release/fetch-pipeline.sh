@@ -11,10 +11,12 @@
 MAX_SHIFT=1
 NIGHTLY_RELEASE="https://raw.githubusercontent.com/openshift/tektoncd-pipeline/release-next/openshift/release/tektoncd-pipeline-nightly.yaml"
 STABLE_RELEASE_URL='https://raw.githubusercontent.com/openshift/tektoncd-pipeline/release-${version}/openshift/release/tektoncd-pipeline-${version}.yaml'
+PAYLOAD_PIPELINE_VERSION="release-next"
 
 function get_version {
     local shift=${1} # 0 is latest, increase is the version before etc...
     local version=$(curl -s https://api.github.com/repos/tektoncd/pipeline/releases | python -c "import sys, json;x=json.load(sys.stdin);print(x[${shift}]['tag_name'])")
+    PAYLOAD_PIPELINE_VERSION=${version}
     echo $(eval echo ${STABLE_RELEASE_URL})
 }
 
@@ -37,6 +39,7 @@ function geturl() {
         done
     else
         local version=${1}
+        PAYLOAD_PIPELINE_VERSION=${1}
         versionyaml=$(eval echo ${STABLE_RELEASE_URL})
         echo ${versionyaml}
         return 0
@@ -51,3 +54,8 @@ echo Pipeline Payload URL: ${URL}
 
 [[ -d ${2}/pipelines ]] || mkdir -p ${2}/pipelines
 curl -Ls ${URL} -o ${2}/pipelines/release.yaml
+
+PROJECT_ROOT=${2}/../../..
+
+sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'${PAYLOAD_PIPELINE_VERSION}'"/' ${PROJECT_ROOT}/pkg/flag/flag.go
+go fmt ${PROJECT_ROOT}/pkg/flag/flag.go
