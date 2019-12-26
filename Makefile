@@ -71,10 +71,38 @@ osdk-image:
 
 .PHONY: opo-test-clean
 opo-test-clean:
-	-oc delete -f deploy/
-	-oc delete -f deploy/crds/
+	-oc delete -f deploy/ --ignore-not-found
+	-oc delete -f deploy/crds/ --ignore-not-found
 
-.PHONY: opo-up-local
+.PHONY: opo-set-pipeline-payload-version
+opo-set-pipeline-payload-version:
+ifndef PAYLOAD_VERSION
+	@echo PAYLOAD_VERSION not set
+	@exit 1
+endif
+	sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'${PAYLOAD_VERSION}'"/' ./pkg/flag/flag.go
+	go fmt ./pkg/flag/flag.go
+
+.PHONY: opo-cluster-tasks
+opo-cluster-tasks:
+ifndef PAYLOAD_VERSION
+	@echo PAYLOAD_VERSION not set
+	@echo example: make opo-cluster-tasks CATALOG_VERSION=release-v0.9 PAYLOAD_VERSION=v0.9.2 CATALOG_VERSION_SUFFIX=v0.9.0
+	@exit 1
+endif
+ifndef CATALOG_VERSION
+	@echo CATALOG_VERSION not set
+	@echo example: make opo-cluster-tasks CATALOG_VERSION=release-v0.9 PAYLOAD_VERSION=v0.9.2 CATALOG_VERSION_SUFFIX=v0.9.0
+	@exit 1
+endif
+ifndef CATALOG_VERSION_SUFFIX
+	@echo CATALOG_VERSION_SUFFIX not set
+	@echo example: make opo-cluster-tasks CATALOG_VERSION=release-v0.9 PAYLOAD_VERSION=v0.9.2 CATALOG_VERSION_SUFFIX=v0.9.0
+	@exit 1
+endif
+	./scripts/update-tasks.sh ${CATALOG_VERSION} deploy/resources/${PAYLOAD_VERSION} ${CATALOG_VERSION_SUFFIX}
+
+.PHONY: opo-test-e2e-up-local
 opo-test-e2e-up-local: opo-test-clean
 	operator-sdk test local ./test/e2e/ --up-local --namespace openshift-pipelines  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
 

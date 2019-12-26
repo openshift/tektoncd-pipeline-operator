@@ -3,21 +3,32 @@
 1. Sync latest master
 1. new branch
 1. Sync the downstream pipeline repo
-1. Checkout release branch
+1. Checkout release branch  
     ```
     git checkout -b release-v0.9.0
     ```
 1. Copy the release yaml from the pipelines repo to operator
    deploy/resources/<openshift-pipelines version>
-1. update operator version pkg/flag/flag.go
+1. update operator version pkg/flag/flag.go (if the payload version has changed)  
+    ```
+    make opo-set-pipeline-payload-version PAYLOAD_VERSION=v0.9.2
+    ```
+1. add latest clustertasks
+    ```
+    make opo-cluster-tasks CATALOG_VERSION=release-v0.9 PAYLOAD_VERSION=v0.9.2 CATALOG_VERSION_SUFFIX=v0.9.0
+    ```
+1. add latest triggers, tasksnippets, pipeline samples etc (if there is an updated version available)
 1. test the operator using `up local`
     ```
     make opo-test-e2e-up-local
     ```
 1. Build operator image and test operator deployment
-    build image, push image and update deployment manifest
+    build image, push image and update deployment manifest  
+    (Todo: move this part to openshift-ci)  
+    **make sure the version number is set carefully**  
+    **using versions of already published operator will overwrite the published image**
     ```
-    make opo-build-push-update VERSION=0.9.0
+    make opo-build-push-update VERSION=<n.n.n>
     ```
     make sure the new image has been updated in deploy/operator.yaml `image: `
     test operator deployment
@@ -81,7 +92,7 @@
     operator-courier repo. see [Push to quay.io](https://github.com/operator-framework/community-operators/blob/master/docs/testing-operators.md#push-to-quayio)
 
     ```
-    make opo-push-quay-app VERSION=0.9.2 TOKEN=$TOKEN QUAY_NAMESPACE=nikhilthomas
+    make opo-push-quay-app VERSION=<n.n.n> TOKEN=$TOKEN QUAY_NAMESPACE=nikhilthomas
     ```
     **NOTE** : special characters in password created issues when courier tried to
     push the app bundle.
