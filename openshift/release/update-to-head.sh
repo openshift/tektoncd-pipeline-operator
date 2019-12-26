@@ -46,6 +46,7 @@ for d in $(ls ${PAYLOAD_ROOT}/${LATEST_RELEASE}); do
 done
 
 git add deploy/resources
+git add  pkg/flag/flag.go
 git commit -m ":Add payload: pipelines,clustertasks,triggers,consolesampleyamls"
 git push -f openshift release-next
 
