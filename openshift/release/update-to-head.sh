@@ -15,8 +15,8 @@ PAYLOAD_ROOT=${PROJECT_ROOT}/deploy/resources
 # as there is no upstream repository for this yet.
 # after moving openshift-pipelines-operator development to https://github.com/openshift/tektoncd-operator
 # the release-next branch should be synced from upstream/master (upstream=tektoncd/operator)
-git fetch openshift master
-git checkout openshift/master -B ${BRANCH_NAME}
+#git fetch openshift master
+#git checkout openshift/master -B ${BRANCH_NAME}
 
 #create payload dir (path where pipeline, addons/triggers, addons/clustertasks are copied)
 PAYLOAD_PATH=${PAYLOAD_ROOT}/${VERSION}
