@@ -25,37 +25,23 @@ function tryurl {
 }
 
 function geturl() {
-    if [[ ${1} = "release-next" ]];then
-         if tryurl ${NIGHTLY_RELEASE};then
-             echo ${NIGHTLY_RELEASE}
-             return 0
-         fi
-        for shifted in `seq 0 ${MAX_SHIFT}`;do
-            versionyaml=$(get_version ${shifted})
-            if tryurl ${versionyaml};then
-                echo ${versionyaml}
-                return 0
-            fi
-        done
-    else
-        local version=${1}
-        PAYLOAD_PIPELINE_VERSION=${1}
-        versionyaml=$(eval echo ${STABLE_RELEASE_URL})
-        echo ${versionyaml}
-        return 0
+    if tryurl ${NIGHTLY_RELEASE};then
+         echo ${NIGHTLY_RELEASE}
+         return 0
     fi
-
+    for shifted in `seq 0 ${MAX_SHIFT}`;do
+        versionyaml=$(get_version ${shifted})
+        if tryurl ${versionyaml};then
+            echo ${versionyaml}
+            return 0
+        fi
+    done
     echo \n"No working Pipeline payload url found"\n
     exit 1
 }
 
-URL=$(geturl $1)
+URL=$(geturl)
 echo Pipeline Payload URL: ${URL}
 
-[[ -d ${2}/pipelines ]] || mkdir -p ${2}/pipelines
-curl -Ls ${URL} -o ${2}/pipelines/release.yaml
-
-PROJECT_ROOT=${2}/../../..
-
-sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'${PAYLOAD_PIPELINE_VERSION}'"/' ${PROJECT_ROOT}/pkg/flag/flag.go
-go fmt ${PROJECT_ROOT}/pkg/flag/flag.go
+[[ -d ${1}/pipelines ]] || mkdir -p ${1}/pipelines
+curl -Ls ${URL} -o ${1}/pipelines/release.yaml
