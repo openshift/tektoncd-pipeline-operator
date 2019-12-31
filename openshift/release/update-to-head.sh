@@ -4,12 +4,8 @@
 # Usage: update-to-head.sh
 
 set -e
-VERSION=$1
 BRANCH_NAME=release-next
-if [[ -n $VERSION ]]; then
-  BRANCH_NAME=release-${VERSION}
-fi
-VERSION=${VERSION:-release-next}
+VERSION=release-next
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=`basename ${PROJECT_ROOT}`
@@ -28,7 +24,10 @@ PAYLOAD_PATH=${PAYLOAD_ROOT}/${VERSION}
 mkdir -p ${PAYLOAD_PATH}
 
 #get pipeline manifest
-${PROJECT_ROOT}/openshift/release/fetch-pipeline.sh ${VERSION} ${PAYLOAD_PATH}
+${PROJECT_ROOT}/openshift/release/fetch-pipeline.sh ${PAYLOAD_PATH}
+
+sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'${VERSION}'"/' ${PROJECT_ROOT}/pkg/flag/flag.go
+go fmt ${PROJECT_ROOT}/pkg/flag/flag.go
 
 # copy rest of the payload from the previous release
 # TODO get triggers from nightly or latest release
