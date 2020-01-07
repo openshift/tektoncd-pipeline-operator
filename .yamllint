@@ -1,3 +1,7 @@
+ignore: |
+  /vendor
+  test/**/*-chart/**
+
 rules:
   braces: enable
   brackets: enable
@@ -10,13 +14,11 @@ rules:
   document-end: disable
   document-start: disable
   empty-lines: enable
-  empty-values:
-    level: warning
+  empty-values: enable
   hyphens: enable
   key-duplicates: enable
   key-ordering: disable
-  line-length:
-    level: warning
+  line-length: disable
   new-line-at-end-of-file: disable
   new-lines: enable
   octal-values: enable
