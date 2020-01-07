@@ -1,5 +1,8 @@
 # Tektoncd-operator
 
+## FAQ
+[click here](/docs/faq.md)
+
 ## Dev env
 
 ### Checkout your fork
