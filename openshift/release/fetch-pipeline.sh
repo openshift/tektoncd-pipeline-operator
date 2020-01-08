@@ -25,10 +25,15 @@ function tryurl {
 }
 
 function geturl() {
-    if tryurl ${NIGHTLY_RELEASE};then
-         echo ${NIGHTLY_RELEASE}
-         return 0
-    fi
+
+    for (( i = 0; i < 10; i++ )); do
+      if tryurl ${NIGHTLY_RELEASE};then
+          echo ${NIGHTLY_RELEASE}
+          return 0
+      fi
+      sleep 30s
+    done
+
     for shifted in `seq 0 ${MAX_SHIFT}`;do
         versionyaml=$(get_version ${shifted})
         if tryurl ${versionyaml};then
