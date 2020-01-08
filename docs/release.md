@@ -117,6 +117,11 @@
     See existing package in community operators for reference
     
     **Note:-** if we are making a release to move an operator version from canary channel to dev-preview, additional steps are needed. Please go through [CSV: `upgrade-path`, `replaces`, `skips`](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/how-to-update-operators.md#subscribing-to-upgrades) before proceeding.
+    Also use this Pull Request to Operator-Framework/community-operators as reference: [https://github.com/operator-framework/community-operators/pull/969](https://github.com/operator-framework/community-operators/pull/969)
+
+    The context of the above pull request is as follows:
+    - dev-preview channel was on v0.7.0. It is being chained to update to v0.8.1 (skipping intermediate versions v0.8.0, v0.8.1 on canary channel)
+    - canary chnannel was on v0.8.1 which is to be updated to v0.8.2
 
 1. verify operator bundle (deploy/olm-catalog/openshift-pipelines-operator directory)
     ```
@@ -125,13 +130,15 @@
 
 ## Test Operator Bundle on OLM
 
-1. operator-courier use that to push the app bundle
-
-    NOTE:
+1. operator app bundle (deploy/olm-catalog/openshift-pipelines-operator directory tree) has to be pushed to 
+    quay application registry (quay.io - applications tab) using operator-courier 
     
-    You can obtain quay token by running `./scripts/get-quay-token` in
+    **install operator-courier:** [https://github.com/operator-framework/operator-courier#installation](https://github.com/operator-framework/operator-courier#installation)
+
+    NOTE: You can obtain quay token by running [./scripts/get-quay-token](https://github.com/operator-framework/operator-courier/blob/master/scripts/get-quay-token) in
     operator-courier repo. see [Push to quay.io](https://github.com/operator-framework/community-operators/blob/master/docs/testing-operators.md#push-to-quayio)
 
+    After getting Quay Token push the operator app bundle (deploy/olm-catalog/openshift-pipelines-operator directory tree) to Quay application registry.
     ```
     make opo-push-quay-app VERSION=<n.n.n> TOKEN=$TOKEN MY_QUAY_NAMESPACE=<your quay username>
     ```
