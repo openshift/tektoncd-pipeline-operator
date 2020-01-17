@@ -45,6 +45,8 @@ spec:
           taskRef:
             name: openshift-client
             kind: ClusterTask
+          runAfter:
+            - build
           params:
             - name: ARGS
               value:
