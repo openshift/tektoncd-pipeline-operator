@@ -35,3 +35,16 @@ func InjectDefaultSA(defaultSA string) mf.Transformer {
 		return nil
 	}
 }
+
+func InjectNamespaceConditional(preserveNamespace string, targetNamespace string) mf.Transformer {
+	tf := mf.InjectNamespace(targetNamespace)
+	return func(u *unstructured.Unstructured) error {
+		annotations := u.GetAnnotations()
+		val, ok := annotations[preserveNamespace]
+		if ok && val == "true" {
+			return nil
+		}
+
+		return tf(u)
+	}
+}

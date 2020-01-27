@@ -322,7 +322,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 func transformManifest(cfg *op.Config, m *mf.Manifest) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
-		mf.InjectNamespace(cfg.Spec.TargetNamespace),
+		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
 	}
 	return m.Transform(tfs...)

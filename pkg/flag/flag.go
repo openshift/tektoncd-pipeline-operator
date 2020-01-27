@@ -28,6 +28,8 @@ const (
 	TriggerControllerName = "tekton-triggers-controller"
 	TriggerWebhookName    = "tekton-triggers-webhook"
 
+	AnnotationPreserveNS = "operator.tekton.dev/preserve-namespace"
+
 	uuidPath = "deploy/uuid"
 )
 
