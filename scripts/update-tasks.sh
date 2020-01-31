@@ -55,6 +55,9 @@ declare -r OPENSHIFT_CATALOG_TASKS=(
   s2i-java-11
   s2i-python-3
   s2i-nodejs
+  s2i-perl
+  s2i-php
+  s2i-ruby
 )
 
 
