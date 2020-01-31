@@ -10,7 +10,7 @@ ifndef PIPELINE_VERSION
 	@echo PIPELINE_VERSION not set
 	@exit 1
 endif
-	[[ -d "v${PIPELINE_PATH}" ]] | mkdir -p v${PIPELINE_PATH}
+	[[ -d "${PIPELINE_PATH}" ]] || mkdir -p ${PIPELINE_PATH}
 	curl -s -o ${PIPELINE_PATH}/release.yaml ${STABLE_RELEASE_URL}
 	sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'v${PIPELINE_VERSION}'"/' pkg/flag/flag.go
 	go fmt pkg/flag/flag.go
@@ -91,7 +91,7 @@ ifndef VERSION
 	@echo VERSION not set
 	@exit 1
 endif
-	sed -i 's/image:.*/image: quay.io\/openshift-pipeline\/'${QUAY_NAMESPACE}:v${VERSION}'/' deploy/operator.yaml
+	sed -i 's/image:.*/image: quay.io\/'${QUAY_NAMESPACE}'\/openshift-pipelines-operator:v'${VERSION}'/' deploy/operator.yaml
 
 .PHONY: opo-new-csv
 opo-new-csv:

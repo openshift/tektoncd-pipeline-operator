@@ -65,7 +65,7 @@
 
 1. update image reference in deploy/operator.yaml (deployment manifest)
     ```
-    make opo-deploy-yaml-update  VERSION=<n.n.n> QUAY_NAMESPACE=<Quay namespace>
+    make opo-operator-yaml-update  VERSION=<n.n.n> QUAY_NAMESPACE=<Quay namespace>
     ```
 1. and test operator deployment
     make sure the new image has been updated in deploy/operator.yaml `image: `
