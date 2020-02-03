@@ -176,6 +176,9 @@ endef
 
 .PHONY: opo-operator-source
 opo-operator-source: opo-olm-clean
+	@echo ::::: operator soruce manifest :::::
+	@echo "$$operatorsource"
+	@echo ::::::::::::::::::::::::::::::
 	@echo "$$operatorsource" | oc apply -f -
 
 export define subscription
@@ -193,6 +196,9 @@ endef
 
 .PHONY: opo-subscription
 opo-subscription:
+	@echo ::::: subscription soruce manifest :::::
+	@echo "$$subscription"
+	@echo ::::::::::::::::::::::::::::::
 	@echo "$$subscription" | oc apply -f -
 
 .PHONY: opo-test-scorecard
