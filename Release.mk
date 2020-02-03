@@ -15,6 +15,21 @@ endif
 	sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'v${PIPELINE_VERSION}'"/' pkg/flag/flag.go
 	go fmt pkg/flag/flag.go
 
+TRIGGERS_STABLE_RELEASE_URL='https://raw.githubusercontent.com/openshift/tektoncd-triggers/release-v${TRIGGERS_VERSION}/openshift/release/tektoncd-triggers-v${TRIGGERS_VERSION}.yaml'
+TRIGGERS_PATH='deploy/resources/v${PIPELINE_VERSION}/addons/triggers'
+.PHONY: opo-payload-triggers
+opo-payload-triggers:
+ifndef PIPELINE_VERSION
+	@echo PIPELINE_VERSION not set
+	@exit 1
+endif
+ifndef TRIGGERS_VERSION
+	@echo TRIGGERS_VERSION not set
+	@exit 1
+endif
+	[[ -d "${TRIGGERS_PATH}" ]] || mkdir -p ${TRIGGERS_PATH}
+	curl -s -o ${TRIGGERS_PATH}/tektoncd-triggers-v${TRIGGERS_VERSION}.yaml ${TRIGGERS_STABLE_RELEASE_URL}
+
 .PHONY: opo-test-clean
 opo-test-clean:
 	-oc delete -f deploy/ --ignore-not-found
