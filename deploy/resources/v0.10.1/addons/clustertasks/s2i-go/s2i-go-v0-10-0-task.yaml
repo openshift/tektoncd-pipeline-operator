@@ -6,7 +6,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: ClusterTask
 metadata:
-  name: s2i-go
+  name: s2i-go-v0-10-0
 spec:
   inputs:
     resources:
