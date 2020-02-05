@@ -250,7 +250,7 @@ spec:
       serviceAccountName: tekton-triggers-controller
       containers:
       - name: tekton-triggers-controller
-        image:  quay.io/openshift-pipeline/tektoncd-triggers-controller:v0.2.1
+        image: quay.io/openshift-pipeline/tektoncd-triggers-controller:v0.2.1
         args: [
           "-logtostderr",
           "-stderrthreshold", "INFO",
@@ -543,7 +543,7 @@ spec:
       serviceAccountName: tekton-triggers-controller
       containers:
       - name: webhook
-        image:  quay.io/openshift-pipeline/tektoncd-triggers-webhook:v0.2.1
+        image: quay.io/openshift-pipeline/tektoncd-triggers-webhook:v0.2.1
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
@@ -556,4 +556,3 @@ spec:
         - name: config-logging
           configMap:
             name: config-logging-triggers
-

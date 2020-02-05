@@ -1,9 +1,7 @@
 channels:
-- currentCSV: openshift-pipelines-operator.v0.9.1
+- currentCSV: openshift-pipelines-operator.v0.10.4
   name: canary
 - currentCSV: openshift-pipelines-operator.v0.8.2
   name: dev-preview
-- currentCSV: openshift-pipelines-operator.v0.10.3
-  name: experimental
 defaultChannel: dev-preview
 packageName: openshift-pipelines-operator
