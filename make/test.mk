@@ -211,3 +211,8 @@ test-upgrade-ci: ./vendor
 	$(Q)sed -e "s,REPLACE_IMAGE,registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator-registry-next," ./test/e2e/catalog_source_OS4.yaml | oc apply -f -
 	$(Q)./hack/check-crds-upgrade.sh
 	$(Q)operator-sdk test local ./test/e2e --no-setup --go-test-flags "-v -timeout=15m"
+
+.PHONY: test-unit
+test-unit:
+	@echo "Running unit tests..."
+	@go test -failfast -v ./pkg/...
