@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-annotation
+  namespace: openshift
+  annotations:
+    operator.tekton.dev/preserve-namespace: "true"
+spec:
+  containers:
+    - name: busy
+      image: busybox
