@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"fmt"
 	"strings"
 
 	mf "github.com/jcrossley3/manifestival"
@@ -36,7 +37,7 @@ func InjectDefaultSA(defaultSA string) mf.Transformer {
 	}
 }
 
-func InjectNamespaceConditional(preserveNamespace string, targetNamespace string) mf.Transformer {
+func InjectNamespaceConditional(preserveNamespace, targetNamespace string) mf.Transformer {
 	tf := mf.InjectNamespace(targetNamespace)
 	return func(u *unstructured.Unstructured) error {
 		annotations := u.GetAnnotations()
@@ -46,5 +47,22 @@ func InjectNamespaceConditional(preserveNamespace string, targetNamespace string
 		}
 
 		return tf(u)
+	}
+}
+
+func Kind(fromKind, toKind string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		kind, found, err := unstructured.NestedString(u.Object, "kind")
+		if err != nil || !found {
+			return fmt.Errorf("cound not get resource KIND, %q", err)
+		}
+		if kind != fromKind {
+			return nil
+		}
+		err = unstructured.SetNestedField(u.Object, toKind, "kind")
+		if err != nil {
+			return fmt.Errorf("cound change resource KIND, %q", err)
+		}
+		return nil
 	}
 }
