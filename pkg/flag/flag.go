@@ -28,7 +28,11 @@ const (
 	TriggerControllerName = "tekton-triggers-controller"
 	TriggerWebhookName    = "tekton-triggers-webhook"
 
-	AnnotationPreserveNS = "operator.tekton.dev/preserve-namespace"
+	AnnotationPreserveNS      = "operator.tekton.dev/preserve-namespace"
+	LabelTaskProviderType     = "operator.tekton.dev/provider-type"
+	TaskProviderTypeCommunity = "community"
+	TaskProviderTypeRedHat    = "redhat"
+	TaskProviderTypeCertified = "certified"
 
 	uuidPath = "deploy/uuid"
 )

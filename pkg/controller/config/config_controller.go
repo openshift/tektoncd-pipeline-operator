@@ -55,6 +55,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
+	log := ctrlLog.WithName("new-reconciler")
 	pipelinePath := filepath.Join(flag.ResourceDir, "pipelines")
 	pipeline, err := mf.NewManifest(pipelinePath, flag.Recursive, mgr.GetClient())
 	if err != nil {
@@ -68,7 +69,8 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 
 	nonRedHat, err := fetchNonRedHat(mgr)
 	if err != nil {
-		return nil, err
+		log.Error(err, "error fetching community resources")
+		nonRedHat = mf.Manifest{}
 	}
 
 	secClient, err := sec.NewForConfig(mgr.GetConfig())
@@ -317,7 +319,11 @@ func matchesUUID(target string) bool {
 func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-addons")
 
-	if err := transformManifest(cfg, &r.addons); err != nil {
+	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
+	addnTfrms := []mf.Transformer{
+		transform.InjectLabel(flag.LabelTaskProviderType, flag.TaskProviderTypeRedHat, true, "ClusterTask"),
+	}
+	if err := transformManifest(cfg, &r.addons, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -345,19 +351,13 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 func (r *ReconcileConfig) applyNonRedHatResources(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-non-redhat-resources")
 
-	// replace kind: Task, with kind: ClusterTask
-	changeKind := transform.Kind("Task", "ClusterTask")
-	if err := r.nonRedHatResources.Transform(changeKind); err != nil {
-		log.Error(err, "failed to apply manifest transformations on non Red Hat Resources")
-		// ignoring failure to update
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.NonRedHatResourcesError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
+	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
+	addnTfrms := []mf.Transformer{
+		// replace kind: Task, with kind: ClusterTask
+		transform.ReplaceKind("Task", "ClusterTask"),
+		transform.InjectLabel(flag.LabelTaskProviderType, flag.TaskProviderTypeCommunity, true),
 	}
-
-	if err := transformManifest(cfg, &r.addons); err != nil {
+	if err := transformManifest(cfg, &r.nonRedHatResources, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -382,12 +382,13 @@ func (r *ReconcileConfig) applyNonRedHatResources(req reconcile.Request, cfg *op
 	return reconcile.Result{Requeue: true}, err
 }
 
-func transformManifest(cfg *op.Config, m *mf.Manifest) error {
+func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transformer) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
 	}
+	tfs = append(tfs, addnTfrms...)
 	return m.Transform(tfs...)
 }
 

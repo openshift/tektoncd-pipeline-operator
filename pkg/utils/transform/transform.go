@@ -50,19 +50,53 @@ func InjectNamespaceConditional(preserveNamespace, targetNamespace string) mf.Tr
 	}
 }
 
-func Kind(fromKind, toKind string) mf.Transformer {
+func ReplaceKind(fromKind, toKind string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
-		kind, found, err := unstructured.NestedString(u.Object, "kind")
-		if err != nil || !found {
-			return fmt.Errorf("cound not get resource KIND, %q", err)
-		}
+		kind := u.GetKind()
+
 		if kind != fromKind {
 			return nil
 		}
-		err = unstructured.SetNestedField(u.Object, toKind, "kind")
+		err := unstructured.SetNestedField(u.Object, toKind, "kind")
 		if err != nil {
-			return fmt.Errorf("cound change resource KIND, %q", err)
+			return fmt.Errorf("could change resource KIND, %q", err)
 		}
 		return nil
 	}
+}
+
+func InjectLabel(key, value string, overwrite bool, kinds ...string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		kind := u.GetKind()
+		if len(kinds) != 0 && !itemInSlice(kind, kinds) {
+			return nil
+		}
+		labels, found, err := unstructured.NestedMap(u.Object, "metadata", "labels")
+		if err != nil {
+			return fmt.Errorf("could not find labels set, %q", err)
+		}
+		if !overwrite && found {
+			if _, ok := labels[key]; ok {
+				return nil
+			}
+		}
+		if !found || labels == nil {
+			labels = map[string]interface{}{}
+		}
+		labels[key] = value
+		err = unstructured.SetNestedMap(u.Object, labels, "metadata", "labels")
+		if err != nil {
+			return fmt.Errorf("error updateing labes for %v:%v, %v", kind, u.GetName(), err)
+		}
+		return nil
+	}
+}
+
+func itemInSlice(item string, items []string) bool {
+	for _, v := range items {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }
