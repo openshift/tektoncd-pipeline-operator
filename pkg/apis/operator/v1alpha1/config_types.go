@@ -82,10 +82,10 @@ const (
 	// Check details field for additional details
 	AddonsError InstallStatus = "error-addons"
 
-	// NonRedHatResourcesError indicates that there was an error
-	// installing non Red Hat Resources
+	// CommunityResourcesError indicates that there was an error
+	// installing Community Provided Resources
 	// Check details field for additional details
-	NonRedHatResourcesError InstallStatus = "error-non-redhat-resources"
+	CommunityResourcesError InstallStatus = "error-community-resources"
 
 	// InstalledStatus indicates that all pipeline resources are installed successfully
 	InstalledStatus InstallStatus = "installed"

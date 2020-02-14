@@ -50,7 +50,7 @@ var (
 	SkipNonRedHatResources bool
 	Recursive              bool
 	OperatorUUID           string
-	NonRedHatResourceURLs  = []string{
+	CommunityResourceURLs  = []string{
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/jib-maven/jib-maven.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/maven/maven.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/tkn/tkn.yaml",

@@ -67,10 +67,10 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return nil, err
 	}
 
-	nonRedHat, err := fetchNonRedHat(mgr)
+	community, err := fetchCommuntiyResources(mgr)
 	if err != nil {
 		log.Error(err, "error fetching community resources")
-		nonRedHat = mf.Manifest{}
+		community = mf.Manifest{}
 	}
 
 	secClient, err := sec.NewForConfig(mgr.GetConfig())
@@ -79,27 +79,27 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	}
 
 	return &ReconcileConfig{
-		client:             mgr.GetClient(),
-		scheme:             mgr.GetScheme(),
-		secClient:          secClient,
-		pipeline:           pipeline,
-		addons:             addons,
-		nonRedHatResources: nonRedHat,
+		client:    mgr.GetClient(),
+		scheme:    mgr.GetScheme(),
+		secClient: secClient,
+		pipeline:  pipeline,
+		addons:    addons,
+		community: community,
 	}, nil
 }
 
-func fetchNonRedHat(mgr manager.Manager) (mf.Manifest, error) {
+func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
 	if flag.SkipNonRedHatResources {
 		return mf.Manifest{}, nil
 	}
 	//manifestival can take urls/filepaths as input
 	//more that one items can be passed as a comma separated list string
-	urls := strings.Join(flag.NonRedHatResourceURLs, ",")
-	nonRedHat, err := mf.NewManifest(urls, flag.Recursive, mgr.GetClient())
+	urls := strings.Join(flag.CommunityResourceURLs, ",")
+	community, err := mf.NewManifest(urls, flag.Recursive, mgr.GetClient())
 	if err != nil {
 		return mf.Manifest{}, err
 	}
-	return nonRedHat, nil
+	return community, nil
 }
 
 // this will read all the addons files
@@ -188,12 +188,12 @@ var _ reconcile.Reconciler = &ReconcileConfig{}
 type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client             client.Client
-	secClient          *sec.SecurityV1Client
-	scheme             *runtime.Scheme
-	pipeline           mf.Manifest
-	addons             mf.Manifest
-	nonRedHatResources mf.Manifest
+	client    client.Client
+	secClient *sec.SecurityV1Client
+	scheme    *runtime.Scheme
+	pipeline  mf.Manifest
+	addons    mf.Manifest
+	community mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -241,8 +241,8 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return r.validatePipeline(req, cfg)
 	case op.ValidatedPipeline, op.AddonsError:
 		return r.applyAddons(req, cfg)
-	case op.AppliedAddons, op.NonRedHatResourcesError:
-		return r.applyNonRedHatResources(req, cfg)
+	case op.AppliedAddons, op.CommunityResourcesError:
+		return r.applyCommunityResources(req, cfg)
 	case op.InstalledStatus:
 		return r.validateVersion(req, cfg)
 	}
@@ -346,7 +346,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	return reconcile.Result{Requeue: true}, err
 }
 
-func (r *ReconcileConfig) applyNonRedHatResources(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
+func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-non-redhat-resources")
 
 	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
@@ -355,21 +355,21 @@ func (r *ReconcileConfig) applyNonRedHatResources(req reconcile.Request, cfg *op
 		transform.ReplaceKind("Task", "ClusterTask"),
 		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite),
 	}
-	if err := transformManifest(cfg, &r.nonRedHatResources, addnTfrms...); err != nil {
+	if err := transformManifest(cfg, &r.community, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.NonRedHatResourcesError,
+			Code:    op.CommunityResourcesError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 
-	if err := r.nonRedHatResources.ApplyAll(); err != nil {
+	if err := r.community.ApplyAll(); err != nil {
 		log.Error(err, "failed to apply non Red Hat resources yaml manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.NonRedHatResourcesError,
+			Code:    op.CommunityResourcesError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
