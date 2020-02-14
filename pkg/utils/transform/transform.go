@@ -59,7 +59,13 @@ func ReplaceKind(fromKind, toKind string) mf.Transformer {
 		}
 		err := unstructured.SetNestedField(u.Object, toKind, "kind")
 		if err != nil {
-			return fmt.Errorf("could change resource KIND, %q", err)
+			return fmt.Errorf(
+				"failed to change resource Name:%s, KIND from %s to %s, %s",
+				u.GetName(),
+				fromKind,
+				toKind,
+				err,
+			)
 		}
 		return nil
 	}
@@ -71,7 +77,7 @@ func InjectLabel(key, value string, overwrite bool, kinds ...string) mf.Transfor
 		if len(kinds) != 0 && !itemInSlice(kind, kinds) {
 			return nil
 		}
-		labels, found, err := unstructured.NestedMap(u.Object, "metadata", "labels")
+		labels, found, err := unstructured.NestedStringMap(u.Object, "metadata", "labels")
 		if err != nil {
 			return fmt.Errorf("could not find labels set, %q", err)
 		}
@@ -80,13 +86,13 @@ func InjectLabel(key, value string, overwrite bool, kinds ...string) mf.Transfor
 				return nil
 			}
 		}
-		if !found || labels == nil {
-			labels = map[string]interface{}{}
+		if !found {
+			labels = map[string]string{}
 		}
 		labels[key] = value
-		err = unstructured.SetNestedMap(u.Object, labels, "metadata", "labels")
+		err = unstructured.SetNestedStringMap(u.Object, labels, "metadata", "labels")
 		if err != nil {
-			return fmt.Errorf("error updateing labes for %v:%v, %v", kind, u.GetName(), err)
+			return fmt.Errorf("error updateing labes for %s:%s, %s", kind, u.GetName(), err)
 		}
 		return nil
 	}
