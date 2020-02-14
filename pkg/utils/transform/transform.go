@@ -85,7 +85,7 @@ func ReplaceKind(fromKind, toKind string) mf.Transformer {
 func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
 		kind := u.GetKind()
-		if len(kinds) != 0 && !itemInSlice(kind, kinds) {
+		if len(kinds) != 0 && !ItemInSlice(kind, kinds) {
 			return nil
 		}
 		labels, found, err := unstructured.NestedStringMap(u.Object, "metadata", "labels")
@@ -109,7 +109,7 @@ func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...st
 	}
 }
 
-func itemInSlice(item string, items []string) bool {
+func ItemInSlice(item string, items []string) bool {
 	for _, v := range items {
 		if v == item {
 			return true
