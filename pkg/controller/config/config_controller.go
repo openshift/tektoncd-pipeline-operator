@@ -320,7 +320,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	log := requestLogger(req, "apply-addons")
 
 	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
-	injectLabel := transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, true, "ClusterTask")
+	injectLabel := transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask")
 	if err := transformManifest(cfg, &r.addons, injectLabel); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
@@ -353,7 +353,7 @@ func (r *ReconcileConfig) applyNonRedHatResources(req reconcile.Request, cfg *op
 	addnTfrms := []mf.Transformer{
 		// replace kind: Task, with kind: ClusterTask
 		transform.ReplaceKind("Task", "ClusterTask"),
-		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, true),
+		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite),
 	}
 	if err := transformManifest(cfg, &r.nonRedHatResources, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")

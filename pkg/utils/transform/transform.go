@@ -10,6 +10,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+type OverwritePolicy int
+
+const (
+	Retain OverwritePolicy = iota
+	Overwrite
+)
+
 // InjectDefaultSA adds default service account into config-defaults configMap
 func InjectDefaultSA(defaultSA string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
@@ -71,7 +78,11 @@ func ReplaceKind(fromKind, toKind string) mf.Transformer {
 	}
 }
 
-func InjectLabel(key, value string, overwrite bool, kinds ...string) mf.Transformer {
+//InjectLabel adds label key:value to a resource
+// overwritePolicy (Retain/Overwrite) decides whehther to overwite an already existing label
+// []kinds specify the Kinds on which the label should be applied
+// if len(kinds) = 0, label will be apllied to all/any resources irrespective of its Kind
+func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
 		kind := u.GetKind()
 		if len(kinds) != 0 && !itemInSlice(kind, kinds) {
@@ -81,7 +92,7 @@ func InjectLabel(key, value string, overwrite bool, kinds ...string) mf.Transfor
 		if err != nil {
 			return fmt.Errorf("could not find labels set, %q", err)
 		}
-		if !overwrite && found {
+		if overwritePolicy == Retain && found {
 			if _, ok := labels[key]; ok {
 				return nil
 			}
