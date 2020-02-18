@@ -28,7 +28,11 @@ const (
 	TriggerControllerName = "tekton-triggers-controller"
 	TriggerWebhookName    = "tekton-triggers-webhook"
 
-	AnnotationPreserveNS = "operator.tekton.dev/preserve-namespace"
+	AnnotationPreserveNS  = "operator.tekton.dev/preserve-namespace"
+	LabelProviderType     = "operator.tekton.dev/provider-type"
+	ProviderTypeCommunity = "community"
+	ProviderTypeRedHat    = "redhat"
+	ProviderTypeCertified = "certified"
 
 	uuidPath = "deploy/uuid"
 )
@@ -37,14 +41,21 @@ var (
 	flagSet *pflag.FlagSet
 
 	TektonVersion   = "v0.10.1"
-	PipelineSA      string
-	IgnorePattern   string
-	ResourceWatched string
-	ResourceDir     string
-	TargetNamespace string
-	NoAutoInstall   bool
-	Recursive       bool
-	OperatorUUID    string
+	PipelineSA             string
+	IgnorePattern          string
+	ResourceWatched        string
+	ResourceDir            string
+	TargetNamespace        string
+	NoAutoInstall          bool
+	SkipNonRedHatResources bool
+	Recursive              bool
+	OperatorUUID           string
+	CommunityResourceURLs  = []string{
+		"https://raw.githubusercontent.com/tektoncd/catalog/master/jib-maven/jib-maven.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/master/maven/maven.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/master/tkn/tkn.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/master/kn/kn.yaml",
+	}
 )
 
 func init() {
@@ -80,10 +91,13 @@ func init() {
 		"Do not automatically install tekton pipelines, default: false")
 
 	flagSet.BoolVar(
-		&Recursive, "recursive", false,
+		&SkipNonRedHatResources, "skip-non-redhat", false,
+		"If enabled skip adding Tasks/Pipelines not supported/owned by Red Hat")
+
+	flagSet.BoolVar(
+		&Recursive, "recursive", true,
 		"If enabled apply manifest file in resource directory recursively")
 }
-
 func FlagSet() *pflag.FlagSet {
 	return flagSet
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -54,6 +55,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
+	log := ctrlLog.WithName("new-reconciler")
 	pipelinePath := filepath.Join(flag.ResourceDir, "pipelines")
 	pipeline, err := mf.NewManifest(pipelinePath, flag.Recursive, mgr.GetClient())
 	if err != nil {
@@ -63,6 +65,12 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	addons, err := readAddons(mgr)
 	if err != nil {
 		return nil, err
+	}
+
+	community, err := fetchCommuntiyResources(mgr)
+	if err != nil {
+		log.Error(err, "error fetching community resources")
+		community = mf.Manifest{}
 	}
 
 	secClient, err := sec.NewForConfig(mgr.GetConfig())
@@ -76,7 +84,22 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		secClient: secClient,
 		pipeline:  pipeline,
 		addons:    addons,
+		community: community,
 	}, nil
+}
+
+func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
+	if flag.SkipNonRedHatResources {
+		return mf.Manifest{}, nil
+	}
+	//manifestival can take urls/filepaths as input
+	//more that one items can be passed as a comma separated list string
+	urls := strings.Join(flag.CommunityResourceURLs, ",")
+	community, err := mf.NewManifest(urls, flag.Recursive, mgr.GetClient())
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	return community, nil
 }
 
 // this will read all the addons files
@@ -170,6 +193,7 @@ type ReconcileConfig struct {
 	scheme    *runtime.Scheme
 	pipeline  mf.Manifest
 	addons    mf.Manifest
+	community mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -215,9 +239,10 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return r.applyPipeline(req, cfg)
 	case op.AppliedPipeline, op.PipelineValidateError:
 		return r.validatePipeline(req, cfg)
-
 	case op.ValidatedPipeline, op.AddonsError:
 		return r.applyAddons(req, cfg)
+	case op.AppliedAddons, op.CommunityResourcesError:
+		return r.applyCommunityResources(req, cfg)
 	case op.InstalledStatus:
 		return r.validateVersion(req, cfg)
 	}
@@ -294,7 +319,9 @@ func matchesUUID(target string) bool {
 func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-addons")
 
-	if err := transformManifest(cfg, &r.addons); err != nil {
+	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
+	injectLabel := transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask")
+	if err := transformManifest(cfg, &r.addons, injectLabel); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -313,18 +340,53 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
-	log.Info("successfully applied all resources")
+	log.Info("successfully applied all addon resources")
+
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedAddons, Version: flag.TektonVersion})
+	return reconcile.Result{Requeue: true}, err
+}
+
+func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
+	log := requestLogger(req, "apply-non-redhat-resources")
+
+	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
+	addnTfrms := []mf.Transformer{
+		// replace kind: Task, with kind: ClusterTask
+		transform.ReplaceKind("Task", "ClusterTask"),
+		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite),
+	}
+	if err := transformManifest(cfg, &r.community, addnTfrms...); err != nil {
+		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
+		// ignoring failure to update
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.CommunityResourcesError,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+
+	if err := r.community.ApplyAll(); err != nil {
+		log.Error(err, "failed to apply non Red Hat resources yaml manifest")
+		// ignoring failure to update
+		_ = r.updateStatus(cfg, op.ConfigCondition{
+			Code:    op.CommunityResourcesError,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, err
+	}
+	log.Info("successfully applied all non Red Hat resources")
 
 	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
 }
 
-func transformManifest(cfg *op.Config, m *mf.Manifest) error {
+func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transformer) error {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
 	}
+	tfs = append(tfs, addnTfrms...)
 	return m.Transform(tfs...)
 }
 

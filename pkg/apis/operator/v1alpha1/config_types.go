@@ -74,9 +74,18 @@ const (
 	// Check details field for additional details
 	InvalidResource InstallStatus = "invalid-resource"
 
+	// AppliedAddons indicates that the pipeline addons
+	// have been applied on the cluster
+	AppliedAddons InstallStatus = "applied-addons"
+
 	// AddonsError indicates that there was an error installing addons
 	// Check details field for additional details
 	AddonsError InstallStatus = "error-addons"
+
+	// CommunityResourcesError indicates that there was an error
+	// installing Community Provided Resources
+	// Check details field for additional details
+	CommunityResourcesError InstallStatus = "error-community-resources"
 
 	// InstalledStatus indicates that all pipeline resources are installed successfully
 	InstalledStatus InstallStatus = "installed"
