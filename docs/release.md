@@ -37,8 +37,15 @@
     ```
     make opo-cluster-tasks CATALOG_VERSION=release-v0.9 PIPELINE_VERSION=v0.9.2 CATALOG_VERSION_SUFFIX=v0.9.0
     ```
-1. add latest triggers, tasksnippets, pipeline samples etc (if there is an updated version available)
+
+1. add latest triggers
+    ```
+    make opo-payload-triggers PIPELINE_VERSION=0.10.1 TRIGGERS_VERSION=0.2.1
+    ```
+
+1. tasksnippets, pipeline samples etc (if there is an updated version available)
     - copy yaml manifests into deploy/resources/<payload version>/<item path>
+    - if new versions are not available copy them from the `deploy/resources/<previous payload version>/<item path>`
 
 1. test the operator using `up local`
     ```
@@ -65,7 +72,7 @@
 
 1. update image reference in deploy/operator.yaml (deployment manifest)
     ```
-    make opo-deploy-yaml-update  VERSION=<n.n.n> QUAY_NAMESPACE=<Quay namespace>
+    make opo-operator-yaml-update  VERSION=<n.n.n> QUAY_NAMESPACE=<Quay namespace>
     ```
 1. and test operator deployment
     make sure the new image has been updated in deploy/operator.yaml `image: `

@@ -10,10 +10,25 @@ ifndef PIPELINE_VERSION
 	@echo PIPELINE_VERSION not set
 	@exit 1
 endif
-	[[ -d "v${PIPELINE_PATH}" ]] | mkdir -p v${PIPELINE_PATH}
+	[[ -d "${PIPELINE_PATH}" ]] || mkdir -p ${PIPELINE_PATH}
 	curl -s -o ${PIPELINE_PATH}/release.yaml ${STABLE_RELEASE_URL}
 	sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'v${PIPELINE_VERSION}'"/' pkg/flag/flag.go
 	go fmt pkg/flag/flag.go
+
+TRIGGERS_STABLE_RELEASE_URL='https://raw.githubusercontent.com/openshift/tektoncd-triggers/release-v${TRIGGERS_VERSION}/openshift/release/tektoncd-triggers-v${TRIGGERS_VERSION}.yaml'
+TRIGGERS_PATH='deploy/resources/v${PIPELINE_VERSION}/addons/triggers'
+.PHONY: opo-payload-triggers
+opo-payload-triggers:
+ifndef PIPELINE_VERSION
+	@echo PIPELINE_VERSION not set
+	@exit 1
+endif
+ifndef TRIGGERS_VERSION
+	@echo TRIGGERS_VERSION not set
+	@exit 1
+endif
+	[[ -d "${TRIGGERS_PATH}" ]] || mkdir -p ${TRIGGERS_PATH}
+	curl -s -o ${TRIGGERS_PATH}/tektoncd-triggers-v${TRIGGERS_VERSION}.yaml ${TRIGGERS_STABLE_RELEASE_URL}
 
 .PHONY: opo-test-clean
 opo-test-clean:
@@ -91,7 +106,7 @@ ifndef VERSION
 	@echo VERSION not set
 	@exit 1
 endif
-	sed -i 's/image:.*/image: quay.io\/openshift-pipeline\/'${QUAY_NAMESPACE}:v${VERSION}'/' deploy/operator.yaml
+	sed -i 's/image:.*/image: quay.io\/'${QUAY_NAMESPACE}'\/openshift-pipelines-operator:v'${VERSION}'/' deploy/operator.yaml
 
 .PHONY: opo-new-csv
 opo-new-csv:
@@ -161,6 +176,9 @@ endef
 
 .PHONY: opo-operator-source
 opo-operator-source: opo-olm-clean
+	@echo ::::: operator soruce manifest :::::
+	@echo "$$operatorsource"
+	@echo ::::::::::::::::::::::::::::::
 	@echo "$$operatorsource" | oc apply -f -
 
 export define subscription
@@ -178,6 +196,9 @@ endef
 
 .PHONY: opo-subscription
 opo-subscription:
+	@echo ::::: subscription soruce manifest :::::
+	@echo "$$subscription"
+	@echo ::::::::::::::::::::::::::::::
 	@echo "$$subscription" | oc apply -f -
 
 .PHONY: opo-test-scorecard
