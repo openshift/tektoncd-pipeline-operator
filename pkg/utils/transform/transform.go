@@ -5,16 +5,25 @@ import (
 	"strings"
 
 	mf "github.com/jcrossley3/manifestival"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+var transformLog = logf.Log.WithName("transform")
 
 type OverwritePolicy int
 
 const (
 	Retain OverwritePolicy = iota
 	Overwrite
+)
+
+const (
+	ARG_PREFIX   = "arg"
+	PARAM_PREFIX = "param"
 )
 
 // InjectDefaultSA adds default service account into config-defaults configMap
@@ -109,6 +118,150 @@ func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...st
 	}
 }
 
+func DeploymentImages(images map[string]string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		if u.GetKind() != "Deployment" {
+			return nil
+		}
+
+		d := &appsv1.Deployment{}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, d)
+		if err != nil {
+			return err
+		}
+
+		containers := d.Spec.Template.Spec.Containers
+		replaceContainerImages(containers, images)
+
+		unstrObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(d)
+		if err != nil {
+			return err
+		}
+		u.SetUnstructuredContent(unstrObj)
+
+		return nil
+	}
+}
+
+func replaceContainerImages(containers []corev1.Container, images map[string]string) {
+	for i, container := range containers {
+		name := formKey("", container.Name)
+		if url, exist := images[name]; exist {
+			containers[i].Image = url
+		}
+
+		replaceContainersArgsImage(&container, images)
+	}
+}
+
+func replaceContainersArgsImage(container *corev1.Container, images map[string]string) {
+	for a, arg := range container.Args {
+		if argVal, hasArg := splitsByEqual(arg); hasArg {
+			argument := formKey(ARG_PREFIX, argVal[0])
+			if url, exist := images[argument]; exist {
+				container.Args[a] = argVal[0] + "=" + url
+			}
+			continue
+		}
+
+		argument := formKey(ARG_PREFIX, arg)
+		if url, exist := images[argument]; exist {
+			container.Args[a+1] = url
+		}
+	}
+
+}
+
+func formKey(prefix, arg string) string {
+	argument := strings.ToLower(arg)
+	if prefix != "" {
+		argument = prefix + "_" + argument
+	}
+	return strings.ReplaceAll(argument, "-", "_")
+}
+
+func splitsByEqual(arg string) ([]string, bool) {
+	values := strings.Split(arg, "=")
+	if len(values) == 2 {
+		return values, true
+	}
+
+	return values, false
+}
+
+func TaskImages(images map[string]string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		if u.GetKind() != "ClusterTask" {
+			return nil
+		}
+
+		steps, found, err := unstructured.NestedSlice(u.Object, "spec", "steps")
+		if err != nil {
+			return err
+		}
+		if !found {
+			return nil
+		}
+		replaceStepsImages(steps, images)
+		err = unstructured.SetNestedField(u.Object, steps, "spec", "steps")
+		if err != nil {
+			return err
+		}
+
+		params, found, err := unstructured.NestedSlice(u.Object, "spec", "params")
+		if err != nil {
+			return err
+		}
+		if !found {
+			return nil
+		}
+		replaceParamsImage(params, images)
+		err = unstructured.SetNestedField(u.Object, params, "spec", "params")
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+func replaceStepsImages(steps []interface{}, override map[string]string) {
+	for _, s := range steps {
+		step := s.(map[string]interface{})
+		name, ok := step["name"].(string)
+		if !ok {
+			transformLog.Info("Unable to get the step", "step", s)
+			continue
+		}
+
+		name = formKey("", name)
+		image, found := override[name]
+		if !found || image == "" {
+			transformLog.Info("Image not found", "step", name, "action", "skip")
+			continue
+		}
+		step["image"] = image
+	}
+}
+
+func replaceParamsImage(params []interface{}, override map[string]string) {
+	for _, p := range params {
+		param := p.(map[string]interface{})
+		name, ok := param["name"].(string)
+		if !ok {
+			transformLog.Info("Unable to get the pram", "param", p)
+			continue
+		}
+
+		name = formKey(PARAM_PREFIX, name)
+		image, found := override[name]
+		if !found || image == "" {
+			transformLog.Info("Image not found", "step", name, "action", "skip")
+			continue
+		}
+		param["default"] = image
+	}
+}
+
 func ItemInSlice(item string, items []string) bool {
 	for _, v := range items {
 		if v == item {
@@ -116,4 +269,15 @@ func ItemInSlice(item string, items []string) bool {
 		}
 	}
 	return false
+}
+
+func ToLowerCaseKeys(keyValues map[string]string) map[string]string {
+	newMap := map[string]string{}
+
+	for k, v := range keyValues {
+		key := strings.ToLower(k)
+		newMap[key] = v
+	}
+
+	return newMap
 }
