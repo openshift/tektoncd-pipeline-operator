@@ -10,7 +10,7 @@ metadata:
     operator.tekton.dev/preserve-namespace: "true"
 spec:
   params:
-    - name: IMAGE_NAME
+    - name: APP_NAME
       type: string
   resources:
     - name: app-source
@@ -42,4 +42,4 @@ spec:
         - build
       params:
         - name: ARGS
-          value: ["new-app", "--docker-image", "$(params.IMAGE_NAME)"]
+          value: ["rollout", "latest", "$(params.APP_NAME)"]
