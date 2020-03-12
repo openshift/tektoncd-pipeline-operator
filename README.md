@@ -9,12 +9,12 @@
 Following environment variables allows overriding images of pipelines, trigger and 
 task addons components
 
-1) `IMAGE_PIPELINE_<DEPLOYMENT-IMAGE-NAME>` e.g. `IMAGE_PIPELINE_WEBHOOK`
+1) `IMAGE_PIPELINES_<DEPLOYMENT-IMAGE-NAME>` e.g. `IMAGE_PIPELINES_WEBHOOK`
 It allows overriding pipelines or triggers deployment images. Note, `*_PIPELINE_*` 
-will override images in pipelines manifest only. Same way `*_TRIGGERS_*`
-2) `IMAGE_PIPELINE__ARG_<DEPLOYMENT-IMAGE-ARG-NAME>` e.g. `IMAGE_PIPELINE_ARG_NOP`
+will override images in pipelines manifest only. Same way `IMAGE__TRIGGERS_*`
+2) `IMAGE_PIPELINES__ARG_<DEPLOYMENT-IMAGE-ARG-NAME>` e.g. `IMAGE_PIPELINES_ARG_NOP`
 It allows overriding pipelines or triggers deployment images of containers `args`. 
-Note, `*_PIPELINE_ARG_*` will override images in pipelines manifest only. Same way `**_TRIGGERS_ARG_**`  
+Note, `*_PIPELINE_ARG_*` will override images in pipelines manifest only. Same way `IMAGE__TRIGGERS_ARG_*`  
 3) `IMAGE_ADDONS_<STEP-NAME>` e.g. `IMAGE_ADDONS_PUSH` 
 It allows overriding `ClusterTask` addons steps images.
 4) `IMAGE_ADDONS_PARAM_<NAME>` e.g. `IMAGE_ADDONS_PARAM_BUILDER` 

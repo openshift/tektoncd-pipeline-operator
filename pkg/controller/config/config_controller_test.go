@@ -14,6 +14,7 @@ import (
 	fakesecurityclient "github.com/openshift/client-go/security/clientset/versioned/fake"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/pkg/flag"
+	trnsfm "github.com/tektoncd/operator/pkg/utils/transform"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,15 +32,15 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 			configName = "cluster"
 			namespace  = "openshift-pipelines"
 			deployment = "tekton-pipelines-controller"
-			container  = "tekton_triggers_controller"
+			container  = "tekton_pipelines_controller"
 			image      = "registry.redhat.io/osbs/controller:latest"
-			arg        = "shell_image"
+			arg        = "_shell_image"
 			argImage   = "registry.redhat.io/osbs/ubi8:latest"
 		)
 
 		// GIVEN
-		os.Setenv("IMAGE_PIPELINE_"+strings.ToUpper(container), image)
-		os.Setenv("IMAGE_PIPELINE_ARG_"+strings.ToUpper(arg), argImage)
+		os.Setenv(trnsfm.PipelinesImagePrefix+strings.ToUpper(container), image)
+		os.Setenv(trnsfm.PipelinesImagePrefix+trnsfm.ArgPrefix+strings.ToUpper(arg), argImage)
 		config := newConfig(configName, namespace)
 		cl := feedConfigMock(config)
 		secCl := feedSCCMock("privileged", t)
@@ -64,13 +65,13 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 			deployment = "tekton-triggers-controller"
 			container  = "tekton_triggers_controller"
 			image      = "registry.redhat.io/osbs/controller:latest"
-			arg        = "el_image"
+			arg        = "_el_image"
 			argImage   = "registry.redhat.io/osbs/eventlistenersink:latest"
 		)
 
 		// GIVEN
-		os.Setenv("IMAGE_TRIGGERS_"+strings.ToUpper(container), image)
-		os.Setenv("IMAGE_TRIGGERS_ARG_"+strings.ToUpper(arg), argImage)
+		os.Setenv(trnsfm.TriggersImagePrefix+strings.ToUpper(container), image)
+		os.Setenv(trnsfm.TriggersImagePrefix+trnsfm.ArgPrefix+strings.ToUpper(arg), argImage)
 		config := newConfig(configName, namespace)
 		cl := feedConfigMock(config)
 		addons, err := mfFor("addons", cl)

@@ -252,7 +252,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-pipeline")
 
-	images := transform.ToLowerCaseKeys(imagesFromEnv("IMAGE_PIPELINE_"))
+	images := transform.ToLowerCaseKeys(imagesFromEnv(transform.PipelinesImagePrefix))
 	if err := transformManifest(cfg, &r.pipeline, transform.DeploymentImages(images)); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
@@ -322,8 +322,8 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	log := requestLogger(req, "apply-addons")
 
 	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
-	triggerImages := transform.ToLowerCaseKeys(imagesFromEnv("IMAGE_TRIGGERS_"))
-	addonImages := transform.ToLowerCaseKeys(imagesFromEnv("IMAGE_ADDONS_"))
+	triggerImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.TriggersImagePrefix))
+	addonImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.AddonsImagePrefix))
 	addnTfrms := []mf.Transformer{
 		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask"),
 		transform.DeploymentImages(triggerImages),
