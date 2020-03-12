@@ -155,7 +155,7 @@ func TestReplaceImages(t *testing.T) {
 	})
 
 	t.Run("of_containers_args_by_space", func(t *testing.T) {
-		arg := ARG_PREFIX + "__bash_image"
+		arg := ArgPrefix + "__bash_image"
 		image := "foo.bar/image/bash"
 		images := map[string]string{
 			arg: image,
@@ -172,7 +172,7 @@ func TestReplaceImages(t *testing.T) {
 	})
 
 	t.Run("of_container_args_has_equal", func(t *testing.T) {
-		arg := ARG_PREFIX + "__nop"
+		arg := ArgPrefix + "__nop"
 		image := "foo.bar/image/nop"
 		images := map[string]string{
 			arg: image,
@@ -206,7 +206,7 @@ func TestReplaceImages(t *testing.T) {
 	})
 
 	t.Run("of_task_addons_param_image", func(t *testing.T) {
-		paramName := PARAM_PREFIX + "_builder_image"
+		paramName := ParamPrefix + "builder_image"
 		image := "foo.bar/image/buildah"
 		images := map[string]string{
 			paramName: image,

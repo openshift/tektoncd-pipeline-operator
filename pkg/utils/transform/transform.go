@@ -22,8 +22,12 @@ const (
 )
 
 const (
-	ARG_PREFIX   = "arg"
-	PARAM_PREFIX = "param"
+	PipelinesImagePrefix = "IMAGE_PIPELINES_"
+	TriggersImagePrefix  = "IMAGE_TRIGGERS_"
+	AddonsImagePrefix    = "IMAGE_ADDONS_"
+
+	ArgPrefix   = "arg_"
+	ParamPrefix = "param_"
 )
 
 // InjectDefaultSA adds default service account into config-defaults configMap
@@ -157,14 +161,14 @@ func replaceContainerImages(containers []corev1.Container, images map[string]str
 func replaceContainersArgsImage(container *corev1.Container, images map[string]string) {
 	for a, arg := range container.Args {
 		if argVal, hasArg := splitsByEqual(arg); hasArg {
-			argument := formKey(ARG_PREFIX, argVal[0])
+			argument := formKey(ArgPrefix, argVal[0])
 			if url, exist := images[argument]; exist {
 				container.Args[a] = argVal[0] + "=" + url
 			}
 			continue
 		}
 
-		argument := formKey(ARG_PREFIX, arg)
+		argument := formKey(ArgPrefix, arg)
 		if url, exist := images[argument]; exist {
 			container.Args[a+1] = url
 		}
@@ -175,7 +179,7 @@ func replaceContainersArgsImage(container *corev1.Container, images map[string]s
 func formKey(prefix, arg string) string {
 	argument := strings.ToLower(arg)
 	if prefix != "" {
-		argument = prefix + "_" + argument
+		argument = prefix + argument
 	}
 	return strings.ReplaceAll(argument, "-", "_")
 }
@@ -252,7 +256,7 @@ func replaceParamsImage(params []interface{}, override map[string]string) {
 			continue
 		}
 
-		name = formKey(PARAM_PREFIX, name)
+		name = formKey(ParamPrefix, name)
 		image, found := override[name]
 		if !found || image == "" {
 			transformLog.Info("Image not found", "step", name, "action", "skip")
