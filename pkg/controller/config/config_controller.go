@@ -3,13 +3,14 @@ package config
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
-	sec "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
+	sec "github.com/openshift/client-go/security/clientset/versioned"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
@@ -189,7 +190,7 @@ type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client    client.Client
-	secClient *sec.SecurityV1Client
+	secClient sec.Interface
 	scheme    *runtime.Scheme
 	pipeline  mf.Manifest
 	addons    mf.Manifest
@@ -251,7 +252,8 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-pipeline")
 
-	if err := transformManifest(cfg, &r.pipeline); err != nil {
+	images := transform.ToLowerCaseKeys(imagesFromEnv("IMAGE_PIPELINE_"))
+	if err := transformManifest(cfg, &r.pipeline, transform.DeploymentImages(images)); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -320,8 +322,14 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	log := requestLogger(req, "apply-addons")
 
 	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
-	injectLabel := transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask")
-	if err := transformManifest(cfg, &r.addons, injectLabel); err != nil {
+	triggerImages := transform.ToLowerCaseKeys(imagesFromEnv("IMAGE_TRIGGERS_"))
+	addonImages := transform.ToLowerCaseKeys(imagesFromEnv("IMAGE_ADDONS_"))
+	addnTfrms := []mf.Transformer{
+		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask"),
+		transform.DeploymentImages(triggerImages),
+		transform.TaskImages(addonImages),
+	}
+	if err := transformManifest(cfg, &r.addons, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -475,7 +483,7 @@ func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.Names
 
 func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
 	log := ctrlLog.WithName("scc").WithName("add")
-	privileged, err := r.secClient.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+	privileged, err := r.secClient.SecurityV1().SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
 	if err != nil {
 		log.Error(err, "scc privileged get error")
 		return err
@@ -492,14 +500,14 @@ func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
 	privileged.Annotations[flag.SccAnnotationKey] = sa
 	privileged.Users = newList
 
-	updated, err := r.secClient.SecurityContextConstraints().Update(privileged)
+	updated, err := r.secClient.SecurityV1().SecurityContextConstraints().Update(privileged)
 	log.Info("added SA to scc", "updated", updated.Users)
 	return err
 }
 
 func (r *ReconcileConfig) removePrivilegedSCC() error {
 	log := ctrlLog.WithName("scc").WithName("remove")
-	privileged, err := r.secClient.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+	privileged, err := r.secClient.SecurityV1().SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
 	if err != nil {
 		log.Error(err, "scc privileged get error")
 		return err
@@ -521,7 +529,7 @@ func (r *ReconcileConfig) removePrivilegedSCC() error {
 	delete(privileged.Annotations, flag.SccAnnotationKey)
 	privileged.Users = newList
 
-	updated, err := r.secClient.SecurityContextConstraints().Update(privileged)
+	updated, err := r.secClient.SecurityV1().SecurityContextConstraints().Update(privileged)
 	log.Info("removed SA from scc", "updated", updated.Users)
 	return err
 }
@@ -637,4 +645,20 @@ func requestLogger(req reconcile.Request, context string) logr.Logger {
 		"Request.Namespace", req.Namespace,
 		"Request.NamespaceName", req.NamespacedName,
 		"Request.Name", req.Name)
+}
+
+func imagesFromEnv(prefix string) map[string]string {
+	images := map[string]string{}
+	for _, env := range os.Environ() {
+		if !strings.HasPrefix(env, prefix) {
+			continue
+		}
+
+		keyValue := strings.Split(env, "=")
+		name := strings.TrimPrefix(keyValue[0], prefix)
+		url := keyValue[1]
+		images[name] = url
+	}
+
+	return images
 }

@@ -3,6 +3,31 @@
 ## FAQ
 [click here](/docs/faq.md)
 
+# Configurations
+
+### Override Images:
+Following environment variables allows overriding images of pipelines, trigger and 
+task addons components
+
+1) `IMAGE_PIPELINE_<DEPLOYMENT-IMAGE-NAME>` e.g. `IMAGE_PIPELINE_WEBHOOK`
+It allows overriding pipelines or triggers deployment images. Note, `*_PIPELINE_*` 
+will override images in pipelines manifest only. Same way `*_TRIGGERS_*`
+2) `IMAGE_PIPELINE__ARG_<DEPLOYMENT-IMAGE-ARG-NAME>` e.g. `IMAGE_PIPELINE_ARG_NOP`
+It allows overriding pipelines or triggers deployment images of containers `args`. 
+Note, `*_PIPELINE_ARG_*` will override images in pipelines manifest only. Same way `**_TRIGGERS_ARG_**`  
+3) `IMAGE_ADDONS_<STEP-NAME>` e.g. `IMAGE_ADDONS_PUSH` 
+It allows overriding `ClusterTask` addons steps images.
+4) `IMAGE_ADDONS_PARAM_<NAME>` e.g. `IMAGE_ADDONS_PARAM_BUILDER` 
+It allows overriding `ClusterTask` addons params images. the `_PARAM_` will replace the
+value of `Task.Spec.Param`.
+
+`Note: IF IMAGE NAME, IMAGE ARGUMENT, STEP NAME AND PARAMATER NAME HAS "-" IN IT, THEN PLEASE SUBSTITUTE IT BY "_"`
+
+`Note: BE CAUTIOUS WHILE SUBSTITUTING THE IMAGES. FOR INSTANCE, IF DEPLOYMENT HAS MORE THAN ONE CONTAINER AND 
+CONTAINER HAS SAME NAME AS DEFINED IN THE OVERRIDE IMAGE CONFIGURATION, THEN THIS COULD RESULT IN UNWATED IMAGE SUBSTITUTATION` 
+
+
+
 ## Dev env
 
 ### Checkout your fork
