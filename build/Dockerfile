@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8-dev-preview/ubi-minimal:latest
+FROM registry.redhat.io/ubi8/ubi-minimal:latest
 
 ENV OPERATOR=/usr/local/bin/openshift-pipelines-operator \
     USER_UID=1001 \
