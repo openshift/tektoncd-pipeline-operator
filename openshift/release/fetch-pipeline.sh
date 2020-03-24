@@ -10,7 +10,7 @@
 # modify this in future if a workflow based on latest version and recent (shifted) versions is needed
 MAX_SHIFT=1
 NIGHTLY_RELEASE="https://raw.githubusercontent.com/openshift/tektoncd-pipeline/release-next/openshift/release/tektoncd-pipeline-nightly.yaml"
-STABLE_RELEASE_URL='https://raw.githubusercontent.com/openshift/tektoncd-pipeline/release-${version}/openshift/release/tektoncd-pipeline-${version}.yaml'
+STABLE_RELEASE_URL='https://raw.githubusercontent.com/openshift/tektoncd-pipeline/${version}/openshift/release/tektoncd-pipeline-${version}.yaml'
 PAYLOAD_PIPELINE_VERSION="release-next"
 
 function get_version {
