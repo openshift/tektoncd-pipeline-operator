@@ -21,7 +21,7 @@ const (
 	PipelineControllerSA   = "tekton-pipelines-controller"
 
 	PipelineWebhookName          = "tekton-pipelines-webhook"
-	PipelineWebhookConfiguration = "webhook.tekton.dev"
+	PipelineWebhookConfiguration = "webhook.pipeline.tekton.dev"
 	SccAnnotationKey             = "operator.tekton.dev"
 
 	// Name of the trigger deployment
@@ -40,7 +40,7 @@ const (
 var (
 	flagSet *pflag.FlagSet
 
-	TektonVersion          = "v0.10.1"
+	TektonVersion          = "devel"
 	PipelineSA             string
 	IgnorePattern          string
 	ResourceWatched        string
