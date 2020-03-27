@@ -8,7 +8,10 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1Options "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	kubectl "k8s.io/kubectl/pkg/polymorphichelpers"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -25,14 +28,26 @@ func Deployment(ctx context.Context, c client.Client, name, namespace string) (b
 		Namespace: namespace,
 		Name:      name,
 	}
+
 	err := c.Get(ctx, key, &dp)
 	if err != nil {
 		return false, ignoreNotFound(err)
 	}
 
-	expected := *dp.Spec.Replicas
-	actual := dp.Status.AvailableReplicas
-	return actual == expected, nil
+	statusViewer, err := kubectl.StatusViewerFor(v1.SchemeGroupVersion.WithKind("Deployment").GroupKind())
+	if err != nil {
+		return false, nil
+	}
+
+	unstr, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&dp)
+	if err != nil {
+		return false, err
+	}
+	untr := unstructured.Unstructured{
+		Object: unstr,
+	}
+	_, status, err := statusViewer.Status(&untr, 0)
+	return status, err
 }
 
 func Webhook(ctx context.Context, c client.Client, name string) (bool, error) {
