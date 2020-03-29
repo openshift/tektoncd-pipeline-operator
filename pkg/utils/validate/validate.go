@@ -2,16 +2,14 @@ package validate
 
 import (
 	"context"
+	"fmt"
 
 	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/api/apps/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1Options "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	kubectl "k8s.io/kubectl/pkg/polymorphichelpers"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -23,31 +21,45 @@ func ignoreNotFound(err error) error {
 }
 
 func Deployment(ctx context.Context, c client.Client, name, namespace string) (bool, error) {
-	dp := v1.Deployment{}
+	deployment := v1.Deployment{}
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}
 
-	err := c.Get(ctx, key, &dp)
+	err := c.Get(ctx, key, &deployment)
 	if err != nil {
 		return false, ignoreNotFound(err)
 	}
 
-	statusViewer, err := kubectl.StatusViewerFor(v1.SchemeGroupVersion.WithKind("Deployment").GroupKind())
-	if err != nil {
-		return false, nil
+	if deployment.Generation <= deployment.Status.ObservedGeneration {
+		cond := getDeploymentCondition(deployment.Status, v1.DeploymentProgressing)
+		if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
+			return false, fmt.Errorf("deployment %q exceeded its progress deadline", deployment.Name)
+		}
+		if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
+			return false, nil
+		}
+		if deployment.Status.Replicas > deployment.Status.UpdatedReplicas {
+			return false, nil
+		}
+		if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
+			return false, nil
+		}
+		return true, nil
 	}
 
-	unstr, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&dp)
-	if err != nil {
-		return false, err
+	return false, nil
+}
+
+func getDeploymentCondition(status v1.DeploymentStatus, condType v1.DeploymentConditionType) *v1.DeploymentCondition {
+	for i := range status.Conditions {
+		c := status.Conditions[i]
+		if c.Type == condType {
+			return &c
+		}
 	}
-	untr := unstructured.Unstructured{
-		Object: unstr,
-	}
-	_, status, err := statusViewer.Status(&untr, 0)
-	return status, err
+	return nil
 }
 
 func Webhook(ctx context.Context, c client.Client, name string) (bool, error) {
