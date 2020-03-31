@@ -58,6 +58,7 @@ declare -r OPENSHIFT_CATALOG_TASKS=(
   s2i-perl
   s2i-php
   s2i-ruby
+  s2i-dotnet-3
 )
 
 
