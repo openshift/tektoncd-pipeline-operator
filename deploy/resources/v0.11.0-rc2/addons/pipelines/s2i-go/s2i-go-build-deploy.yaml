@@ -42,4 +42,4 @@ spec:
         - build
       params:
         - name: ARGS
-          value: ["rollout", "latest", "$(params.APP_NAME)"]
+          value: ["rollout", "status", "dc/$(params.APP_NAME)"]
