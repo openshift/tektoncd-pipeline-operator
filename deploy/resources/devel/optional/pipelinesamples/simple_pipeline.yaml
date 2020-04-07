@@ -5,13 +5,13 @@ metadata:
   name: simple-pipeline
 spec:
   targetResource:
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     kind: Pipeline
   title: simple-pipeline
   description: An example of simple pipeline
   snippet: false
   yaml: |
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     kind: Pipeline
     metadata:
       name: simple-pipeline

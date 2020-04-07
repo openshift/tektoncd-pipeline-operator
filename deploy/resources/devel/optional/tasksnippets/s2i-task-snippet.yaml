@@ -5,7 +5,7 @@ metadata:
   name: s2i-snippet
 spec:
   targetResource:
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     kind: Pipeline
   title: S2I Task
   description: |
