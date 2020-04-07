@@ -5,7 +5,7 @@ metadata:
   name: s2i-java-8-snippet
 spec:
   targetResource:
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     kind: Pipeline
   title: S2I-Java-8 Task
   description: |
