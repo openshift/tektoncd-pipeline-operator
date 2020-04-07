@@ -6,6 +6,7 @@ metadata:
   namespace: openshift
   labels:
     pipeline.openshift.io/strategy: docker
+    pipeline.openshift.io/type: openshift
   annotations:
     operator.tekton.dev/preserve-namespace: "true"
 spec:
