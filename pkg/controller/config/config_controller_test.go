@@ -89,6 +89,105 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 	})
 }
 
+func TestValidateDeployment(t *testing.T) {
+	t.Run("rollout success", func(t *testing.T) {
+		replicas := int32(1)
+		configName := "cluster"
+		ns := "openshift-pipelines"
+		deployments := []*appsv1.Deployment{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       flag.PipelineControllerName,
+					Namespace:  ns,
+					Generation: 1,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+				},
+				Status: appsv1.DeploymentStatus{
+					ObservedGeneration: 1,
+					UpdatedReplicas:    1,
+					AvailableReplicas:  1,
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       flag.PipelineWebhookName,
+					Namespace:  ns,
+					Generation: 1,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+				},
+				Status: appsv1.DeploymentStatus{
+					ObservedGeneration: 1,
+					UpdatedReplicas:    1,
+					AvailableReplicas:  1,
+				},
+			},
+		}
+
+		config := newConfig(configName, ns)
+		cl := feedAll(config, deployments, t)
+		r := ReconcileConfig{scheme: scheme.Scheme, client: cl}
+		req := newRequest(configName, ns)
+		result, err := r.validateDeployments(req, config)
+
+		if result == false || err != nil {
+			t.Fatalf("Validation failed, expected state %v, got %v, err %v", true, result, err)
+		}
+	})
+
+	t.Run("rollout in progress", func(t *testing.T) {
+		replicas := int32(1)
+		configName := "cluster"
+		ns := "openshift-pipelines"
+		deployments := []*appsv1.Deployment{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       flag.PipelineControllerName,
+					Namespace:  ns,
+					Generation: 1,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+				},
+				Status: appsv1.DeploymentStatus{
+					ObservedGeneration: 2,
+					UpdatedReplicas:    1,
+					AvailableReplicas:  0,
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       flag.PipelineWebhookName,
+					Namespace:  ns,
+					Generation: 1,
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: &replicas,
+				},
+				Status: appsv1.DeploymentStatus{
+					ObservedGeneration: 2,
+					UpdatedReplicas:    1,
+					AvailableReplicas:  0,
+				},
+			},
+		}
+
+		config := newConfig(configName, ns)
+		cl := feedAll(config, deployments, t)
+		r := ReconcileConfig{scheme: scheme.Scheme, client: cl}
+		req := newRequest(configName, ns)
+		result, err := r.validateDeployments(req, config)
+
+		if result == true || err != nil {
+			t.Fatalf("Validation failed, expected state %v, got %v, err %v", false, result, err)
+		}
+	})
+
+}
+
 func newConfig(name string, namespace string) *op.Config {
 	return &op.Config{
 		ObjectMeta: metav1.ObjectMeta{
@@ -204,6 +303,23 @@ func feedConfigMock(config *op.Config) client.Client {
 	// Register operator types with the runtime scheme.
 	s := scheme.Scheme
 	s.AddKnownTypes(op.SchemeGroupVersion, config)
+
+	// Create a fake client to mock API calls.
+	return fake.NewFakeClientWithScheme(s, objs...)
+}
+
+func feedAll(config *op.Config, deployments []*appsv1.Deployment, t *testing.T) client.Client {
+	objs := []runtime.Object{config}
+	for _, d := range deployments {
+		objs = append(objs, d)
+	}
+
+	// Register operator types with the runtime scheme.
+	s := scheme.Scheme
+	s.AddKnownTypes(op.SchemeGroupVersion, config)
+	if err := appsv1.AddToScheme(s); err != nil {
+		t.Fatalf("Unable to add deployment scheme: (%v)", err)
+	}
 
 	// Create a fake client to mock API calls.
 	return fake.NewFakeClientWithScheme(s, objs...)
