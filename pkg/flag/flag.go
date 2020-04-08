@@ -34,6 +34,8 @@ const (
 	ProviderTypeRedHat    = "redhat"
 	ProviderTypeCertified = "certified"
 
+	OperatorPrivilegedSCC = "privileged-openshift-pipelines"
+
 	uuidPath = "deploy/uuid"
 )
 
