@@ -123,6 +123,7 @@ rules:
   verbs:
   - get
   - update
+  - create
   - use
 - apiGroups:
   - operator.tekton.dev

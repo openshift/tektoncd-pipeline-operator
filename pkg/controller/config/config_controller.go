@@ -483,73 +483,45 @@ func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.Names
 
 func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
 	log := ctrlLog.WithName("scc").WithName("add")
-	privileged, err := r.secClient.SecurityV1().SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+	// get the scc and not nothing if it exists
+	scc := r.secClient.SecurityV1().SecurityContextConstraints()
+	sccPriv, err := scc.Get(flag.OperatorPrivilegedSCC, metav1.GetOptions{})
+	if err == nil {
+		log.Info("scc already exists")
+		return nil
+	} else if !errors.IsNotFound(err) {
+		log.Error(err, "failed to get scc")
+		return err
+	}
+
+	// create new copied for privileged
+	privileged, err := scc.Get("privileged", metav1.GetOptions{})
 	if err != nil {
 		log.Error(err, "scc privileged get error")
 		return err
 	}
+	log.Info("creating scc based on privileged")
 
-	newList, changed := addToList(privileged.Users, sa)
-	_, annotated := privileged.Annotations[flag.SccAnnotationKey]
-	if !changed && annotated {
-		log.Info("scc already in added to the list", "action", "none")
-		return nil
-	}
+	sccPriv = privileged.DeepCopy()
+	sccPriv.ObjectMeta = metav1.ObjectMeta{Name: flag.OperatorPrivilegedSCC}
+	sccPriv.Users = []string{sa}
 
-	log.Info("privileged scc needs updation")
-	privileged.Annotations[flag.SccAnnotationKey] = sa
-	privileged.Users = newList
-
-	updated, err := r.secClient.SecurityV1().SecurityContextConstraints().Update(privileged)
-	log.Info("added SA to scc", "updated", updated.Users)
+	created, err := scc.Create(sccPriv)
+	log.Info("created new SCC based on privileged", "users", created.Users)
 	return err
 }
 
 func (r *ReconcileConfig) removePrivilegedSCC() error {
 	log := ctrlLog.WithName("scc").WithName("remove")
-	privileged, err := r.secClient.SecurityV1().SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
-	if err != nil {
-		log.Error(err, "scc privileged get error")
+	scc := r.secClient.SecurityV1().SecurityContextConstraints()
+
+	if err := scc.Delete(flag.OperatorPrivilegedSCC, &metav1.DeleteOptions{}); ignoreNotFound(err) != nil {
+		log.Error(err, "scc privileged deletion error")
 		return err
 	}
 
-	sa, annotated := privileged.Annotations[flag.SccAnnotationKey]
-	if !annotated {
-		log.Info("sa already not in privileged SCC", "action", "none")
-		return nil
-	}
-
-	newList, changed := removeFromList(privileged.Users, sa)
-	if !changed {
-		log.Info("sa already not in privileged SCC", "action", "none")
-		return nil
-	}
-
-	log.Info("privileged scc needs updation")
-	delete(privileged.Annotations, flag.SccAnnotationKey)
-	privileged.Users = newList
-
-	updated, err := r.secClient.SecurityV1().SecurityContextConstraints().Update(privileged)
-	log.Info("removed SA from scc", "updated", updated.Users)
-	return err
-}
-
-func removeFromList(list []string, item string) ([]string, bool) {
-	for i, v := range list {
-		if v == item {
-			return append(list[:i], list[i+1:]...), true
-		}
-	}
-	return list, false
-}
-
-func addToList(list []string, item string) ([]string, bool) {
-	for _, v := range list {
-		if v == item {
-			return list, false
-		}
-	}
-	return append(list, item), true
+	log.Info("removed scc")
+	return nil
 }
 
 func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
@@ -661,4 +633,11 @@ func imagesFromEnv(prefix string) map[string]string {
 	}
 
 	return images
+}
+
+func ignoreNotFound(err error) error {
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
