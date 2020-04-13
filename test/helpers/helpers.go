@@ -119,32 +119,36 @@ func DeleteClusterCR(t *testing.T, name string) {
 
 	AssertNoError(t, err)
 }
-func ValidateSCCAdded(t *testing.T, ns, sa string) {
+func ValidateSCC(t *testing.T, ns, sa, sccName string) {
 	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
-		privileged, err := GetPrivilegedSCC()
+		scc, err := GetPrivilegedSCC(sccName)
 		if err != nil {
 			t.Logf("failed to get privileged scc: %s \n", err)
 			return false, err
 		}
-		t.Logf("... looking at %v", privileged.Users)
-
+		t.Logf("scc", scc.Users)
 		ctrlSA := fmt.Sprintf("system:serviceaccount:%s:%s", ns, sa)
-		return inList(privileged.Users, ctrlSA), nil
+		return inList(scc.Users, ctrlSA), nil
 	})
 	AssertNoError(t, err)
 }
 
-func ValidateSCCRemoved(t *testing.T, ns, sa string) {
+func ValidateSCCDeleted(t *testing.T, ns, sa, sccName string) {
+	t.Helper()
 	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
-		privileged, err := GetPrivilegedSCC()
+		_, err := GetPrivilegedSCC(sccName)
 		if err != nil {
-			t.Logf("failed to get privileged scc: %s \n", err)
+			if apierrors.IsGone(err) || apierrors.IsNotFound(err) {
+				return true, nil
+			}
 			return false, err
 		}
-
-		ctrlSA := fmt.Sprintf("system:serviceaccount:%s:%s", ns, sa)
-		return !inList(privileged.Users, ctrlSA), nil
+		t.Logf("Waiting for deletion of %s SCC\n", sccName)
+		return false, nil
 	})
+	if err == nil {
+		t.Logf("%s SCC deleted\n", sccName)
+	}
 	AssertNoError(t, err)
 }
 
@@ -173,15 +177,14 @@ func ValidatePipelineSetup(t *testing.T, cr *op.Config, sa string, deployments .
 		)
 		AssertNoError(t, err)
 	}
-
 }
 
-func GetPrivilegedSCC() (*secv1.SecurityContextConstraints, error) {
+func GetPrivilegedSCC(sccName string) (*secv1.SecurityContextConstraints, error) {
 	sec, err := secclient.NewForConfig(test.Global.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
-	return sec.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
+	return sec.SecurityContextConstraints().Get(sccName, metav1.GetOptions{})
 }
 
 func ValidatePipelineCleanup(t *testing.T, cr *op.Config, deployments ...string) {

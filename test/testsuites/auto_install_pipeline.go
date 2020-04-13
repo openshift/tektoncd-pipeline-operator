@@ -26,7 +26,10 @@ func ValidateAutoInstall(t *testing.T) {
 		flag.TriggerControllerName,
 		flag.TriggerWebhookName)
 
-	helpers.ValidateSCCAdded(t, cr.Spec.TargetNamespace, flag.PipelineControllerName)
+	helpers.ValidateSCC(t,
+		cr.Spec.TargetNamespace,
+		flag.PipelineControllerName,
+		flag.OperatorPrivilegedSCC)
 
 	cr = helpers.WaitForClusterCR(t, flag.ClusterCRName)
 	if code := cr.Status.Conditions[0].Code; code != op.InstalledStatus {
@@ -61,5 +64,8 @@ func ValidateDeletion(t *testing.T) {
 		flag.TriggerControllerName,
 		flag.TriggerWebhookName)
 
-	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, flag.PipelineControllerName)
+	helpers.ValidateSCCDeleted(t,
+		cr.Spec.TargetNamespace,
+		flag.PipelineControllerName,
+		flag.OperatorPrivilegedSCC)
 }
