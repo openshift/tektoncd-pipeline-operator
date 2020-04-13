@@ -6,7 +6,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: ClusterTask
 metadata:
-  name: s2i-php
+  name: s2i-php-v0-11-1
 spec:
   params:
     - name: MINOR_VERSION
