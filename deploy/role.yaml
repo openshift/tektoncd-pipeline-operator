@@ -126,6 +126,7 @@ rules:
   - update
   - create
   - use
+  - delete
 - apiGroups:
   - operator.tekton.dev
   resources:
