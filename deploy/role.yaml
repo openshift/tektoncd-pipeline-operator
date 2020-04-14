@@ -146,6 +146,12 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - triggers.tekton.dev
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
   - console.openshift.io
   resources:
   - consoleyamlsamples
