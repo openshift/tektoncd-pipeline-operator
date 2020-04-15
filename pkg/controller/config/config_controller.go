@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
-	sec "github.com/openshift/client-go/security/clientset/versioned"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
@@ -74,15 +72,9 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		community = mf.Manifest{}
 	}
 
-	secClient, err := sec.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return nil, err
-	}
-
 	return &ReconcileConfig{
 		client:    mgr.GetClient(),
 		scheme:    mgr.GetScheme(),
-		secClient: secClient,
 		pipeline:  pipeline,
 		addons:    addons,
 		community: community,
@@ -190,7 +182,6 @@ type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client    client.Client
-	secClient sec.Interface
 	scheme    *runtime.Scheme
 	pipeline  mf.Manifest
 	addons    mf.Manifest
@@ -274,30 +265,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	}
 	log.Info("successfully applied all pipeline resources")
 
-	// add pipeline-controller to scc; scc privileged needs to be updated and
-	// can't be just oc applied
-	controller := types.NamespacedName{Namespace: cfg.Spec.TargetNamespace, Name: flag.PipelineControllerName}
-	ctrlSA, err := r.serviceAccountNameForDeployment(controller)
-	if err != nil {
-		log.Error(err, "failed to find controller service account")
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineApplyError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
-	}
-
-	if err := r.addPrivilegedSCC(ctrlSA); err != nil {
-		log.Error(err, "failed to update scc")
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineApplyError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
-	}
-	log.Info("successfully updated SCC privileged")
-
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -470,68 +438,10 @@ func (r *ReconcileConfig) validateDeployments(req reconcile.Request, cfg *op.Con
 	return controller && webhook, nil
 }
 
-func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.NamespacedName) (string, error) {
-	d := appsv1.Deployment{}
-	if err := r.client.Get(context.Background(), deployment, &d); err != nil {
-		return "", err
-	}
-
-	sa := d.Spec.Template.Spec.ServiceAccountName
-	fullSA := fmt.Sprintf("system:serviceaccount:%s:%s", deployment.Namespace, sa)
-	return fullSA, nil
-}
-
-func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
-	log := ctrlLog.WithName("scc").WithName("add")
-	// get the scc and not nothing if it exists
-	scc := r.secClient.SecurityV1().SecurityContextConstraints()
-	_, err := scc.Get(flag.OperatorPrivilegedSCC, metav1.GetOptions{})
-	if err == nil {
-		log.Info("scc already exists")
-		return nil
-	} else if !errors.IsNotFound(err) {
-		log.Error(err, "failed to get scc")
-		return err
-	}
-
-	// create new copied for privileged
-	privileged, err := scc.Get("privileged", metav1.GetOptions{})
-	if err != nil {
-		log.Error(err, "scc privileged get error")
-		return err
-	}
-	log.Info("creating scc based on privileged")
-
-	sccPriv := privileged.DeepCopy()
-	sccPriv.ObjectMeta = metav1.ObjectMeta{Name: flag.OperatorPrivilegedSCC}
-	sccPriv.Users = []string{sa}
-
-	created, err := scc.Create(sccPriv)
-	log.Info("created new SCC based on privileged", "users", created.Users)
-	return err
-}
-
-func (r *ReconcileConfig) removePrivilegedSCC() error {
-	log := ctrlLog.WithName("scc").WithName("remove")
-	scc := r.secClient.SecurityV1().SecurityContextConstraints()
-
-	if err := scc.Delete(flag.OperatorPrivilegedSCC, &metav1.DeleteOptions{}); ignoreNotFound(err) != nil {
-		log.Error(err, "scc privileged deletion error")
-		return err
-	}
-
-	log.Info("removed scc")
-	return nil
-}
-
 func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "delete")
 
 	log.Info("deleting pipeline resources")
-
-	if err := r.removePrivilegedSCC(); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	// Requested object not found, could have been deleted after reconcile request.
 	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -633,11 +543,4 @@ func imagesFromEnv(prefix string) map[string]string {
 	}
 
 	return images
-}
-
-func ignoreNotFound(err error) error {
-	if errors.IsNotFound(err) {
-		return nil
-	}
-	return err
 }
