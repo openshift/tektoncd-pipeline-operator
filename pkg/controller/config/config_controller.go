@@ -485,7 +485,7 @@ func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
 	log := ctrlLog.WithName("scc").WithName("add")
 	// get the scc and not nothing if it exists
 	scc := r.secClient.SecurityV1().SecurityContextConstraints()
-	sccPriv, err := scc.Get(flag.OperatorPrivilegedSCC, metav1.GetOptions{})
+	_, err := scc.Get(flag.OperatorPrivilegedSCC, metav1.GetOptions{})
 	if err == nil {
 		log.Info("scc already exists")
 		return nil
@@ -502,7 +502,7 @@ func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
 	}
 	log.Info("creating scc based on privileged")
 
-	sccPriv = privileged.DeepCopy()
+	sccPriv := privileged.DeepCopy()
 	sccPriv.ObjectMeta = metav1.ObjectMeta{Name: flag.OperatorPrivilegedSCC}
 	sccPriv.Users = []string{sa}
 

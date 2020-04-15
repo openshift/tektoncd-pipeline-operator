@@ -126,7 +126,7 @@ func ValidateSCC(t *testing.T, ns, sa, sccName string) {
 			t.Logf("failed to get privileged scc: %s \n", err)
 			return false, err
 		}
-		t.Logf("scc", scc.Users)
+		t.Log("scc", scc.Users)
 		ctrlSA := fmt.Sprintf("system:serviceaccount:%s:%s", ns, sa)
 		return inList(scc.Users, ctrlSA), nil
 	})

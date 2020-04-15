@@ -710,4 +710,3 @@ spec:
           containerPort: 8008
         - name: https-webhook
           containerPort: 8443
-
