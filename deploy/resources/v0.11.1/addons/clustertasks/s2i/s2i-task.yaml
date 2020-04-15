@@ -21,11 +21,12 @@ spec:
     description: Log level when running the S2I binary
     default: '0'
   resources:
+    inputs:
+      - name: source
+        type: git
     outputs:
-    - name: image
-      type: image
-  workspaces:
-  - name: source
+      - name: image
+        type: image
   steps:
   - name: generate
     command:
@@ -40,7 +41,7 @@ spec:
     volumeMounts:
     - mountPath: /gen-source
       name: gen-source
-    workingDir: $(workspaces.source.path)
+    workingDir: /workspace/source
   - name: build
     command:
     - buildah
