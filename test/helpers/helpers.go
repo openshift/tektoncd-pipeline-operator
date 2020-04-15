@@ -2,11 +2,8 @@ package helpers
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	secv1 "github.com/openshift/api/security/v1"
-	secclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,47 +116,6 @@ func DeleteClusterCR(t *testing.T, name string) {
 
 	AssertNoError(t, err)
 }
-func ValidateSCC(t *testing.T, ns, sa, sccName string) {
-	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
-		scc, err := GetPrivilegedSCC(sccName)
-		if err != nil {
-			t.Logf("failed to get privileged scc: %s \n", err)
-			return false, err
-		}
-		t.Log("scc", scc.Users)
-		ctrlSA := fmt.Sprintf("system:serviceaccount:%s:%s", ns, sa)
-		return inList(scc.Users, ctrlSA), nil
-	})
-	AssertNoError(t, err)
-}
-
-func ValidateSCCDeleted(t *testing.T, ns, sa, sccName string) {
-	t.Helper()
-	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
-		_, err := GetPrivilegedSCC(sccName)
-		if err != nil {
-			if apierrors.IsGone(err) || apierrors.IsNotFound(err) {
-				return true, nil
-			}
-			return false, err
-		}
-		t.Logf("Waiting for deletion of %s SCC\n", sccName)
-		return false, nil
-	})
-	if err == nil {
-		t.Logf("%s SCC deleted\n", sccName)
-	}
-	AssertNoError(t, err)
-}
-
-func inList(list []string, item string) bool {
-	for _, v := range list {
-		if v == item {
-			return true
-		}
-	}
-	return false
-}
 
 func ValidatePipelineSetup(t *testing.T, cr *op.Config, sa string, deployments ...string) {
 	t.Helper()
@@ -177,14 +133,6 @@ func ValidatePipelineSetup(t *testing.T, cr *op.Config, sa string, deployments .
 		)
 		AssertNoError(t, err)
 	}
-}
-
-func GetPrivilegedSCC(sccName string) (*secv1.SecurityContextConstraints, error) {
-	sec, err := secclient.NewForConfig(test.Global.KubeConfig)
-	if err != nil {
-		return nil, err
-	}
-	return sec.SecurityContextConstraints().Get(sccName, metav1.GetOptions{})
 }
 
 func ValidatePipelineCleanup(t *testing.T, cr *op.Config, deployments ...string) {
