@@ -80,7 +80,7 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		_, err = r.applyAddons(req, config)
 
 		// THEN
-		assertNoEror(err, "failed to reconcile for applyPipeline;", t)
+		assertNoEror(err, "failed to reconcile for applyAddons;", t)
 		assertContainerHasImage(deployment, container, image, r.client, t)
 		assertContainerArgHasImage(deployment, arg, argImage, r.client, t)
 	})

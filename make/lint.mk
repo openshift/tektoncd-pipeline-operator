@@ -29,9 +29,9 @@ lint-go-code: ./vendor $(GOLANGCI_LINT_BIN)
 	./out/golangci-lint ${V_FLAG} run --deadline=30m
 
 $(GOLANGCI_LINT_BIN):
-		$(Q) GO111MODULE=on \
-		GOBIN=$(shell pwd)/out \
-		go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	$(Q) GO111MODULE=on \
+	GOBIN=$(shell pwd)/out \
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 	# re-enable this when the fix for the issue is released
 	#$(Q)curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./out v1.16.0
