@@ -3,6 +3,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: tekton-default-pipelines-view
   namespace: openshift
+  annotations:
+    operator.tekton.dev/preserve-namespace: "true"
 roleRef:
   kind: ClusterRole
   name: tekton-default-pipelines-view
