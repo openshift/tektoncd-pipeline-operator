@@ -3,12 +3,12 @@ kind: ClusterRole
 metadata:
   labels:
     rbac.authorization.k8s.io/aggregate-to-view: "true"
-  name: tekton-clustertriggerbinding-view
+  name: tekton-clustertriggerbindings-view
 rules:
 - apiGroups:
-  - tekton.dev
+  - triggers.tekton.dev
   resources:
-  - clustertasks
+  - clustertriggerbindings
   verbs:
   - get
   - list

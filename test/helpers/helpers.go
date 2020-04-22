@@ -71,6 +71,30 @@ func WaitForClusterCR(t *testing.T, name string) *op.Config {
 	return cr
 }
 
+func WaitForClusterCRStatus(t *testing.T, name string, installStatus op.InstallStatus) error {
+	t.Helper()
+
+	objKey := types.NamespacedName{Name: name}
+	cr := &op.Config{}
+
+	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
+		err := test.Global.Client.Get(context.TODO(), objKey, cr)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Logf("Waiting for availability of %s cr\n", name)
+				return false, nil
+			}
+			return false, err
+		}
+		if cr.Status.Conditions[0].Code != installStatus {
+			t.Logf("Waiting for InstallStatus %s\n", installStatus)
+			return false, nil
+		}
+		return true, nil
+	})
+	return err
+}
+
 func WaitForServiceAccount(t *testing.T, ns, targetSA string) *corev1.ServiceAccount {
 	t.Helper()
 

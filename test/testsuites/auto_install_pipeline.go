@@ -25,12 +25,8 @@ func ValidateAutoInstall(t *testing.T) {
 	helpers.ValidatePipelineSetup(t, cr,
 		flag.TriggerControllerName,
 		flag.TriggerWebhookName)
-
-	cr = helpers.WaitForClusterCR(t, flag.ClusterCRName)
-	if code := cr.Status.Conditions[0].Code; code != op.InstalledStatus {
-		t.Errorf("Expected code to be %s but got %s", op.InstalledStatus, code)
-	}
-
+	err := helpers.WaitForClusterCRStatus(t, flag.ClusterCRName, op.InstalledStatus)
+	helpers.AssertNoError(t, err)
 }
 
 // ValidateDeletion ensures that deleting the cluster CR  deletes the already
