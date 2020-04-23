@@ -633,7 +633,7 @@ func createCR(c client.Client) error {
 
 	err := c.Create(context.TODO(), cr)
 	if errors.IsAlreadyExists(err) {
-		log.Info("skipped creation", "reason", "resoure already exists")
+		log.Info("skipped creation", "reason", "resource already exists")
 		return nil
 	}
 

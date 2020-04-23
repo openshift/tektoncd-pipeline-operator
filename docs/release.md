@@ -13,7 +13,7 @@
     * To make an official release use **QUAY_NAMESPACE=openshift-pipeline**
     * For local development/testing use **QUAY_NAMESPACE=\<your quay username\>**
     
-    * whereever **MY_QUAY_NAMESPACE** is specified (in OLM testing) always use **MY_QUAY_NAMESPACE=\<your quay username\>** 
+    * wherever **MY_QUAY_NAMESPACE** is specified (in OLM testing) always use **MY_QUAY_NAMESPACE=\<your quay username\>** 
 
 ## Branching
 
