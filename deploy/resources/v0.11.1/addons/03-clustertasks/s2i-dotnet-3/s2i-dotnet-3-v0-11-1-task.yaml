@@ -6,7 +6,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: ClusterTask
 metadata:
-  name: s2i-dotnet3-v0-11-1
+  name: s2i-dotnet-3-v0-11-1
 spec:
   params:
     - name: MINOR_VERSION
