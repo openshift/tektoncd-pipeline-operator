@@ -31,7 +31,7 @@ lint-go-code: ./vendor $(GOLANGCI_LINT_BIN)
 $(GOLANGCI_LINT_BIN):
 	# HACK: fix golang-ci giving errors with utf8
 	# see: https://github.com/golangci/golangci-lint/issues/658
-	$(Q) GO111MODULE=off \
+	$(Q) GO111MODULE=on \
 		GOBIN=$(shell pwd)/out \
 		go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
