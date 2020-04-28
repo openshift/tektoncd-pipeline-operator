@@ -29,14 +29,7 @@ lint-go-code: ./vendor $(GOLANGCI_LINT_BIN)
 	./out/golangci-lint ${V_FLAG} run --deadline=30m
 
 $(GOLANGCI_LINT_BIN):
-	# HACK: fix golang-ci giving errors with utf8
-	# see: https://github.com/golangci/golangci-lint/issues/658
-	$(Q) GO111MODULE=on \
-		GOBIN=$(shell pwd)/out \
-		go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-
-	# re-enable this when the fix for the issue is released
-	#$(Q)curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./out v1.16.0
+	$(Q)curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./out v1.25.1
 
 .PHONY: courier
 ## Validate manifests using operator-courier
