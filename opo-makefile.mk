@@ -11,7 +11,7 @@ ifndef PIPELINE_VERSION
 	@exit 1
 endif
 	[[ -d "${PIPELINE_PATH}" ]] || mkdir -p ${PIPELINE_PATH}
-	curl -s -o ${PIPELINE_PATH}/release.yaml ${STABLE_RELEASE_URL}
+	curl -s -o ${PIPELINE_PATH}/00-release.yaml ${STABLE_RELEASE_URL}
 	sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'v${PIPELINE_VERSION}'"/' pkg/flag/flag.go
 	go fmt pkg/flag/flag.go
 
