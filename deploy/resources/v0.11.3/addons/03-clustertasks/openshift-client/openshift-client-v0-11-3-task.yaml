@@ -7,7 +7,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: ClusterTask
 metadata:
-  name: openshift-client-v0-11-1
+  name: openshift-client-v0-11-3
 spec:
   params:
   - name: SCRIPT

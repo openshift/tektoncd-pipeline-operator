@@ -11,7 +11,7 @@ spec:
   params:
     - name: VERSION
       description: The version of the nodejs
-      default: '8'
+      default: '10'
       type: string
     - name: PATH_CONTEXT
       description: The location of the path to run s2i from.

@@ -7,7 +7,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: ClusterTask
 metadata:
-  name: buildah-v0-11-1
+  name: buildah-v0-11-3
 spec:
   params:
   - name: BUILDER_IMAGE

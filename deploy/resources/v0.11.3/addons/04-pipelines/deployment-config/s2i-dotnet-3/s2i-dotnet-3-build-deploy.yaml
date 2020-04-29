@@ -22,7 +22,7 @@ spec:
   tasks:
     - name: build
       taskRef:
-        name: s2i-dotnet3
+        name: s2i-dotnet-3
         kind: ClusterTask
       resources:
         inputs:
