@@ -116,7 +116,7 @@ func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...st
 		labels[key] = value
 		err = unstructured.SetNestedStringMap(u.Object, labels, "metadata", "labels")
 		if err != nil {
-			return fmt.Errorf("error updating labes for %s:%s, %s", kind, u.GetName(), err)
+			return fmt.Errorf("error updating labels for %s:%s, %s", kind, u.GetName(), err)
 		}
 		return nil
 	}
