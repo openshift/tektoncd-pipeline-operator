@@ -1,0 +1,34 @@
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: buildah-snippet
+spec:
+  targetResource:
+    apiVersion: tekton.dev/v1alpha1
+    kind: Pipeline
+  title: Buildah Task
+  description: |
+    Buildash task builds the source into a container image Project Atomic's Buildah build tool.
+    It uses Buildah's support for building from Dockerfiles, using its buildah bud command.
+    This command executes the directives in the Dockerfile to assemble a container image, then pushes that image to a container registry.
+  snippet: true
+  yaml: |
+    - name: build
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      resources:
+        inputs:
+          - name: source
+            resource: app-source
+        outputs:
+          - name: image
+            resource: app-image
+        params:
+          - name: BUILDER_IMAGE
+            value: quay.io/buildah/stable:v1.11.0
+          - name: DOCKERFILE
+            value: ./Dockerfile
+          - name: TLSVERIFY
+            value: "true"
