@@ -151,8 +151,8 @@ kind: Service
 metadata:
   labels:
     app: tekton-triggers-controller
-    version: "devel"
-    triggers.tekton.dev/release: "devel"
+    version: "v0.4.0"
+    triggers.tekton.dev/release: "v0.4.0"
   name: tekton-triggers-controller
   namespace: tekton-pipelines
 spec:
@@ -283,7 +283,7 @@ metadata:
     app.kubernetes.io/name: tekton-triggers
     app.kubernetes.io/component: controller
     # tekton.dev/release value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
-    triggers.tekton.dev/release: "devel"
+    triggers.tekton.dev/release: "v0.4.0"
 spec:
   replicas: 1
   selector:
@@ -295,9 +295,9 @@ spec:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
       labels:
         app: tekton-triggers-controller
-        triggers.tekton.dev/release: "devel"
+        triggers.tekton.dev/release: "v0.4.0"
         # version value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
-        version: "devel"
+        version: "v0.4.0"
     spec:
       serviceAccountName: tekton-triggers-controller
       containers:
@@ -443,7 +443,7 @@ metadata:
   name: triggers-webhook-certs
   namespace: tekton-pipelines
   labels:
-    triggers.tekton.dev/release: devel
+    triggers.tekton.dev/release: v0.4.0
 # The data is populated at install time.
 
 ---
@@ -452,7 +452,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validation.webhook.triggers.tekton.dev
   labels:
-    triggers.tekton.dev/release: devel
+    triggers.tekton.dev/release: v0.4.0
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -470,7 +470,7 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: webhook.triggers.tekton.dev
   labels:
-    triggers.tekton.dev/release: devel
+    triggers.tekton.dev/release: v0.4.0
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -487,7 +487,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: config.webhook.triggers.tekton.dev
   labels:
-    triggers.tekton.dev/release: devel
+    triggers.tekton.dev/release: v0.4.0
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -590,8 +590,8 @@ kind: Service
 metadata:
   labels:
     app: tekton-triggers-webhook
-    version: "devel"
-    triggers.tekton.dev/release: "devel"
+    version: "v0.4.0"
+    triggers.tekton.dev/release: "v0.4.0"
   name: tekton-triggers-webhook
   namespace: tekton-pipelines
 spec:
@@ -667,7 +667,7 @@ metadata:
     app.kubernetes.io/name: tekton-triggers
     app.kubernetes.io/component: webhook-controller
     # tekton.dev/release value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
-    triggers.tekton.dev/release: "devel"
+    triggers.tekton.dev/release: "v0.4.0"
 spec:
   replicas: 1
   selector:
@@ -679,9 +679,9 @@ spec:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
       labels:
         app: tekton-triggers-webhook
-        triggers.tekton.dev/release: "devel"
+        triggers.tekton.dev/release: "v0.4.0"
         # version value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
-        version: "devel"
+        version: "v0.4.0"
         role: webhook
         app.kubernetes.io/name: tekton-triggers
         app.kubernetes.io/component: webhook-controller
