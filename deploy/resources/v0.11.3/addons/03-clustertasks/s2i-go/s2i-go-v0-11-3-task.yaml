@@ -33,7 +33,7 @@ spec:
         - name: gen-source
           mountPath: /gen-source
     - name: build
-      image: registry.access.redhat.com/rhel8/buildah
+      image: registry.redhat.io/rhel8/buildah
       workingDir: /gen-source
       command: ['buildah', 'bud', '--tls-verify=$(params.TLSVERIFY)', '--layers', '-f', '/gen-source/Dockerfile.gen', '-t', '$(resources.outputs.image.url)', '.']
       volumeMounts:
@@ -44,7 +44,7 @@ spec:
       securityContext:
         privileged: true
     - name: push
-      image: registry.access.redhat.com/rhel8/buildah
+      image: registry.redhat.io/rhel8/buildah
       command: ['buildah', 'push', '--tls-verify=$(params.TLSVERIFY)', '$(resources.outputs.image.url)', 'docker://$(resources.outputs.image.url)']
       volumeMounts:
         - name: varlibcontainers

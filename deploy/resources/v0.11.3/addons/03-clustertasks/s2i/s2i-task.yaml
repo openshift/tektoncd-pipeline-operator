@@ -53,7 +53,7 @@ spec:
     - -t
     - $(resources.outputs.image.url)
     - .
-    image: registry.access.redhat.com/rhel8/buildah
+    image: registry.redhat.io/rhel8/buildah
     securityContext:
       privileged: true
     volumeMounts:
@@ -69,7 +69,7 @@ spec:
     - --tls-verify=$(params.TLSVERIFY)
     - $(resources.outputs.image.url)
     - docker://$(resources.outputs.image.url)
-    image: registry.access.redhat.com/rhel8/buildah
+    image: registry.redhat.io/rhel8/buildah
     securityContext:
       privileged: true
     volumeMounts:
