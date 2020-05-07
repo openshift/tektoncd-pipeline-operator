@@ -293,7 +293,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	triggerImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.TriggersImagePrefix))
 	addonImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.AddonsImagePrefix))
 	addnTfrms := []mf.Transformer{
-		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask"),
+		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite, "ClusterTask"),
 		transform.DeploymentImages(triggerImages),
 		transform.TaskImages(addonImages),
 	}

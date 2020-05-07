@@ -37,7 +37,7 @@ spec:
     - $(params.BUILDER_IMAGE)
     - --as-dockerfile
     - /gen-source/Dockerfile.gen
-    image: quay.io/openshift-pipeline/s2i:nightly
+    image: registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8
     volumeMounts:
     - mountPath: /gen-source
       name: gen-source
@@ -53,7 +53,7 @@ spec:
     - -t
     - $(resources.outputs.image.url)
     - .
-    image: quay.io/buildah/stable
+    image: registry.access.redhat.com/rhel8/buildah
     securityContext:
       privileged: true
     volumeMounts:
@@ -69,7 +69,7 @@ spec:
     - --tls-verify=$(params.TLSVERIFY)
     - $(resources.outputs.image.url)
     - docker://$(resources.outputs.image.url)
-    image: quay.io/buildah/stable
+    image: registry.access.redhat.com/rhel8/buildah
     securityContext:
       privileged: true
     volumeMounts:
