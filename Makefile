@@ -39,6 +39,12 @@ clean:
 ./vendor: go.mod go.sum
 	$(Q)go mod vendor
 
+ifeq ($(shell uname -m),x86_64)
+        ARCH := amd64
+else ifeq ($(shell uname -m),ppc64le)
+        ARCH := ppc64le
+endif
+
 ./out/operator: ./vendor $(shell find . -path ./vendor -prune -o -name '*.go' -print)
 	#$(Q)operator-sdk generate k8s
 	$(Q)go version
