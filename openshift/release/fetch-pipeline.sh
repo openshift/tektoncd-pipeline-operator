@@ -15,7 +15,7 @@ PAYLOAD_PIPELINE_VERSION="release-next"
 
 function get_version {
     local shift=${1} # 0 is latest, increase is the version before etc...
-    local version=$(curl -s https://api.github.com/repos/tektoncd/pipeline/releases | python -c "import sys, json;x=json.load(sys.stdin);print(x[${shift}]['tag_name'])")
+    local version=$(curl -s https://api.github.com/repos/tektoncd/pipeline/releases | python -c "from pkg_resources import parse_version;import sys, json;jeez=json.load(sys.stdin);print(sorted([x['tag_name'] for x in jeez], key=parse_version, reverse=True)[${shift}])")
     PAYLOAD_PIPELINE_VERSION=${version}
     echo $(eval echo ${STABLE_RELEASE_URL})
 }
