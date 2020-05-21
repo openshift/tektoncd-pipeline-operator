@@ -326,10 +326,12 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 	log := requestLogger(req, "apply-non-redhat-resources")
 
 	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
+	addonImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.AddonsImagePrefix))
 	addnTfrms := []mf.Transformer{
 		// replace kind: Task, with kind: ClusterTask
 		transform.ReplaceKind("Task", "ClusterTask"),
 		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite),
+		transform.TaskImages(addonImages),
 	}
 	if err := transformManifest(cfg, &r.community, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
