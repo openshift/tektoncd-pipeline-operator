@@ -22,7 +22,7 @@ lint-yaml: ./vendor ${YAML_FILES}
 .PHONY: lint-go-code
 ## Checks the code with golangci-lint
 lint-go-code: ./vendor $(GOLANGCI_LINT_BIN)
-	# This is required for OpenShift CI enviroment
+	# This is required for OpenShift CI environment
 	# Ref: https://github.com/openshift/release/pull/3438#issuecomment-482053250
 	$(Q)XDG_CACHE_HOME=$(shell pwd)/out/cache \
 	GOCACHE=$(shell pwd)/out/gocache \

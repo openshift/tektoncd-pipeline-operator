@@ -92,7 +92,7 @@ func ReplaceKind(fromKind, toKind string) mf.Transformer {
 }
 
 //InjectLabel adds label key:value to a resource
-// overwritePolicy (Retain/Overwrite) decides whehther to overwite an already existing label
+// overwritePolicy (Retain/Overwrite) decides whehther to overwrite an already existing label
 // []kinds specify the Kinds on which the label should be applied
 // if len(kinds) = 0, label will be apllied to all/any resources irrespective of its Kind
 func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...string) mf.Transformer {
@@ -116,7 +116,7 @@ func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...st
 		labels[key] = value
 		err = unstructured.SetNestedStringMap(u.Object, labels, "metadata", "labels")
 		if err != nil {
-			return fmt.Errorf("error updateing labes for %s:%s, %s", kind, u.GetName(), err)
+			return fmt.Errorf("error updating labels for %s:%s, %s", kind, u.GetName(), err)
 		}
 		return nil
 	}
