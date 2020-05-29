@@ -21,7 +21,7 @@ It allows overriding `ClusterTask` addons steps images.
 It allows overriding `ClusterTask` addons params images. the `_PARAM_` will replace the
 value of `Task.Spec.Param`.
 
-`Note: IF IMAGE NAME, IMAGE ARGUMENT, STEP NAME AND PARAMATER NAME HAS "-" IN IT, THEN PLEASE SUBSTITUTE IT BY "_"`
+`Note: IF IMAGE NAME, IMAGE ARGUMENT, STEP NAME AND PARAMETER NAME HAS "-" IN IT, THEN PLEASE SUBSTITUTE IT BY "_"`
 
 `Note: BE CAUTIOUS WHILE SUBSTITUTING THE IMAGES. FOR INSTANCE, IF DEPLOYMENT HAS MORE THAN ONE CONTAINER AND 
 CONTAINER HAS SAME NAME AS DEFINED IN THE OVERRIDE IMAGE CONFIGURATION, THEN THIS COULD RESULT IN UNWATED IMAGE SUBSTITUTATION` 
@@ -247,7 +247,7 @@ cd $GOPATH/src/github.com/operator-framework/operator-lifecycle-manager
 
 This section explains how to test changes to the operator by executing the entire end-to-end workflow of edit, test, build, package, etc... 
 
-It asssumes you have already followed install [minikube](#install-minikube) and [OLM](#install-olm).
+It assumes you have already followed install [minikube](#install-minikube) and [OLM](#install-olm).
 
 #### Generate new image, CSV
 

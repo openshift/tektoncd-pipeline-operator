@@ -141,7 +141,7 @@ func DeleteClusterCR(t *testing.T, name string) {
 	AssertNoError(t, err)
 }
 
-func ValidatePipelineSetup(t *testing.T, cr *op.Config, sa string, deployments ...string) {
+func ValidatePipelineSetup(t *testing.T, cr *op.Config, deployments ...string) {
 	t.Helper()
 
 	kc := test.Global.KubeClient
