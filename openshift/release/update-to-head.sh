@@ -35,10 +35,13 @@ go fmt ${PROJECT_ROOT}/pkg/flag/flag.go
 #get triggers manifest
 #get cluster task manifest
 #get consoleSample
-LATEST_RELEASE=$(ls ${PAYLOAD_ROOT} | sort | tail -n 1)
+# this is a hack, filter out all versions with single digit minor versions to get the sort working as expected
+LATEST_RELEASE=$(ls ${PAYLOAD_ROOT} | sort | grep -v 'v0\.[[:digit:]]\.' | tail -n 1)
 for d in $(ls ${PAYLOAD_ROOT}/${LATEST_RELEASE}); do
   echo $d
   if [[ "${d}" = "pipelines" ]]; then
+    cp  ${PAYLOAD_ROOT}/${LATEST_RELEASE}/${d}/01-clusterrole.yaml ${PAYLOAD_PATH}/${d}/
+    cp  ${PAYLOAD_ROOT}/${LATEST_RELEASE}/${d}/02-rolebinding.yaml ${PAYLOAD_PATH}/${d}/
     continue
   fi
   cp -r ${PAYLOAD_ROOT}/${LATEST_RELEASE}/${d} ${PAYLOAD_PATH}/${d}
