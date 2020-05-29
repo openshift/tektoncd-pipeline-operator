@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
-	sec "github.com/openshift/client-go/security/clientset/versioned"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
@@ -74,15 +72,9 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		community = mf.Manifest{}
 	}
 
-	secClient, err := sec.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return nil, err
-	}
-
 	return &ReconcileConfig{
 		client:    mgr.GetClient(),
 		scheme:    mgr.GetScheme(),
-		secClient: secClient,
 		pipeline:  pipeline,
 		addons:    addons,
 		community: community,
@@ -190,7 +182,6 @@ type ReconcileConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client    client.Client
-	secClient sec.Interface
 	scheme    *runtime.Scheme
 	pipeline  mf.Manifest
 	addons    mf.Manifest
@@ -274,30 +265,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	}
 	log.Info("successfully applied all pipeline resources")
 
-	// add pipeline-controller to scc; scc privileged needs to be updated and
-	// can't be just oc applied
-	controller := types.NamespacedName{Namespace: cfg.Spec.TargetNamespace, Name: flag.PipelineControllerName}
-	ctrlSA, err := r.serviceAccountNameForDeployment(controller)
-	if err != nil {
-		log.Error(err, "failed to find controller service account")
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineApplyError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
-	}
-
-	if err := r.addPrivilegedSCC(ctrlSA); err != nil {
-		log.Error(err, "failed to update scc")
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineApplyError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
-	}
-	log.Info("successfully updated SCC privileged")
-
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
+	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -325,7 +293,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	triggerImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.TriggersImagePrefix))
 	addonImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.AddonsImagePrefix))
 	addnTfrms := []mf.Transformer{
-		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeRedHat, transform.Overwrite, "ClusterTask"),
+		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite, "ClusterTask"),
 		transform.DeploymentImages(triggerImages),
 		transform.TaskImages(addonImages),
 	}
@@ -358,10 +326,12 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 	log := requestLogger(req, "apply-non-redhat-resources")
 
 	//add TaskProviderType label to ClusterTasks (community, redhat, certified)
+	addonImages := transform.ToLowerCaseKeys(imagesFromEnv(transform.AddonsImagePrefix))
 	addnTfrms := []mf.Transformer{
 		// replace kind: Task, with kind: ClusterTask
 		transform.ReplaceKind("Task", "ClusterTask"),
 		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite),
+		transform.TaskImages(addonImages),
 	}
 	if err := transformManifest(cfg, &r.community, addnTfrms...); err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
@@ -470,96 +440,10 @@ func (r *ReconcileConfig) validateDeployments(req reconcile.Request, cfg *op.Con
 	return controller && webhook, nil
 }
 
-func (r *ReconcileConfig) serviceAccountNameForDeployment(deployment types.NamespacedName) (string, error) {
-	d := appsv1.Deployment{}
-	if err := r.client.Get(context.Background(), deployment, &d); err != nil {
-		return "", err
-	}
-
-	sa := d.Spec.Template.Spec.ServiceAccountName
-	fullSA := fmt.Sprintf("system:serviceaccount:%s:%s", deployment.Namespace, sa)
-	return fullSA, nil
-}
-
-func (r *ReconcileConfig) addPrivilegedSCC(sa string) error {
-	log := ctrlLog.WithName("scc").WithName("add")
-	privileged, err := r.secClient.SecurityV1().SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
-	if err != nil {
-		log.Error(err, "scc privileged get error")
-		return err
-	}
-
-	newList, changed := addToList(privileged.Users, sa)
-	_, annotated := privileged.Annotations[flag.SccAnnotationKey]
-	if !changed && annotated {
-		log.Info("scc already in added to the list", "action", "none")
-		return nil
-	}
-
-	log.Info("privileged scc needs updation")
-	privileged.Annotations[flag.SccAnnotationKey] = sa
-	privileged.Users = newList
-
-	updated, err := r.secClient.SecurityV1().SecurityContextConstraints().Update(privileged)
-	log.Info("added SA to scc", "updated", updated.Users)
-	return err
-}
-
-func (r *ReconcileConfig) removePrivilegedSCC() error {
-	log := ctrlLog.WithName("scc").WithName("remove")
-	privileged, err := r.secClient.SecurityV1().SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
-	if err != nil {
-		log.Error(err, "scc privileged get error")
-		return err
-	}
-
-	sa, annotated := privileged.Annotations[flag.SccAnnotationKey]
-	if !annotated {
-		log.Info("sa already not in privileged SCC", "action", "none")
-		return nil
-	}
-
-	newList, changed := removeFromList(privileged.Users, sa)
-	if !changed {
-		log.Info("sa already not in privileged SCC", "action", "none")
-		return nil
-	}
-
-	log.Info("privileged scc needs updation")
-	delete(privileged.Annotations, flag.SccAnnotationKey)
-	privileged.Users = newList
-
-	updated, err := r.secClient.SecurityV1().SecurityContextConstraints().Update(privileged)
-	log.Info("removed SA from scc", "updated", updated.Users)
-	return err
-}
-
-func removeFromList(list []string, item string) ([]string, bool) {
-	for i, v := range list {
-		if v == item {
-			return append(list[:i], list[i+1:]...), true
-		}
-	}
-	return list, false
-}
-
-func addToList(list []string, item string) ([]string, bool) {
-	for _, v := range list {
-		if v == item {
-			return list, false
-		}
-	}
-	return append(list, item), true
-}
-
 func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "delete")
 
 	log.Info("deleting pipeline resources")
-
-	if err := r.removePrivilegedSCC(); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	// Requested object not found, could have been deleted after reconcile request.
 	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.

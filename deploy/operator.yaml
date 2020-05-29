@@ -16,7 +16,7 @@ spec:
       serviceAccountName: openshift-pipelines-operator
       containers:
       - name: openshift-pipelines-operator
-        image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.10.8
+        image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.11.2
         command:
         - openshift-pipelines-operator
         - --recursive
@@ -24,6 +24,8 @@ spec:
         env:
         - name: WATCH_NAMESPACE
           value: ""
+        - name: IMAGE_ADDONS_PARAM_KN_IMAGE
+          value: registry.redhat.io/openshift-serverless-1/client-kn-rhel8
         - name: POD_NAME
           valueFrom:
             fieldRef:

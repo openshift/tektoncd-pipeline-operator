@@ -2,11 +2,8 @@ package helpers
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	secv1 "github.com/openshift/api/security/v1"
-	secclient "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,6 +71,30 @@ func WaitForClusterCR(t *testing.T, name string) *op.Config {
 	return cr
 }
 
+func WaitForClusterCRStatus(t *testing.T, name string, installStatus op.InstallStatus) error {
+	t.Helper()
+
+	objKey := types.NamespacedName{Name: name}
+	cr := &op.Config{}
+
+	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
+		err := test.Global.Client.Get(context.TODO(), objKey, cr)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Logf("Waiting for availability of %s cr\n", name)
+				return false, nil
+			}
+			return false, err
+		}
+		if cr.Status.Conditions[0].Code != installStatus {
+			t.Logf("Waiting for InstallStatus %s\n", installStatus)
+			return false, nil
+		}
+		return true, nil
+	})
+	return err
+}
+
 func WaitForServiceAccount(t *testing.T, ns, targetSA string) *corev1.ServiceAccount {
 	t.Helper()
 
@@ -119,43 +140,6 @@ func DeleteClusterCR(t *testing.T, name string) {
 
 	AssertNoError(t, err)
 }
-func ValidateSCCAdded(t *testing.T, ns, sa string) {
-	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
-		privileged, err := GetPrivilegedSCC()
-		if err != nil {
-			t.Logf("failed to get privileged scc: %s \n", err)
-			return false, err
-		}
-		t.Logf("... looking at %v", privileged.Users)
-
-		ctrlSA := fmt.Sprintf("system:serviceaccount:%s:%s", ns, sa)
-		return inList(privileged.Users, ctrlSA), nil
-	})
-	AssertNoError(t, err)
-}
-
-func ValidateSCCRemoved(t *testing.T, ns, sa string) {
-	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
-		privileged, err := GetPrivilegedSCC()
-		if err != nil {
-			t.Logf("failed to get privileged scc: %s \n", err)
-			return false, err
-		}
-
-		ctrlSA := fmt.Sprintf("system:serviceaccount:%s:%s", ns, sa)
-		return !inList(privileged.Users, ctrlSA), nil
-	})
-	AssertNoError(t, err)
-}
-
-func inList(list []string, item string) bool {
-	for _, v := range list {
-		if v == item {
-			return true
-		}
-	}
-	return false
-}
 
 func ValidatePipelineSetup(t *testing.T, cr *op.Config, deployments ...string) {
 	t.Helper()
@@ -173,15 +157,6 @@ func ValidatePipelineSetup(t *testing.T, cr *op.Config, deployments ...string) {
 		)
 		AssertNoError(t, err)
 	}
-
-}
-
-func GetPrivilegedSCC() (*secv1.SecurityContextConstraints, error) {
-	sec, err := secclient.NewForConfig(test.Global.KubeConfig)
-	if err != nil {
-		return nil, err
-	}
-	return sec.SecurityContextConstraints().Get("privileged", metav1.GetOptions{})
 }
 
 func ValidatePipelineCleanup(t *testing.T, cr *op.Config, deployments ...string) {
