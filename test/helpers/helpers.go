@@ -157,7 +157,7 @@ func inList(list []string, item string) bool {
 	return false
 }
 
-func ValidatePipelineSetup(t *testing.T, cr *op.Config, sa string, deployments ...string) {
+func ValidatePipelineSetup(t *testing.T, cr *op.Config, deployments ...string) {
 	t.Helper()
 
 	kc := test.Global.KubeClient
