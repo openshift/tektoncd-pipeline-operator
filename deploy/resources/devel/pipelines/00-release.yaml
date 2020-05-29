@@ -497,7 +497,7 @@ metadata:
   name: webhook-certs
   namespace: tekton-pipelines
   labels:
-    pipeline.tekton.dev/release: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
 # The data is populated at install time.
 
 ---
@@ -520,7 +520,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validation.webhook.pipeline.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -551,7 +551,7 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: webhook.pipeline.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -582,7 +582,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: config.webhook.pipeline.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -931,8 +931,8 @@ metadata:
   labels:
     app.kubernetes.io/name: tekton-pipelines
     app.kubernetes.io/component: controller
-    pipeline.tekton.dev/release: v0.11.1
-    version: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
+    version: v0.11.3
 spec:
   replicas: 1
   selector:
@@ -947,24 +947,24 @@ spec:
         app.kubernetes.io/name: tekton-pipelines
         app.kubernetes.io/component: controller
         # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-        pipeline.tekton.dev/release: v0.11.1
-        version: v0.11.1
+        pipeline.tekton.dev/release: v0.11.3
+        version: v0.11.3
     spec:
       serviceAccountName: tekton-pipelines-controller
       containers:
       - name: tekton-pipelines-controller
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.11.1
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.11.3
         args: [
-          "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.11.1",
-          "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.11.1",
-          "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.11.1",
-          "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.11.1",
+          "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.11.3",
+          "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.11.3",
+          "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.11.3",
+          "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.11.3",
           "-shell-image", "registry.access.redhat.com/ubi8/ubi-minimal:latest",
           "-gsutil-image", "google/cloud-sdk",
-          "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.11.1",
-          "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.11.1",
-          "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.11.1",
-          "-build-gcs-fetcher-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gcs-fetcher:v0.11.1",
+          "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.11.3",
+          "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.11.3",
+          "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.11.3",
+          "-build-gcs-fetcher-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gcs-fetcher:v0.11.3",
         ]
         volumeMounts:
         - name: config-logging
@@ -994,8 +994,8 @@ kind: Service
 metadata:
   labels:
     app: tekton-pipelines-controller
-    pipeline.tekton.dev/release: v0.11.1
-    version: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
+    version: v0.11.3
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
 spec:
@@ -1033,8 +1033,8 @@ metadata:
   labels:
     app.kubernetes.io/name: tekton-pipelines
     app.kubernetes.io/component: webhook-controller
-    pipeline.tekton.dev/release: v0.11.1
-    version: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
+    version: v0.11.3
 spec:
   replicas: 1
   selector:
@@ -1050,15 +1050,15 @@ spec:
         role: webhook
         app.kubernetes.io/name: tekton-pipelines
         app.kubernetes.io/component: webhook-controller
-        pipeline.tekton.dev/release: v0.11.1
-        version: v0.11.1
+        pipeline.tekton.dev/release: v0.11.3
+        version: v0.11.3
     spec:
       serviceAccountName: tekton-pipelines-controller
       containers:
       - name: webhook
         # This is the Go import path for the binary that is containerized
         # and substituted here.
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.11.1
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.11.3
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
@@ -1089,8 +1089,8 @@ metadata:
   labels:
     app: tekton-pipelines-webhook
     role: webhook
-    pipeline.tekton.dev/release: v0.11.1
-    version: v0.11.1
+    pipeline.tekton.dev/release: v0.11.3
+    version: v0.11.3
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
 spec:
