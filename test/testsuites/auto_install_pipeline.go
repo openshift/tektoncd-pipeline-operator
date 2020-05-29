@@ -61,5 +61,5 @@ func ValidateDeletion(t *testing.T) {
 		flag.TriggerControllerName,
 		flag.TriggerWebhookName)
 
-	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, flag.PipelineControllerName)
+	helpers.ValidateSCCRemoved(t, cr.Spec.TargetNamespace, flag.PipelineControllerSA)
 }
