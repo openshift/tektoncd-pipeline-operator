@@ -362,6 +362,8 @@ func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transform
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
+		transform.InjectNamespaceRoleBindingSubjects(cfg.Spec.TargetNamespace),
+		transform.InjectNamespaceCRDWebhookClientConfig(cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
 	}
 	tfs = append(tfs, addnTfrms...)
