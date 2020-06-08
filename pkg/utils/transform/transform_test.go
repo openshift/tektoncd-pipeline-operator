@@ -398,3 +398,99 @@ func assertTaskImage(t *testing.T, resources []unstructured.Unstructured, name s
 		}
 	}
 }
+
+func TestTransformManifest_InjectNamespaceRoleBindingSubjects(t *testing.T) {
+	resourceWithAnnotation := "testdata/inject-ns-rolebinding.yaml"
+	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	assertNoEror(t, err)
+	tf := InjectNamespaceRoleBindingSubjects("target")
+	err = manifest.Transform(tf)
+	assertNoEror(t, err)
+	assertRBSubjectNamespace(t, manifest.Resources[0], "target")
+}
+
+func TestTransformManifest_InjectNamespaceRoleBindingSubjects_NoNs(t *testing.T) {
+	resourceWithAnnotation := "testdata/inject-ns-rolebinding-no-ns.yaml"
+	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	assertNoEror(t, err)
+	tf := InjectNamespaceRoleBindingSubjects("target")
+	err = manifest.Transform(tf)
+	assertNoEror(t, err)
+	assertRBSubjectNoNamespace(t, manifest.Resources[0])
+}
+
+func TestTransformManifest_InjectNamespaceCRDWebhookClientConf(t *testing.T) {
+	resourceWithAnnotation := "testdata/inject-ns-crd-webhookclientconf.yaml"
+	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	assertNoEror(t, err)
+	tf := InjectNamespaceCRDWebhookClientConfig("target")
+	err = manifest.Transform(tf)
+	assertNoEror(t, err)
+	assertCRDWebhookClientConfNS(t, manifest.Resources[0], "target")
+}
+
+func TestTransformManifest_InjectNamespaceCRDWebhookClientConf_NoNs(t *testing.T) {
+	resourceWithAnnotation := "testdata/inject-ns-crd-webhookclientconf-no-ns.yaml"
+	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	assertNoEror(t, err)
+	tf := InjectNamespaceCRDWebhookClientConfig("target")
+	err = manifest.Transform(tf)
+	assertNoEror(t, err)
+	assertCRDWebhookClientConfNoNS(t, manifest.Resources[0])
+}
+
+func assertRBSubjectNamespace(t *testing.T, u unstructured.Unstructured, expected string) {
+	t.Helper()
+	subjects, found, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
+	if found {
+		for _, subject := range subjects.([]interface{}) {
+			m := subject.(map[string]interface{})
+			if _, ok := m["namespace"]; !ok {
+				t.Errorf("Namespace not found")
+			}
+			ns := m["namespace"]
+			if ns != expected {
+				t.Errorf("Expected '%s', got '%s'", expected, ns)
+			}
+		}
+	}
+}
+
+func assertRBSubjectNoNamespace(t *testing.T, u unstructured.Unstructured) {
+	t.Helper()
+	subjects, found, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
+	if found {
+		for _, subject := range subjects.([]interface{}) {
+			m := subject.(map[string]interface{})
+			if _, ok := m["namespace"]; ok {
+				t.Errorf("Expected no namesapce")
+			}
+		}
+	}
+}
+
+func assertCRDWebhookClientConfNS(t *testing.T, u unstructured.Unstructured, expected string) {
+	t.Helper()
+	service, found, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "conversion", "webhookClientConfig", "service")
+	if found {
+		m := service.(map[string]interface{})
+		if _, ok := m["namespace"]; !ok {
+			t.Errorf("Namespace not found")
+		}
+		ns := m["namespace"]
+		if ns != expected {
+			t.Errorf("Expected '%s', got '%s'", expected, ns)
+		}
+	}
+}
+
+func assertCRDWebhookClientConfNoNS(t *testing.T, u unstructured.Unstructured) {
+	t.Helper()
+	service, found, _ := unstructured.NestedFieldNoCopy(u.Object, "spec", "conversion", "webhookClientConfig", "service")
+	if found {
+		m := service.(map[string]interface{})
+		if _, ok := m["namespace"]; ok {
+			t.Errorf("Expected no namesapce")
+		}
+	}
+}
