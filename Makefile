@@ -66,8 +66,14 @@ upgrade-build: #TODO: reenable it
 
 .PHONY: osdk-image
 osdk-image:
+
+ifeq ($(uname -m),x86_64)
+        ARCH=amd64
+else ifeq ($(uname -m),ppc64le)
+        ARCH=ppc64le
+endif
 	$(Q)rm -rf build/_output/bin
 	$(eval IMAGE_TAG := quay.io/rhpipeline/openshift-pipelines-operator:test)
-	$(Q)operator-sdk build \
+	$(Q) GOARCH=${ARCH} operator-sdk build \
 	--go-build-args "-o build/_output/bin/openshift-pipelines-operator" \
 	$(IMAGE_TAG)
