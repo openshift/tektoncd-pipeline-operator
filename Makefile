@@ -39,10 +39,16 @@ clean:
 ./vendor: go.mod go.sum
 	$(Q)go mod vendor
 
+ifeq ($(shell uname -m),x86_64)
+        ARCH := amd64
+else ifeq ($(shell uname -m),ppc64le)
+        ARCH := ppc64le
+endif
+
 ./out/operator: ./vendor $(shell find . -path ./vendor -prune -o -name '*.go' -print)
 	#$(Q)operator-sdk generate k8s
 	$(Q)go version
-	$(Q)CGO_ENABLED=0 GOARCH=amd64 GOOS=linux \
+	$(Q)CGO_ENABLED=0 GOARCH=${ARCH} GOOS=linux \
 		go build ${V_FLAG} ${VENDOR_BUILD} -o ${BUILD_OUTPUT_DIR}${BUILD_OUTPUT_FILE} \
 		./cmd/manager
 
@@ -60,8 +66,14 @@ upgrade-build: #TODO: reenable it
 
 .PHONY: osdk-image
 osdk-image:
+
+ifeq ($(uname -m),x86_64)
+        ARCH=amd64
+else ifeq ($(uname -m),ppc64le)
+        ARCH=ppc64le
+endif
 	$(Q)rm -rf build/_output/bin
 	$(eval IMAGE_TAG := quay.io/rhpipeline/openshift-pipelines-operator:test)
-	$(Q)operator-sdk build \
+	$(Q) GOARCH=${ARCH} operator-sdk build \
 	--go-build-args "-o build/_output/bin/openshift-pipelines-operator" \
 	$(IMAGE_TAG)

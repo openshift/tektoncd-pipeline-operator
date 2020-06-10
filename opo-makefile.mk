@@ -86,7 +86,12 @@ ifndef QUAY_NAMESPACE
 	@echo QUAY_NAMESPACE not set
 	@exit 1
 endif
-	operator-sdk build quay.io/${QUAY_NAMESPACE}/openshift-pipelines-operator:v${VERSION} --go-build-args "-o build/_output/bin/openshift-pipelines-operator"
+ifeq ($(uname -m),x86_64)
+        ARCH=amd64
+else ifeq ($(uname -m),ppc64le)
+        ARCH=ppc64le
+endif
+	GOARCH=${ARCH} operator-sdk build quay.io/${QUAY_NAMESPACE}/openshift-pipelines-operator:v${VERSION} --go-build-args "-o build/_output/bin/openshift-pipelines-operator"
 
 .PHONY: opo-image-push
 opo-image-push:
