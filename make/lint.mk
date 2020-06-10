@@ -22,21 +22,14 @@ lint-yaml: ./vendor ${YAML_FILES}
 .PHONY: lint-go-code
 ## Checks the code with golangci-lint
 lint-go-code: ./vendor $(GOLANGCI_LINT_BIN)
-	# This is required for OpenShift CI enviroment
+	# This is required for OpenShift CI environment
 	# Ref: https://github.com/openshift/release/pull/3438#issuecomment-482053250
 	$(Q)XDG_CACHE_HOME=$(shell pwd)/out/cache \
 	GOCACHE=$(shell pwd)/out/gocache \
 	./out/golangci-lint ${V_FLAG} run --deadline=30m
 
 $(GOLANGCI_LINT_BIN):
-	# HACK: fix golang-ci giving errors with utf8
-	# see: https://github.com/golangci/golangci-lint/issues/658
-	$(Q) GO111MODULE=on \
-		GOBIN=$(shell pwd)/out \
-		go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0
-
-	# re-enable this when the fix for the issue is released
-	#$(Q)curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./out v1.16.0
+	$(Q)curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./out v1.25.1
 
 .PHONY: courier
 ## Validate manifests using operator-courier

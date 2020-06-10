@@ -34,7 +34,7 @@ USAGE:
     $SCRIPT_NAME CATALOG_VERSION DEST_DIR VERSION
 
 Example:
-  $SCRIPT_NAME release-v0.7 deploy/resources/v0.7.0 0.7.0
+  $SCRIPT_NAME release-v0.7 deploy/resources/v0.7.0 v0.7.0
 EOF
   exit 1
 }
@@ -58,6 +58,7 @@ declare -r OPENSHIFT_CATALOG_TASKS=(
   s2i-perl
   s2i-php
   s2i-ruby
+  s2i-dotnet-3
 )
 
 
@@ -150,7 +151,7 @@ main() {
 
   mkdir -p "$dest_dir" || die 1 "failed to create ${dest_dir}"
 
-  dest_dir="$dest_dir/addons/clustertasks"
+  dest_dir="$dest_dir/addons/03-clustertasks"
   mkdir -p "$dest_dir" || die 1 "failed to create catalog dir ${catalog_dir}"
 
   get_tasks "$dest_dir" "$version"  \

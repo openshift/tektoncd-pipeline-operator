@@ -10,13 +10,11 @@ import (
 	"testing"
 
 	mf "github.com/jcrossley3/manifestival"
-	securityv1 "github.com/openshift/api/security/v1"
-	fakesecurityclient "github.com/openshift/client-go/security/clientset/versioned/fake"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/pkg/flag"
 	trnsfm "github.com/tektoncd/operator/pkg/utils/transform"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,11 +41,10 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		os.Setenv(trnsfm.PipelinesImagePrefix+trnsfm.ArgPrefix+strings.ToUpper(arg), argImage)
 		config := newConfig(configName, namespace)
 		cl := feedConfigMock(config)
-		secCl := feedSCCMock("privileged", t)
 		pipelines, err := mfFor("pipelines", cl)
 		assertNoEror(err, "failed to create manifestival for pipelines;", t)
 		req := newRequest(configName, namespace)
-		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, pipeline: pipelines, secClient: secCl}
+		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, pipeline: pipelines}
 
 		// WHEN
 		_, err = r.applyPipeline(req, config)
@@ -83,7 +80,7 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		_, err = r.applyAddons(req, config)
 
 		// THEN
-		assertNoEror(err, "failed to reconcile for applyPipeline;", t)
+		assertNoEror(err, "failed to reconcile for applyAddons;", t)
 		assertContainerHasImage(deployment, container, image, r.client, t)
 		assertContainerArgHasImage(deployment, arg, argImage, r.client, t)
 	})
@@ -281,20 +278,6 @@ func mfFor(resource string, cl client.Client) (mf.Manifest, error) {
 	root := path.Join(path.Dir(filename), "../../..")
 	pipelinePath := filepath.Join(root, flag.ResourceDir, resource)
 	return mf.NewManifest(pipelinePath, flag.Recursive, cl)
-}
-
-func feedSCCMock(scc string, t *testing.T) *fakesecurityclient.Clientset {
-	constraint := &securityv1.SecurityContextConstraints{
-		ObjectMeta: metav1.ObjectMeta{Name: scc, Annotations: map[string]string{}},
-		Groups:     []string{},
-	}
-	securityFake := fakesecurityclient.NewSimpleClientset(constraint)
-	_, err := securityFake.SecurityV1().SecurityContextConstraints().Create(constraint)
-	if err != nil {
-		t.Errorf("mocking failed, cant create SCC: %v", err)
-	}
-
-	return securityFake
 }
 
 func feedConfigMock(config *op.Config) client.Client {

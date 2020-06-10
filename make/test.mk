@@ -46,12 +46,7 @@ get-operator-version:
 ## Runs the e2e tests locally
 test-e2e: e2e-setup
 	$(info Running E2E test: $@)
-	$(Q) rm -rf vendor/
-	$(Q)operator-sdk test local ./test/e2e \
-		--image registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator \
-		--namespace $(TEST_NAMESPACE) \
-		--go-test-flags "-v -timeout=15m" \
-	 	--debug
+	./test/e2e-tests.sh $(TEST_NAMESPACE)
 
 .PHONY: e2e-setup
 e2e-setup: get-test-namespace

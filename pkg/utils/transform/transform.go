@@ -65,8 +65,45 @@ func InjectNamespaceConditional(preserveNamespace, targetNamespace string) mf.Tr
 		if ok && val == "true" {
 			return nil
 		}
-
 		return tf(u)
+	}
+}
+
+func InjectNamespaceRoleBindingSubjects(targetNamespace string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		kind := strings.ToLower(u.GetKind())
+		if kind != "rolebinding" {
+			return nil
+		}
+		subjects, found, err := unstructured.NestedFieldNoCopy(u.Object, "subjects")
+		if !found || err != nil {
+			return err
+		}
+		for _, subject := range subjects.([]interface{}) {
+			m := subject.(map[string]interface{})
+			if _, ok := m["namespace"]; ok {
+				m["namespace"] = targetNamespace
+			}
+		}
+		return nil
+	}
+}
+
+func InjectNamespaceCRDWebhookClientConfig(targetNamespace string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		kind := strings.ToLower(u.GetKind())
+		if kind != "customresourcedefinition" {
+			return nil
+		}
+		service, found, err := unstructured.NestedFieldNoCopy(u.Object, "spec", "conversion", "webhookClientConfig", "service")
+		if !found || err != nil {
+			return err
+		}
+		m := service.(map[string]interface{})
+		if _, ok := m["namespace"]; ok {
+			m["namespace"] = targetNamespace
+		}
+		return nil
 	}
 }
 
@@ -92,7 +129,7 @@ func ReplaceKind(fromKind, toKind string) mf.Transformer {
 }
 
 //InjectLabel adds label key:value to a resource
-// overwritePolicy (Retain/Overwrite) decides whehther to overwite an already existing label
+// overwritePolicy (Retain/Overwrite) decides whehther to overwrite an already existing label
 // []kinds specify the Kinds on which the label should be applied
 // if len(kinds) = 0, label will be apllied to all/any resources irrespective of its Kind
 func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...string) mf.Transformer {
@@ -116,7 +153,7 @@ func InjectLabel(key, value string, overwritePolicy OverwritePolicy, kinds ...st
 		labels[key] = value
 		err = unstructured.SetNestedStringMap(u.Object, labels, "metadata", "labels")
 		if err != nil {
-			return fmt.Errorf("error updateing labes for %s:%s, %s", kind, u.GetName(), err)
+			return fmt.Errorf("error updating labels for %s:%s, %s", kind, u.GetName(), err)
 		}
 		return nil
 	}

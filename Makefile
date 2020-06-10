@@ -14,7 +14,7 @@ include ./make/lint.mk
 include ./make/test.mk
 include ./make/docker.mk
 include ./make/csv.mk
-include ./Release.mk
+include ./opo-makefile.mk
 
 BUILD_OUTPUT_DIR ?= ./out/
 BUILD_OUTPUT_FILE ?= operator

@@ -10,8 +10,6 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/jcrossley3/manifestival v0.0.0-20191210210340-41c7c3a22365
 	github.com/json-iterator/go v1.1.8 // indirect
-	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
-	github.com/openshift/client-go v0.0.0-20190923180330-3b6373338c9b
 	github.com/operator-framework/operator-sdk v0.14.1
 	github.com/prometheus/common v0.7.0
 	github.com/spf13/pflag v1.0.5

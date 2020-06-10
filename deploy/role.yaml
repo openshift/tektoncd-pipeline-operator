@@ -17,6 +17,7 @@ rules:
   - secrets
   - services
   - serviceaccounts
+  - limitranges
   verbs:
   - '*'
 - apiGroups:
@@ -123,7 +124,9 @@ rules:
   verbs:
   - get
   - update
+  - create
   - use
+  - delete
 - apiGroups:
   - operator.tekton.dev
   resources:
@@ -137,8 +140,15 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - triggers.tekton.dev
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
   - console.openshift.io
   resources:
   - consoleyamlsamples
+  - consoleclidownloads
   verbs:
   - '*'
