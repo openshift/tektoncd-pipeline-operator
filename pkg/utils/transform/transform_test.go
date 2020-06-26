@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	mf "github.com/jcrossley3/manifestival"
+	mf "github.com/manifestival/manifestival"
 	"github.com/tektoncd/operator/pkg/flag"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

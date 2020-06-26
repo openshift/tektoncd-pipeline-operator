@@ -8,8 +8,8 @@ require (
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/jcrossley3/manifestival v0.0.0-20191210210340-41c7c3a22365
 	github.com/json-iterator/go v1.1.8 // indirect
+	github.com/manifestival/manifestival v0.0.0
 	github.com/operator-framework/operator-sdk v0.14.1
 	github.com/prometheus/common v0.7.0
 	github.com/spf13/pflag v1.0.5

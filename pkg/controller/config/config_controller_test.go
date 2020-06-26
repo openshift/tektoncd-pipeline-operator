@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	mf "github.com/jcrossley3/manifestival"
+	mf "github.com/manifestival/manifestival"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/pkg/flag"
 	trnsfm "github.com/tektoncd/operator/pkg/utils/transform"
