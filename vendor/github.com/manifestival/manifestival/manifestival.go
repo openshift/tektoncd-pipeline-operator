@@ -1,18 +1,14 @@
 package manifestival
 
 import (
-	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/equality"
+	"github.com/go-logr/logr"
+	"github.com/go-logr/logr/testing"
+	"github.com/manifestival/manifestival/patch"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
-)
-
-var (
-	log = logf.Log.WithName("manifestival")
 )
 
 // Manifestival allows group application of a set of Kubernetes resources
@@ -20,45 +16,54 @@ var (
 // apiserver.
 type Manifestival interface {
 	// Either updates or creates all resources in the manifest
-	ApplyAll() error
+	ApplyAll(opts ...ClientOption) error
 	// Updates or creates a particular resource
-	Apply(*unstructured.Unstructured) error
+	Apply(spec *unstructured.Unstructured, opts ...ClientOption) error
 	// Deletes all resources in the manifest
-	DeleteAll(opts ...client.DeleteOption) error
+	DeleteAll(opts ...ClientOption) error
 	// Deletes a particular resource
-	Delete(spec *unstructured.Unstructured, opts ...client.DeleteOption) error
+	Delete(spec *unstructured.Unstructured, opts ...ClientOption) error
 	// Returns a copy of the resource from the api server, nil if not found
-	Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	Get(spec *unstructured.Unstructured, opts ...ClientOption) (*unstructured.Unstructured, error)
 	// Transforms the resources within a Manifest
-	Transform(fns ...Transformer) error
+	Transform(fns ...Transformer) (*Manifest, error)
 }
 
 // Manifest tracks a set of concrete resources which should be managed as a
 // group using a Kubernetes client provided by `NewManifest`.
 type Manifest struct {
 	Resources []unstructured.Unstructured
-	client    client.Client
+	client    Client
+	log       logr.Logger
 }
 
 var _ Manifestival = &Manifest{}
 
 // NewManifest creates a Manifest from a comma-separated set of yaml files or
 // directories (and subdirectories if the `recursive` option is set). The
-// Manifest will be evaluated using the supplied `client` against a particular
+// Manifest will be evaluated using the supplied `config` against a particular
 // Kubernetes apiserver.
-func NewManifest(pathname string, recursive bool, client client.Client) (Manifest, error) {
-	log.Info("Reading file", "name", pathname)
-	resources, err := Parse(pathname, recursive)
+func NewManifest(pathname string, opts ...Option) (Manifest, error) {
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+	log := o.logger
+	if log == nil {
+		log = testing.NullLogger{}
+	}
+	log.Info("Reading manifest", "name", pathname)
+	resources, err := Parse(pathname, o.recursive)
 	if err != nil {
 		return Manifest{}, err
 	}
-	return Manifest{Resources: resources, client: client}, nil
+	return Manifest{Resources: resources, client: o.client, log: log}, nil
 }
 
 // ApplyAll updates or creates all resources in the manifest.
-func (f *Manifest) ApplyAll() error {
+func (f *Manifest) ApplyAll(opts ...ClientOption) error {
 	for _, spec := range f.Resources {
-		if err := f.Apply(&spec); err != nil {
+		if err := f.Apply(&spec, opts...); err != nil {
 			return err
 		}
 	}
@@ -67,22 +72,31 @@ func (f *Manifest) ApplyAll() error {
 
 // Apply updates or creates a particular resource, which does not need to be
 // part of `Resources`, and will not be tracked.
-func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
-	current, err := f.Get(spec)
+func (f *Manifest) Apply(spec *unstructured.Unstructured, opts ...ClientOption) error {
+	current, err := f.Get(spec, opts...)
 	if err != nil {
 		return err
 	}
+	options := NewOptions(opts...)
 	if current == nil {
-		logResource("Creating", spec)
+		f.logResource("Creating", spec)
+		annotate(spec, v1.LastAppliedConfigAnnotation, patch.MakeLastAppliedConfig(spec))
 		annotate(spec, "manifestival", resourceCreated)
-		if err = f.client.Create(context.TODO(), spec.DeepCopy()); err != nil {
+		if err = f.client.Create(spec.DeepCopy(), options.ForCreate()); err != nil {
 			return err
 		}
 	} else {
-		// Update existing one
-		if UpdateChanged(spec.UnstructuredContent(), current.UnstructuredContent()) {
-			logResource("Updating", spec)
-			if err = f.client.Update(context.TODO(), current); err != nil {
+		patch, err := patch.NewPatch(spec, current)
+		if err != nil {
+			return err
+		}
+		if patch.IsRequired() {
+			f.log.Info("Merging", "diff", patch)
+			if err := patch.Merge(current); err != nil {
+				return err
+			}
+			f.logResource("Updating", current)
+			if err = f.client.Update(current, options.ForUpdate()); err != nil {
 				return err
 			}
 		}
@@ -91,7 +105,7 @@ func (f *Manifest) Apply(spec *unstructured.Unstructured) error {
 }
 
 // DeleteAll removes all tracked `Resources` in the Manifest.
-func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
+func (f *Manifest) DeleteAll(opts ...ClientOption) error {
 	a := make([]unstructured.Unstructured, len(f.Resources))
 	copy(a, f.Resources)
 	// we want to delete in reverse order
@@ -101,7 +115,7 @@ func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
 	for _, spec := range a {
 		if okToDelete(&spec) {
 			if err := f.Delete(&spec, opts...); err != nil {
-				return err
+				f.log.Error(err, "Delete failed")
 			}
 		}
 	}
@@ -110,13 +124,14 @@ func (f *Manifest) DeleteAll(opts ...client.DeleteOption) error {
 
 // Delete removes the specified objects, which do not need to be registered as
 // `Resources` in the Manifest.
-func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...client.DeleteOption) error {
-	current, err := f.Get(spec)
+func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...ClientOption) error {
+	current, err := f.Get(spec, opts...)
 	if current == nil && err == nil {
 		return nil
 	}
-	logResource("Deleting", spec)
-	if err := f.client.Delete(context.TODO(), spec, opts...); err != nil {
+	f.logResource("Deleting", spec)
+	options := NewOptions(opts...)
+	if err := f.client.Delete(spec, options.ForDelete()); err != nil {
 		// ignore GC race conditions triggered by owner references
 		if !errors.IsNotFound(err) {
 			return err
@@ -127,11 +142,9 @@ func (f *Manifest) Delete(spec *unstructured.Unstructured, opts ...client.Delete
 
 // Get collects a full resource body (or `nil`) from a partial resource
 // supplied in `spec`.
-func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	key := client.ObjectKey{Namespace: spec.GetNamespace(), Name: spec.GetName()}
-	result := &unstructured.Unstructured{}
-	result.SetGroupVersionKind(spec.GroupVersionKind())
-	err := f.client.Get(context.TODO(), key, result)
+func (f *Manifest) Get(spec *unstructured.Unstructured, opts ...ClientOption) (*unstructured.Unstructured, error) {
+	options := NewOptions(opts...)
+	result, err := f.client.Get(spec, options.ForGet())
 	if err != nil {
 		result = nil
 		if errors.IsNotFound(err) {
@@ -141,36 +154,9 @@ func (f *Manifest) Get(spec *unstructured.Unstructured) (*unstructured.Unstructu
 	return result, err
 }
 
-// UpdateChanged recursively merges JSON-style values in `src` into `tgt`.
-// 
-// We need to preserve the top-level target keys, specifically
-// 'metadata.resourceVersion', 'spec.clusterIP', and any existing
-// entries in a ConfigMap's 'data' field. So we only overwrite fields
-// set in our src resource.
-// TODO: Use Patch instead
-func UpdateChanged(src, tgt map[string]interface{}) bool {
-	changed := false
-	for k, v := range src {
-		if v, ok := v.(map[string]interface{}); ok {
-			if tgt[k] == nil {
-				tgt[k], changed = v, true
-			} else if UpdateChanged(v, tgt[k].(map[string]interface{})) {
-				// This could be an issue if a field in a nested src
-				// map doesn't overwrite its corresponding tgt
-				changed = true
-			}
-			continue
-		}
-		if !equality.Semantic.DeepEqual(v, tgt[k]) {
-			tgt[k], changed = v, true
-		}
-	}
-	return changed
-}
-
-func logResource(msg string, spec *unstructured.Unstructured) {
+func (f *Manifest) logResource(msg string, spec *unstructured.Unstructured) {
 	name := fmt.Sprintf("%s/%s", spec.GetNamespace(), spec.GetName())
-	log.Info(msg, "name", name, "type", spec.GroupVersionKind())
+	f.log.Info(msg, "name", name, "type", spec.GroupVersionKind())
 }
 
 func annotate(spec *unstructured.Unstructured, key string, value string) {

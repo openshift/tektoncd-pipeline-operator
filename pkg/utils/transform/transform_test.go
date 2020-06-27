@@ -14,22 +14,22 @@ import (
 
 func TestTransformManifest_WithAnnotation(t *testing.T) {
 	resourceWithAnnotation := "testdata/with-annotation.yaml"
-	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	manifest, err := mf.NewManifest(resourceWithAnnotation, mf.UseRecursive(true))
 	assertNoEror(t, err)
 	tf := InjectNamespaceConditional(flag.AnnotationPreserveNS, "target")
-	err = manifest.Transform(tf)
+	newManifest, err := manifest.Transform(tf)
 	assertNoEror(t, err)
-	assertNamespace(t, manifest.Resources[0], "openshift")
+	assertNamespace(t, newManifest.Resources[0], "openshift")
 }
 
 func TestTransformManifest_WithoutAnnotation(t *testing.T) {
 	resourceWithoutAnnotation := "testdata/without-annotation.yaml"
-	manifest, err := mf.NewManifest(resourceWithoutAnnotation, true, nil)
+	manifest, err := mf.NewManifest(resourceWithoutAnnotation, mf.UseRecursive(true))
 	assertNoEror(t, err)
 	tf := InjectNamespaceConditional(flag.AnnotationPreserveNS, "target")
-	err = manifest.Transform(tf)
+	newManifest, err := manifest.Transform(tf)
 	assertNoEror(t, err)
-	assertNamespace(t, manifest.Resources[0], "target")
+	assertNamespace(t, newManifest.Resources[0], "target")
 }
 
 func TestReplaceKind(t *testing.T) {
@@ -39,20 +39,20 @@ func TestReplaceKind(t *testing.T) {
 	testData := path.Join("testdata", "test-replace-kind.yaml")
 
 	t.Run("should replace Kind when resource kind == fromKind", func(t *testing.T) {
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		replaceKind := ReplaceKind(fromKind, toKind)
-		err = manifest.Transform(replaceKind)
+		newManifest, err := manifest.Transform(replaceKind)
 		assertNoEror(t, err)
-		assertKind(t, manifest.Resources[0], toKind)
+		assertKind(t, newManifest.Resources[0], toKind)
 	})
 	t.Run("should not replace Kind when resource kind != fromKind", func(t *testing.T) {
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		replaceKind := ReplaceKind(fromKindMismatch, toKind)
-		err = manifest.Transform(replaceKind)
+		newManifest, err := manifest.Transform(replaceKind)
 		assertNoEror(t, err)
-		assertKind(t, manifest.Resources[0], fromKind)
+		assertKind(t, newManifest.Resources[0], fromKind)
 	})
 }
 
@@ -70,44 +70,44 @@ func TestInjectLabel(t *testing.T) {
 	t.Run("should add label to a resource", func(t *testing.T) {
 		testData := path.Join("testdata", "test-inject-label.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		injectLabel := InjectLabel(key, value, Overwrite)
-		err = manifest.Transform(injectLabel)
+		newManifest, err := manifest.Transform(injectLabel)
 		assertNoEror(t, err)
-		assertLabel(t, manifest.Resources[0], key, value)
+		assertLabel(t, newManifest.Resources[0], key, value)
 	})
 	t.Run("should add label if kind(s) is specified and does not match resource kind", func(t *testing.T) {
 		testData := path.Join("testdata", "test-inject-label.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		injectLabel := InjectLabel(key, value, Overwrite, "Service")
-		err = manifest.Transform(injectLabel)
+		newManifest, err := manifest.Transform(injectLabel)
 		assertNoEror(t, err)
-		assertNoLabel(t, manifest.Resources[0], key, value)
+		assertNoLabel(t, newManifest.Resources[0], key, value)
 	})
 
 	t.Run("should retain original label with overwritePolicy 'Retain'", func(t *testing.T) {
 		existingValue := flag.ProviderTypeRedHat
 		testData := path.Join("testdata", "test-inject-label-overwrite.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		injectLabel := InjectLabel(key, value, Retain)
-		err = manifest.Transform(injectLabel)
+		newManifest, err := manifest.Transform(injectLabel)
 		assertNoEror(t, err)
-		assertLabel(t, manifest.Resources[0], key, existingValue)
+		assertLabel(t, newManifest.Resources[0], key, existingValue)
 	})
 	t.Run("should overwrite original label with overwritePolicy 'Overwrite'", func(t *testing.T) {
 		testData := path.Join("testdata", "test-inject-label-overwrite.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		injectLabel := InjectLabel(key, value, Overwrite)
-		err = manifest.Transform(injectLabel)
+		newManifest, err := manifest.Transform(injectLabel)
 		assertNoEror(t, err)
-		assertLabel(t, manifest.Resources[0], key, value)
+		assertLabel(t, newManifest.Resources[0], key, value)
 	})
 	t.Run("should add labels only to specified resources", func(t *testing.T) {
 		testData := path.Join("testdata", "test-inject-label-kind-set.yaml")
@@ -116,26 +116,25 @@ func TestInjectLabel(t *testing.T) {
 			"Service",
 		}
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
 		injectLabel := InjectLabel(key, value, Overwrite, kinds...)
-		err = manifest.Transform(injectLabel)
+		newManifest, err := manifest.Transform(injectLabel)
 		assertNoEror(t, err)
-		assertOnResourceList(t, manifest.Resources, key, value, kinds...)
+		assertOnResourceList(t, newManifest.Resources, key, value, kinds...)
 	})
 }
 
 func TestReplaceImages(t *testing.T) {
 	t.Run("ignore_non_deployment", func(t *testing.T) {
 		testData := path.Join("testdata", "test-replace-kind.yaml")
-		expected, _ := mf.NewManifest(testData, true, nil)
+		expected, _ := mf.NewManifest(testData, mf.UseRecursive(true))
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
-		err = manifest.Transform(DeploymentImages(map[string]string{}))
-
+		newManifest, err := manifest.Transform(DeploymentImages(map[string]string{}))
 		assertNoEror(t, err)
-		assertEqual(t, manifest.Resources, expected.Resources)
+		assertEqual(t, newManifest.Resources, expected.Resources)
 	})
 
 	t.Run("of_containers_by_name", func(t *testing.T) {
@@ -145,13 +144,12 @@ func TestReplaceImages(t *testing.T) {
 		}
 		testData := path.Join("testdata", "test-replace-image.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
-		err = manifest.Transform(DeploymentImages(images))
-
+		newManifest, err := manifest.Transform(DeploymentImages(images))
 		assertNoEror(t, err)
-		assertDeployContainersHasImage(t, manifest.Resources, "controller", image)
-		assertDeployContainersHasImage(t, manifest.Resources, "sidecar", "busybox")
+		assertDeployContainersHasImage(t, newManifest.Resources, "controller", image)
+		assertDeployContainersHasImage(t, newManifest.Resources, "sidecar", "busybox")
 	})
 
 	t.Run("of_containers_args_by_space", func(t *testing.T) {
@@ -162,13 +160,12 @@ func TestReplaceImages(t *testing.T) {
 		}
 		testData := path.Join("testdata", "test-replace-image.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
-		err = manifest.Transform(DeploymentImages(images))
-
+		newManifest, err := manifest.Transform(DeploymentImages(images))
 		assertNoEror(t, err)
-		assertDeployContainerArgsHasImage(t, manifest.Resources, "-bash", image)
-		assertDeployContainerArgsHasImage(t, manifest.Resources, "-git", "git")
+		assertDeployContainerArgsHasImage(t, newManifest.Resources, "-bash", image)
+		assertDeployContainerArgsHasImage(t, newManifest.Resources, "-git", "git")
 	})
 
 	t.Run("of_container_args_has_equal", func(t *testing.T) {
@@ -179,13 +176,12 @@ func TestReplaceImages(t *testing.T) {
 		}
 		testData := path.Join("testdata", "test-replace-image.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
-		err = manifest.Transform(DeploymentImages(images))
-
+		newManifest, err := manifest.Transform(DeploymentImages(images))
 		assertNoEror(t, err)
-		assertDeployContainerArgsHasImage(t, manifest.Resources, "-nop", image)
-		assertDeployContainerArgsHasImage(t, manifest.Resources, "-git", "git")
+		assertDeployContainerArgsHasImage(t, newManifest.Resources, "-nop", image)
+		assertDeployContainerArgsHasImage(t, newManifest.Resources, "-git", "git")
 	})
 
 	t.Run("of_task_addons_step_image", func(t *testing.T) {
@@ -196,13 +192,12 @@ func TestReplaceImages(t *testing.T) {
 		}
 		testData := path.Join("testdata", "test-replace-addon-image.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
-		err = manifest.Transform(TaskImages(images))
-
+		newManifest, err := manifest.Transform(TaskImages(images))
 		assertNoEror(t, err)
-		assertTaskImage(t, manifest.Resources, "push", image)
-		assertTaskImage(t, manifest.Resources, "build", "$(inputs.params.BUILDER_IMAGE)")
+		assertTaskImage(t, newManifest.Resources, "push", image)
+		assertTaskImage(t, newManifest.Resources, "build", "$(inputs.params.BUILDER_IMAGE)")
 	})
 
 	t.Run("of_task_addons_param_image", func(t *testing.T) {
@@ -213,13 +208,12 @@ func TestReplaceImages(t *testing.T) {
 		}
 		testData := path.Join("testdata", "test-replace-addon-image.yaml")
 
-		manifest, err := mf.NewManifest(testData, true, nil)
+		manifest, err := mf.NewManifest(testData, mf.UseRecursive(true))
 		assertNoEror(t, err)
-		err = manifest.Transform(TaskImages(images))
-
+		newManifest, err := manifest.Transform(TaskImages(images))
 		assertNoEror(t, err)
-		assertParamHasImage(t, manifest.Resources, "BUILDER_IMAGE", image)
-		assertTaskImage(t, manifest.Resources, "push", "buildah")
+		assertParamHasImage(t, newManifest.Resources, "BUILDER_IMAGE", image)
+		assertTaskImage(t, newManifest.Resources, "push", "buildah")
 	})
 }
 
@@ -401,42 +395,42 @@ func assertTaskImage(t *testing.T, resources []unstructured.Unstructured, name s
 
 func TestTransformManifest_InjectNamespaceRoleBindingSubjects(t *testing.T) {
 	resourceWithAnnotation := "testdata/inject-ns-rolebinding.yaml"
-	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	manifest, err := mf.NewManifest(resourceWithAnnotation, mf.UseRecursive(true))
 	assertNoEror(t, err)
 	tf := InjectNamespaceRoleBindingSubjects("target")
-	err = manifest.Transform(tf)
+	newManifest, err := manifest.Transform(tf)
 	assertNoEror(t, err)
-	assertRBSubjectNamespace(t, manifest.Resources[0], "target")
+	assertRBSubjectNamespace(t, newManifest.Resources[0], "target")
 }
 
 func TestTransformManifest_InjectNamespaceRoleBindingSubjects_NoNs(t *testing.T) {
 	resourceWithAnnotation := "testdata/inject-ns-rolebinding-no-ns.yaml"
-	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	manifest, err := mf.NewManifest(resourceWithAnnotation, mf.UseRecursive(true))
 	assertNoEror(t, err)
 	tf := InjectNamespaceRoleBindingSubjects("target")
-	err = manifest.Transform(tf)
+	newManifest, err := manifest.Transform(tf)
 	assertNoEror(t, err)
-	assertRBSubjectNoNamespace(t, manifest.Resources[0])
+	assertRBSubjectNoNamespace(t, newManifest.Resources[0])
 }
 
 func TestTransformManifest_InjectNamespaceCRDWebhookClientConf(t *testing.T) {
 	resourceWithAnnotation := "testdata/inject-ns-crd-webhookclientconf.yaml"
-	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	manifest, err := mf.NewManifest(resourceWithAnnotation, mf.UseRecursive(true))
 	assertNoEror(t, err)
 	tf := InjectNamespaceCRDWebhookClientConfig("target")
-	err = manifest.Transform(tf)
+	newManifest, err := manifest.Transform(tf)
 	assertNoEror(t, err)
-	assertCRDWebhookClientConfNS(t, manifest.Resources[0], "target")
+	assertCRDWebhookClientConfNS(t, newManifest.Resources[0], "target")
 }
 
 func TestTransformManifest_InjectNamespaceCRDWebhookClientConf_NoNs(t *testing.T) {
 	resourceWithAnnotation := "testdata/inject-ns-crd-webhookclientconf-no-ns.yaml"
-	manifest, err := mf.NewManifest(resourceWithAnnotation, true, nil)
+	manifest, err := mf.NewManifest(resourceWithAnnotation, mf.UseRecursive(true))
 	assertNoEror(t, err)
 	tf := InjectNamespaceCRDWebhookClientConfig("target")
-	err = manifest.Transform(tf)
+	newManifest, err := manifest.Transform(tf)
 	assertNoEror(t, err)
-	assertCRDWebhookClientConfNoNS(t, manifest.Resources[0])
+	assertCRDWebhookClientConfNoNS(t, newManifest.Resources[0])
 }
 
 func assertRBSubjectNamespace(t *testing.T, u unstructured.Unstructured, expected string) {

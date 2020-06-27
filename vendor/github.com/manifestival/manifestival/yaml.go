@@ -81,7 +81,7 @@ func readDir(pathname string, recursive bool) ([]unstructured.Unstructured, erro
 		name := path.Join(pathname, f.Name())
 		pathDirOrFile, err := os.Stat(name)
 		var els []unstructured.Unstructured
-		
+
 		if os.IsNotExist(err) || os.IsPermission(err) {
 			return aggregated, err
 		}
@@ -120,10 +120,10 @@ func decode(reader io.Reader) ([]unstructured.Unstructured, error) {
 	for {
 		out := unstructured.Unstructured{}
 		err = decoder.Decode(&out)
-		if err != nil {
+		if err == io.EOF {
 			break
 		}
-		if len(out.Object) == 0 {
+		if err != nil || len(out.Object) == 0 {
 			continue
 		}
 		objs = append(objs, out)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	mfc "github.com/manifestival/controller-runtime-client"
 	mf "github.com/manifestival/manifestival"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
@@ -56,7 +57,7 @@ func Add(mgr manager.Manager) error {
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	log := ctrlLog.WithName("new-reconciler")
 	pipelinePath := filepath.Join(flag.ResourceDir, "pipelines")
-	pipeline, err := mf.NewManifest(pipelinePath, flag.Recursive, mgr.GetClient())
+	pipeline, err := mf.NewManifest(pipelinePath, mf.UseRecursive(flag.Recursive), mf.UseClient(mfc.NewClient(mgr.GetClient())))
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
 	//manifestival can take urls/filepaths as input
 	//more that one items can be passed as a comma separated list string
 	urls := strings.Join(flag.CommunityResourceURLs, ",")
-	community, err := mf.NewManifest(urls, flag.Recursive, mgr.GetClient())
+	community, err := mf.NewManifest(urls, mf.UseRecursive(flag.Recursive), mf.UseClient(mfc.NewClient(mgr.GetClient())))
 	if err != nil {
 		return mf.Manifest{}, err
 	}
@@ -99,7 +100,7 @@ func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
 func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	// read addons
 	addonsPath := filepath.Join(flag.ResourceDir, "addons")
-	addons, err := mf.NewManifest(addonsPath, flag.Recursive, mgr.GetClient())
+	addons, err := mf.NewManifest(addonsPath, mf.UseRecursive(flag.Recursive), mf.UseClient(mfc.NewClient(mgr.GetClient())))
 	if err != nil {
 		return mf.Manifest{}, err
 	}
@@ -124,7 +125,8 @@ func readOptional(mgr manager.Manager) ([]unstructured.Unstructured, error) {
 	// read optionals only if CRD available
 	if consoleCRDinstalled {
 		optionalPath := filepath.Join(flag.ResourceDir, "optional")
-		optionalAddons, err := mf.NewManifest(optionalPath, flag.Recursive, mgr.GetClient())
+		client := mfc.NewClient(mgr.GetClient())
+		optionalAddons, err := mf.NewManifest(optionalPath, mf.UseRecursive(flag.Recursive), mf.UseClient(client))
 		if err != nil {
 			return []unstructured.Unstructured{}, err
 		}
@@ -244,7 +246,8 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	log := requestLogger(req, "apply-pipeline")
 
 	images := transform.ToLowerCaseKeys(imagesFromEnv(transform.PipelinesImagePrefix))
-	if err := transformManifest(cfg, &r.pipeline, transform.DeploymentImages(images)); err != nil {
+	newPipeline, err := transformManifest(cfg, &r.pipeline, transform.DeploymentImages(images))
+	if err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -253,6 +256,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
+	r.pipeline = *newPipeline
 
 	if err := r.pipeline.ApplyAll(); err != nil {
 		log.Error(err, "failed to apply release.yaml")
@@ -265,7 +269,7 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	}
 	log.Info("successfully applied all pipeline resources")
 
-	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -297,7 +301,8 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		transform.DeploymentImages(triggerImages),
 		transform.TaskImages(addonImages),
 	}
-	if err := transformManifest(cfg, &r.addons, addnTfrms...); err != nil {
+	newAddons, err := transformManifest(cfg, &r.addons, addnTfrms...)
+	if err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -306,6 +311,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
+	r.addons = *newAddons
 
 	if err := r.addons.ApplyAll(); err != nil {
 		log.Error(err, "failed to apply addons yaml manifest")
@@ -318,7 +324,7 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	}
 	log.Info("successfully applied all addon resources")
 
-	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedAddons, Version: flag.TektonVersion})
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedAddons, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -333,7 +339,8 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 		transform.InjectLabel(flag.LabelProviderType, flag.ProviderTypeCommunity, transform.Overwrite),
 		transform.TaskImages(addonImages),
 	}
-	if err := transformManifest(cfg, &r.community, addnTfrms...); err != nil {
+	newCommunityResources, err := transformManifest(cfg, &r.community, addnTfrms...)
+	if err != nil {
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
@@ -342,6 +349,7 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 			Version: flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
+	r.community = *newCommunityResources
 
 	if err := r.community.ApplyAll(); err != nil {
 		log.Error(err, "failed to apply non Red Hat resources yaml manifest")
@@ -354,11 +362,11 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 	}
 	log.Info("successfully applied all non Red Hat resources")
 
-	err := r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
+	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
 }
 
-func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transformer) error {
+func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transformer) (*mf.Manifest, error) {
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
@@ -449,7 +457,8 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 
 	// Requested object not found, could have been deleted after reconcile request.
 	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-	propPolicy := client.PropagationPolicy(metav1.DeletePropagationForeground)
+	deletePropForegroundPolicy := metav1.DeletePropagationForeground
+	propPolicy := mf.PropagationPolicy(&deletePropForegroundPolicy)
 
 	if err := r.addons.DeleteAll(propPolicy); err != nil {
 		log.Error(err, "failed to delete pipeline addons")

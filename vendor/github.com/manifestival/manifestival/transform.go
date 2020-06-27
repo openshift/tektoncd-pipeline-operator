@@ -21,20 +21,23 @@ type Owner interface {
 // Transform applies an ordered set of Transformer functions to the
 // `Resources` in this Manifest.  If an error occurs, no resources are
 // transformed.
-func (f *Manifest) Transform(fns ...Transformer) error {
+func (f *Manifest) Transform(fns ...Transformer) (*Manifest, error) {
 	var results []unstructured.Unstructured
 	for i := 0; i < len(f.Resources); i++ {
 		spec := f.Resources[i].DeepCopy()
 		for _, transform := range fns {
-			err := transform(spec)
-			if err != nil {
-				return err
+			if transform != nil {
+				err := transform(spec)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 		results = append(results, *spec)
 	}
-	f.Resources = results
-	return nil
+	shallow := *f
+	shallow.Resources = results // deep-copied above!
+	return &shallow, nil
 }
 
 // InjectNamespace creates a Transformer which adds a namespace to existing
@@ -46,7 +49,7 @@ func InjectNamespace(ns string) Transformer {
 		switch strings.ToLower(u.GetKind()) {
 		case "namespace":
 			u.SetName(namespace)
-		case "clusterrolebinding":
+		case "clusterrolebinding", "rolebinding":
 			subjects, _, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
 			for _, subject := range subjects.([]interface{}) {
 				m := subject.(map[string]interface{})
@@ -65,6 +68,13 @@ func InjectNamespace(ns string) Transformer {
 						srv["namespace"] = namespace
 					}
 				}
+			}
+		case "apiservice":
+			spec, _, _ := unstructured.NestedFieldNoCopy(u.Object, "spec")
+			m := spec.(map[string]interface{})
+			if c, ok := m["service"]; ok {
+				srv := c.(map[string]interface{})
+				srv["namespace"] = namespace
 			}
 		}
 		if !isClusterScoped(u.GetKind()) {

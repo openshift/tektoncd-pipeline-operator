@@ -44,6 +44,7 @@ github.com/evanphx/json-patch
 github.com/ghodss/yaml
 # github.com/go-logr/logr v0.1.0
 github.com/go-logr/logr
+github.com/go-logr/logr/testing
 # github.com/go-logr/zapr v0.1.1
 github.com/go-logr/zapr
 # github.com/go-openapi/jsonpointer v0.19.3
@@ -106,8 +107,11 @@ github.com/konsorten/go-windows-terminal-sequences
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
-# github.com/manifestival/manifestival v0.0.0
+# github.com/manifestival/controller-runtime-client v0.1.0
+github.com/manifestival/controller-runtime-client
+# github.com/manifestival/manifestival v0.1.0
 github.com/manifestival/manifestival
+github.com/manifestival/manifestival/patch
 # github.com/markbates/inflect v1.0.4
 github.com/markbates/inflect
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
@@ -357,6 +361,7 @@ k8s.io/apimachinery/pkg/util/errors
 k8s.io/apimachinery/pkg/util/framer
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/util/json
+k8s.io/apimachinery/pkg/util/jsonmergepatch
 k8s.io/apimachinery/pkg/util/mergepatch
 k8s.io/apimachinery/pkg/util/naming
 k8s.io/apimachinery/pkg/util/net
@@ -493,7 +498,6 @@ sigs.k8s.io/controller-runtime/pkg/predicate
 sigs.k8s.io/controller-runtime/pkg/reconcile
 sigs.k8s.io/controller-runtime/pkg/recorder
 sigs.k8s.io/controller-runtime/pkg/runtime/inject
-sigs.k8s.io/controller-runtime/pkg/runtime/log
 sigs.k8s.io/controller-runtime/pkg/scheme
 sigs.k8s.io/controller-runtime/pkg/source
 sigs.k8s.io/controller-runtime/pkg/source/internal

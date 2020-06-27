@@ -4,7 +4,15 @@
 
 Manipulate unstructured Kubernetes resources loaded from a manifest
 
-## Build
+## Usage
+
+This library isn't much use without a `Client` implementation. You
+have two choices:
+
+- [client-go](https://github.com/manifestival/client-go-client)
+- [controller-runtime](https://github.com/manifestival/controller-runtime-client)
+
+## Development
 
     dep ensure -v
-    go test -v
+    go test -v ./...
