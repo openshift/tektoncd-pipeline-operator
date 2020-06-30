@@ -7,26 +7,26 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps
-  - endpoints
-  - events
-  - namespaces
-  - persistentvolumeclaims
   - pods
-  - pods/log
+  - pods/logs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - namespaces
   - secrets
   - services
   - serviceaccounts
-  - limitranges
   verbs:
   - '*'
 - apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   - deployments/finalizers
   verbs:
   - '*'
