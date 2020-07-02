@@ -3,10 +3,9 @@ package testsuites
 import (
 	"testing"
 
-	"github.com/tektoncd/operator/pkg/flag"
-
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/pkg/flag"
 	"github.com/tektoncd/operator/test/helpers"
 )
 

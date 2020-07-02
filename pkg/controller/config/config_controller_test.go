@@ -56,7 +56,7 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		assertContainerArgHasImage(deployment, arg, argImage, r.client, t)
 	})
 
-	t.Run("for_triggers_addon", func(t *testing.T) {
+	t.Run("for_triggers_addon_optional", func(t *testing.T) {
 		var (
 			configName = "cluster"
 			namespace  = "openshift-pipelines"
@@ -74,8 +74,10 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		cl := feedConfigMock(config)
 		addons, err := mfFor("addons", cl)
 		assertNoEror(err, "failed to create manifestival for triggers addons;", t)
+		optional, err := mfFor("optional", cl)
+		assertNoEror(err, "failed to create manifestival for optional;", t)
 		req := newRequest(configName, namespace)
-		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, addons: addons}
+		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, addons: addons, optional: optional}
 
 		// WHEN
 		_, err = r.applyAddons(req, config)
@@ -278,7 +280,7 @@ func mfFor(resource string, cl client.Client) (mf.Manifest, error) {
 	_, filename, _, _ := rt.Caller(0)
 	root := path.Join(path.Dir(filename), "../../..")
 	pipelinePath := filepath.Join(root, flag.ResourceDir, resource)
-	return mf.NewManifest(pipelinePath, mf.UseRecursive(flag.Recursive), mf.UseClient(mfc.NewClient(cl)))
+	return mf.ManifestFrom(sourceBasedOnRecursion(pipelinePath), mf.UseClient(mfc.NewClient(cl)))
 }
 
 func feedConfigMock(config *op.Config) client.Client {

@@ -78,15 +78,16 @@
   revision = "ab8a2e0c74be"
 
 [[projects]]
-  digest = "1:4d67892f272491cc3a7c9bcafa8baeee5af178060a541c304def117c017d5eec"
+  digest = "1:2575736731bd3046cf6bd5a08a7d694a30a6be8b4af230470f1ad4239bb7d0c3"
   name = "github.com/manifestival/manifestival"
   packages = [
     ".",
     "patch",
+    "sources",
   ]
   pruneopts = "UT"
-  revision = "f5dd205675d3301a65eeb90aa4c7f793b8c0897f"
-  version = "v0.1.0"
+  revision = "062c519a505b425bf0990e7f78e06568b2756b89"
+  version = "v0.2.0"
 
 [[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
@@ -231,7 +232,7 @@
   version = "v2.2.8"
 
 [[projects]]
-  digest = "1:b2e959d92a38ffc25142da8e8bf4fefe0e5e687ecb871fabaac58db0497304df"
+  digest = "1:d89afbf3588e87d2c9e6efdd5528d249b32d23a12fbd7ec324f3cb373c6fb76c"
   name = "k8s.io/api"
   packages = [
     "admissionregistration/v1beta1",
@@ -272,7 +273,8 @@
     "storage/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "7cf5895f2711"
+  revision = "bd6ac527cfd24ad928f66798231e5bcf7f37321b"
+  version = "kubernetes-1.15.4"
 
 [[projects]]
   digest = "1:e0dad81c7448a8c8f39280f5dacd2921b72953e164549738d792345c15d250b9"
@@ -397,6 +399,7 @@
     "github.com/manifestival/manifestival",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
+    "k8s.io/apimachinery/pkg/types",
     "sigs.k8s.io/controller-runtime/pkg/client",
   ]
   solver-name = "gps-cdcl"

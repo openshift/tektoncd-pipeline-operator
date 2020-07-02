@@ -490,10 +490,10 @@ github.com/mailru/easyjson v0.0.0-20190614124828-94de47d64c63/go.mod h1:C1wdFJiN
 github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
 github.com/mailru/easyjson v0.7.0 h1:aizVhC/NAAcKWb+5QsU1iNOZb4Yws5UO2I+aIprQITM=
 github.com/mailru/easyjson v0.7.0/go.mod h1:KAzv3t3aY1NaHWoQz1+4F1ccyAH66Jk7yos7ldAVICs=
-github.com/manifestival/controller-runtime-client v0.1.0 h1:U5auDtjtCkD0tnquZWW+AOV79asJeHreQ1YSvYCt838=
-github.com/manifestival/controller-runtime-client v0.1.0/go.mod h1:xK5vtLpVxkFQKIFk4ABGln7fpUKVf2UHybbP9wPWetw=
-github.com/manifestival/manifestival v0.1.0 h1:57NBFAjia3bV4ZJoK0fjvTJ43UnFgmLJOtNAJTvTgRM=
-github.com/manifestival/manifestival v0.1.0/go.mod h1:jlYRi+Y1LEGR94OSBXU887tNJ7Y317sHd/DcNAHE2eI=
+github.com/manifestival/controller-runtime-client v0.2.0 h1:Zqmtcd+VCov+T89nMERuQD5rb1xumscTZ5Vb2+M3V4s=
+github.com/manifestival/controller-runtime-client v0.2.0/go.mod h1:xK5vtLpVxkFQKIFk4ABGln7fpUKVf2UHybbP9wPWetw=
+github.com/manifestival/manifestival v0.2.0 h1:CuEhPyM0khbuYAFRWYfNubwXXzd5iNXWoydKm5KQJ80=
+github.com/manifestival/manifestival v0.2.0/go.mod h1:jlYRi+Y1LEGR94OSBXU887tNJ7Y317sHd/DcNAHE2eI=
 github.com/maorfr/helm-plugin-utils v0.0.0-20181205064038-588190cb5e3b/go.mod h1:p3gwmRSFqbWw6plBpR0sKl3n3vpu8kX70gvCJKMvvCA=
 github.com/markbates/inflect v1.0.4 h1:5fh1gzTFhfae06u3hzHYO9xe3l3v3nW5Pwt3naLTP5g=
 github.com/markbates/inflect v1.0.4/go.mod h1:1fR9+pO2KHEO9ZRtto13gDwwZaAKstQzferVeWqbgNs=

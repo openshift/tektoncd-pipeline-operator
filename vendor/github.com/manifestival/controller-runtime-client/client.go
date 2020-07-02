@@ -24,19 +24,24 @@ type controllerRuntimeClient struct {
 // verify implementation
 var _ mf.Client = (*controllerRuntimeClient)(nil)
 
-func (c *controllerRuntimeClient) Create(obj *unstructured.Unstructured, options *metav1.CreateOptions) error {
+func (c *controllerRuntimeClient) Create(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
 	return c.client.Create(context.TODO(), obj, createWith(options)...)
 }
 
-func (c *controllerRuntimeClient) Update(obj *unstructured.Unstructured, options *metav1.UpdateOptions) error {
+func (c *controllerRuntimeClient) Update(obj *unstructured.Unstructured, options ...mf.ApplyOption) error {
 	return c.client.Update(context.TODO(), obj, updateWith(options)...)
 }
 
-func (c *controllerRuntimeClient) Delete(obj *unstructured.Unstructured, options *metav1.DeleteOptions) error {
-	return c.client.Delete(context.TODO(), obj, deleteWith(options)...)
+func (c *controllerRuntimeClient) Delete(obj *unstructured.Unstructured, options ...mf.DeleteOption) error {
+	err := c.client.Delete(context.TODO(), obj, deleteWith(options)...)
+	opts := mf.DeleteWith(options)
+	if opts.IgnoreNotFound {
+		return client.IgnoreNotFound(err)
+	}
+	return err
 }
 
-func (c *controllerRuntimeClient) Get(obj *unstructured.Unstructured, options *metav1.GetOptions) (*unstructured.Unstructured, error) {
+func (c *controllerRuntimeClient) Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	key := client.ObjectKey{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 	result := &unstructured.Unstructured{}
 	result.SetGroupVersionKind(obj.GroupVersionKind())
@@ -44,44 +49,47 @@ func (c *controllerRuntimeClient) Get(obj *unstructured.Unstructured, options *m
 	return result, err
 }
 
-func createWith(opts *metav1.CreateOptions) []client.CreateOption {
+func createWith(opts []mf.ApplyOption) []client.CreateOption {
 	result := []client.CreateOption{}
-	empty := &metav1.CreateOptions{}
-	if len(opts.DryRun) != len(empty.DryRun) {
-		result = append(result, client.DryRunAll)
-	}
-	if opts.FieldManager != empty.FieldManager {
-		result = append(result, client.FieldOwner(opts.FieldManager))
+	for _, opt := range opts {
+		if opt == mf.DryRunAll {
+			result = append(result, client.DryRunAll)
+		}
+		if t, ok := opt.(mf.FieldManager); ok {
+			result = append(result, client.FieldOwner(string(t)))
+		}
 	}
 	return result
 }
 
-func updateWith(opts *metav1.UpdateOptions) []client.UpdateOption {
+func updateWith(opts []mf.ApplyOption) []client.UpdateOption {
 	result := []client.UpdateOption{}
-	empty := &metav1.UpdateOptions{}
-	if len(opts.DryRun) != len(empty.DryRun) {
-		result = append(result, client.DryRunAll)
-	}
-	if opts.FieldManager != empty.FieldManager {
-		result = append(result, client.FieldOwner(opts.FieldManager))
+	for _, opt := range opts {
+		if opt == mf.DryRunAll {
+			result = append(result, client.DryRunAll)
+		}
+		if t, ok := opt.(mf.FieldManager); ok {
+			result = append(result, client.FieldOwner(string(t)))
+		}
 	}
 	return result
 }
 
-func deleteWith(opts *metav1.DeleteOptions) []client.DeleteOption {
+func deleteWith(opts []mf.DeleteOption) []client.DeleteOption {
 	result := []client.DeleteOption{}
-	empty := &metav1.DeleteOptions{}
-	if len(opts.DryRun) != len(empty.DryRun) {
-		result = append(result, client.DryRunAll)
-	}
-	if opts.GracePeriodSeconds != empty.GracePeriodSeconds {
-		result = append(result, client.GracePeriodSeconds(*opts.GracePeriodSeconds))
-	}
-	if opts.Preconditions != empty.Preconditions {
-		result = append(result, client.Preconditions(*opts.Preconditions))
-	}
-	if opts.PropagationPolicy != empty.PropagationPolicy {
-		result = append(result, client.PropagationPolicy(*opts.PropagationPolicy))
+	for _, opt := range opts {
+		if opt == mf.DryRunAll {
+			result = append(result, client.DryRunAll)
+			continue
+		}
+		switch v := opt.(type) {
+		case mf.GracePeriodSeconds:
+			result = append(result, client.GracePeriodSeconds(int64(v)))
+		case mf.Preconditions:
+			result = append(result, client.Preconditions(metav1.Preconditions(v)))
+		case mf.PropagationPolicy:
+			result = append(result, client.PropagationPolicy(metav1.DeletionPropagation(v)))
+		}
 	}
 	return result
 }

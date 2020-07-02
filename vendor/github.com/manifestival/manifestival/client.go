@@ -6,88 +6,88 @@ import (
 )
 
 type Client interface {
-	Create(obj *unstructured.Unstructured, options *metav1.CreateOptions) error
-	Update(obj *unstructured.Unstructured, options *metav1.UpdateOptions) error
-	Delete(obj *unstructured.Unstructured, options *metav1.DeleteOptions) error
-	Get(obj *unstructured.Unstructured, options *metav1.GetOptions) (*unstructured.Unstructured, error)
+	Create(obj *unstructured.Unstructured, options ...ApplyOption) error
+	Update(obj *unstructured.Unstructured, options ...ApplyOption) error
+	Delete(obj *unstructured.Unstructured, options ...DeleteOption) error
+	Get(obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 }
 
-// Functional options pattern
-type ClientOption func(*ClientOptions)
-
-type ClientOptions struct {
-	DryRun             []string
-	FieldManager       string
-	GracePeriodSeconds *int64
-	Preconditions      *metav1.Preconditions
-	PropagationPolicy  *metav1.DeletionPropagation
-	ResourceVersion    string
-}
-
-func NewOptions(opts ...ClientOption) *ClientOptions {
-	result := &ClientOptions{}
-	for _, opt := range opts {
-		opt(result)
+func ApplyWith(options []ApplyOption) *ApplyOptions {
+	result := &ApplyOptions{
+		ForCreate: &metav1.CreateOptions{},
+		ForUpdate: &metav1.UpdateOptions{},
+	}
+	for _, f := range options {
+		f.ApplyWith(result)
 	}
 	return result
 }
 
-func (o *ClientOptions) ForCreate() *metav1.CreateOptions {
-	return &metav1.CreateOptions{
-		DryRun:       o.DryRun,
-		FieldManager: o.FieldManager,
+func DeleteWith(options []DeleteOption) *DeleteOptions {
+	result := &DeleteOptions{
+		ForDelete:      &metav1.DeleteOptions{},
+		IgnoreNotFound: true,
 	}
+	for _, f := range options {
+		f.DeleteWith(result)
+	}
+	return result
 }
 
-func (o *ClientOptions) ForUpdate() *metav1.UpdateOptions {
-	return &metav1.UpdateOptions{
-		DryRun:       o.DryRun,
-		FieldManager: o.FieldManager,
-	}
+// Functional options pattern
+type ApplyOption interface {
+	ApplyWith(*ApplyOptions)
+}
+type DeleteOption interface {
+	DeleteWith(*DeleteOptions)
 }
 
-func (o *ClientOptions) ForDelete() *metav1.DeleteOptions {
-	return &metav1.DeleteOptions{
-		DryRun:             o.DryRun,
-		GracePeriodSeconds: o.GracePeriodSeconds,
-		Preconditions:      o.Preconditions,
-		PropagationPolicy:  o.PropagationPolicy,
-	}
+type ApplyOptions struct {
+	ForCreate *metav1.CreateOptions
+	ForUpdate *metav1.UpdateOptions
+}
+type DeleteOptions struct {
+	ForDelete      *metav1.DeleteOptions
+	IgnoreNotFound bool // default to true in OptionsForDelete()
 }
 
-func (o *ClientOptions) ForGet() *metav1.GetOptions {
-	return &metav1.GetOptions{
-		ResourceVersion: o.ResourceVersion,
-	}
+var DryRunAll = dryRunAll{}
+
+type FieldManager string
+type GracePeriodSeconds int64
+type Preconditions metav1.Preconditions
+type PropagationPolicy metav1.DeletionPropagation
+type IgnoreNotFound bool
+type dryRunAll struct{} // for both apply and delete
+
+func (dryRunAll) ApplyWith(opts *ApplyOptions) {
+	opts.ForCreate.DryRun = []string{metav1.DryRunAll}
+	opts.ForUpdate.DryRun = []string{metav1.DryRunAll}
+}
+func (f FieldManager) ApplyWith(opts *ApplyOptions) {
+	// TODO: The FM was introduced in k8s 1.14, but not ready to
+	// abandon pre-1.14 users yet. Uncomment when ready.
+
+	// fm := string(f)
+	// opts.ForCreate.FieldManager = fm
+	// opts.ForUpdate.FieldManager = fm
 }
 
-func DryRun(v []string) ClientOption {
-	return func(o *ClientOptions) {
-		o.DryRun = v
-	}
+func (dryRunAll) DeleteWith(opts *DeleteOptions) {
+	opts.ForDelete.DryRun = []string{metav1.DryRunAll}
 }
-func FieldManager(v string) ClientOption {
-	return func(o *ClientOptions) {
-		o.FieldManager = v
-	}
+func (g GracePeriodSeconds) DeleteWith(opts *DeleteOptions) {
+	s := int64(g)
+	opts.ForDelete.GracePeriodSeconds = &s
 }
-func GracePeriodSeconds(v *int64) ClientOption {
-	return func(o *ClientOptions) {
-		o.GracePeriodSeconds = v
-	}
+func (p Preconditions) DeleteWith(opts *DeleteOptions) {
+	preconds := metav1.Preconditions(p)
+	opts.ForDelete.Preconditions = &preconds
 }
-func Preconditions(v *metav1.Preconditions) ClientOption {
-	return func(o *ClientOptions) {
-		o.Preconditions = v
-	}
+func (p PropagationPolicy) DeleteWith(opts *DeleteOptions) {
+	policy := metav1.DeletionPropagation(p)
+	opts.ForDelete.PropagationPolicy = &policy
 }
-func PropagationPolicy(v *metav1.DeletionPropagation) ClientOption {
-	return func(o *ClientOptions) {
-		o.PropagationPolicy = v
-	}
-}
-func ResourceVersion(v string) ClientOption {
-	return func(o *ClientOptions) {
-		o.ResourceVersion = v
-	}
+func (i IgnoreNotFound) DeleteWith(opts *DeleteOptions) {
+	opts.IgnoreNotFound = bool(i)
 }
