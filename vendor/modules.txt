@@ -109,8 +109,9 @@ github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
 # github.com/manifestival/controller-runtime-client v0.2.0
 github.com/manifestival/controller-runtime-client
-# github.com/manifestival/manifestival v0.2.0
+# github.com/manifestival/manifestival v0.5.0
 github.com/manifestival/manifestival
+github.com/manifestival/manifestival/overlay
 github.com/manifestival/manifestival/patch
 github.com/manifestival/manifestival/sources
 # github.com/markbates/inflect v1.0.4

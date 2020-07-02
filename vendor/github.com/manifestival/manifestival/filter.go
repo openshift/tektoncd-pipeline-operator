@@ -12,28 +12,54 @@ type Predicate func(u *unstructured.Unstructured) bool
 // *all* Predicates return true. Any changes callers make to the
 // resources passed to their Predicate[s] will only be reflected in
 // the returned Manifest.
-func (m Manifest) Filter(fns ...Predicate) Manifest {
+func (m Manifest) Filter(preds ...Predicate) Manifest {
 	result := m
 	result.resources = []unstructured.Unstructured{}
-NEXT_RESOURCE:
+	pred := All(preds...)
 	for _, spec := range m.Resources() {
-		for _, pred := range fns {
-			if pred != nil {
-				if !pred(&spec) {
-					continue NEXT_RESOURCE
-				}
-			}
+		if !pred(&spec) {
+			continue
 		}
 		result.resources = append(result.resources, spec)
 	}
 	return result
 }
 
-// JustCRDs returns only CustomResourceDefinitions
-var JustCRDs = ByKind("CustomResourceDefinition")
+func All(preds ...Predicate) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		for _, p := range preds {
+			if !p(u) {
+				return false
+			}
+		}
+		return true
+	}
+}
 
-// NotCRDs returns no CustomResourceDefinitions
-var NotCRDs = Complement(JustCRDs)
+func Any(preds ...Predicate) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		for _, p := range preds {
+			if p(u) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// None returns true iff none of the preds are true
+func None(preds ...Predicate) Predicate {
+	p := Any(preds...)
+	return func(u *unstructured.Unstructured) bool {
+		return !p(u)
+	}
+}
+
+// CRDs returns only CustomResourceDefinitions
+var CRDs = ByKind("CustomResourceDefinition")
+
+// NoCRDs returns no CustomResourceDefinitions
+var NoCRDs = None(CRDs)
 
 // ByName returns resources with a specifc name
 func ByName(name string) Predicate {
@@ -61,16 +87,21 @@ func ByLabel(label, value string) Predicate {
 	}
 }
 
+// ByLabels returns true when the resource contains any of the labels.
+func ByLabels(labels map[string]string) Predicate {
+	return func(u *unstructured.Unstructured) bool {
+		for key, value := range labels {
+			if v := u.GetLabels()[key]; v == value {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 // ByGVK returns resources of a particular GroupVersionKind
 func ByGVK(gvk schema.GroupVersionKind) Predicate {
 	return func(u *unstructured.Unstructured) bool {
 		return u.GroupVersionKind() == gvk
-	}
-}
-
-// Complement returns what another Predicate wouldn't
-func Complement(p Predicate) Predicate {
-	return func(u *unstructured.Unstructured) bool {
-		return !p(u)
 	}
 }

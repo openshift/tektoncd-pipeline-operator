@@ -2,11 +2,16 @@
 
 [![Build Status](https://travis-ci.org/manifestival/manifestival.svg?branch=master)](https://travis-ci.org/manifestival/manifestival)
 
-Manipulate unstructured Kubernetes resources loaded from a manifest.
+Manifestival is a library for manipulating a set of unstructured
+Kubernetes resources. Essentially, it enables you to toss a "bag of
+YAML" at a k8s cluster.
 
-Manifestival is sort of like using `kubectl` from within your Go app.
-You can load a manifest of resources, optionally transform/filter
-them, and then apply/delete them to/from your k8s cluster.
+It's sort of like embedding a simplified `kubectl` in your Go
+application. You can load a manifest of resources from a variety of
+sources, optionally transform/filter those resources, and then
+apply/delete them to/from your k8s cluster.
+
+See [CHANGELOG.md](CHANGELOG.md)
 
 ## Usage
 
@@ -15,8 +20,8 @@ them, and then apply/delete them to/from your k8s cluster.
 Manifests require a `Client` implementation to interact with your k8s
 API server. You have two choices:
 
-- [client-go](https://github.com/manifestival/client-go-client)
-- [controller-runtime](https://github.com/manifestival/controller-runtime-client)
+- <https://github.com/manifestival/client-go-client>
+- <https://github.com/manifestival/controller-runtime-client>
 
 Once you have a client, create a manifest from some path to a YAML
 doc. This could be a path to a file, directory, or URL. Other sources
@@ -35,8 +40,11 @@ invoke the manifest's `Client` directly.
 
 ```go
 manifest.Apply()
-manifest.Filter(NotCRDs).Delete()
-manifest.Client.Delete(manifest.Resources()[0])
+manifest.Filter(NoCRDs).Delete()
+
+u := manifest.Resources()[0]
+u.SetName("foo")
+manifest.Client.Create(&u)
 ```
 
 Manifests are immutable once created, but you can create new instances
@@ -50,8 +58,14 @@ only resources matching every predicate will be included in the
 returned manifest.
 
 ```go
-m := manifest.Filter(ByLabel("foo", "bar"), ByGVK(gvk), NotCRDs)
+m := manifest.Filter(ByLabel("foo", "bar"), ByGVK(gvk), NoCRDs)
 ```
+
+Because the `Predicate` receives the resource by reference, any
+changes you make to it will be reflected in the returned `Manifest`,
+but _not_ in the one being filtered. Since errors are not in the
+`Predicate` interface, you should limit changes to those that won't
+error. For more complex mutations, use `Transform` instead.
 
 ### Transform
 
@@ -76,7 +90,7 @@ func updateDeployment(resource *unstructured.Unstructured) error {
 
     // Now update the deployment!
     
-    // If necessary, convert it back
+    // If you converted it, convert it back, otherwise return nil
     return scheme.Scheme.Convert(deployment, resource, nil)
 }
 
