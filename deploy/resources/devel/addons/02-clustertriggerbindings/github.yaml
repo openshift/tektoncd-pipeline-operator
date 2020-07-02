@@ -44,7 +44,7 @@ spec:
   - name: content-type
     value: $(header.Content-Type)
   - name: pusher-name
-    value: $(body.name)
+    value: $(body.pusher.name)
 
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
