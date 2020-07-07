@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/pkg/flag"
+	"github.com/tektoncd/operator/pkg/utils/addons"
 	"github.com/tektoncd/operator/pkg/utils/transform"
 	"github.com/tektoncd/operator/pkg/utils/validate"
 	appsv1 "k8s.io/api/apps/v1"
@@ -129,6 +130,14 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 		return mf.Manifest{}, err
 	}
 	addons = addons.Append(optionalResources)
+
+	// create all the pipeline dynamically
+	addonsPipelineTemplates, err := createAddonsPipelines(mgr)
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+
+	addons = addons.Append(addonsPipelineTemplates)
 	return addons, nil
 }
 
@@ -827,4 +836,17 @@ func sourceBasedOnRecursion(path string) mf.Source {
 		return mf.Recursive(path)
 	}
 	return mf.Path(path)
+}
+
+func createAddonsPipelines(mgr manager.Manager) (mf.Manifest, error) {
+	pipelineTemplate, err := mf.NewManifest("deploy/resources/templates/pipelinetemplate.yaml")
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	pipelines, err := addons.CreatePipelines(pipelineTemplate, mgr.GetClient())
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+
+	return pipelines, nil
 }

@@ -10,6 +10,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery v0.17.4
