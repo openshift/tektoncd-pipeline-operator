@@ -5,12 +5,9 @@ require (
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/go-logr/logr v0.1.0
-	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/google/go-cmp v0.4.0 // indirect
-	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/json-iterator/go v1.1.8 // indirect
-	github.com/manifestival/controller-runtime-client v0.2.0
-	github.com/manifestival/manifestival v0.5.0
+	github.com/manifestival/controller-runtime-client v0.3.0
+	github.com/manifestival/manifestival v0.6.0
 	github.com/operator-framework/operator-sdk v0.14.1
 	github.com/prometheus/common v0.7.0
 	github.com/spf13/pflag v1.0.5
@@ -18,16 +15,12 @@ require (
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
 	golang.org/x/tools v0.0.0-20200214144324-88be01311a71 // indirect
-	gopkg.in/yaml.v2 v2.2.5 // indirect
 	k8s.io/api v0.17.2
 	k8s.io/apiextensions-apiserver v0.0.0
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 	sigs.k8s.io/controller-runtime v0.4.0
 
 )

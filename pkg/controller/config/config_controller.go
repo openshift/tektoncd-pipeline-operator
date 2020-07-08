@@ -66,12 +66,6 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return nil, err
 	}
 
-	// read optionals if any
-	optional, err := readOptional(mgr)
-	if err != nil {
-		return nil, err
-	}
-
 	community, err := fetchCommuntiyResources(mgr)
 	if err != nil {
 		log.Error(err, "error fetching community resources")
@@ -84,7 +78,6 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		pipeline:  pipeline,
 		addons:    addons,
 		community: community,
-		optional:  optional,
 	}, nil
 }
 
@@ -110,6 +103,13 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	if err != nil {
 		return mf.Manifest{}, err
 	}
+
+	// add optionals to addons if any
+	optionalResources, err := readOptional(mgr)
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	addons = addons.Append(optionalResources)
 	return addons, nil
 }
 
@@ -186,7 +186,6 @@ type ReconcileConfig struct {
 	pipeline  mf.Manifest
 	addons    mf.Manifest
 	community mf.Manifest
-	optional  mf.Manifest
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -322,17 +321,6 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		return reconcile.Result{}, err
 	}
 	log.Info("successfully applied all addon resources")
-
-	if err := r.optional.Apply(); err != nil {
-		log.Error(err, "failed to apply optional yaml manifest")
-		// ignoring failure to update
-		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.AddonsError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
-	}
-	log.Info("successfully applied all optional resources")
 
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedAddons, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err

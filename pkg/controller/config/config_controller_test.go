@@ -56,7 +56,7 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		assertContainerArgHasImage(deployment, arg, argImage, r.client, t)
 	})
 
-	t.Run("for_triggers_addon_optional", func(t *testing.T) {
+	t.Run("for_triggers_addon", func(t *testing.T) {
 		var (
 			configName = "cluster"
 			namespace  = "openshift-pipelines"
@@ -74,10 +74,8 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		cl := feedConfigMock(config)
 		addons, err := mfFor("addons", cl)
 		assertNoEror(err, "failed to create manifestival for triggers addons;", t)
-		optional, err := mfFor("optional", cl)
-		assertNoEror(err, "failed to create manifestival for optional;", t)
 		req := newRequest(configName, namespace)
-		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, addons: addons, optional: optional}
+		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, addons: addons}
 
 		// WHEN
 		_, err = r.applyAddons(req, config)
