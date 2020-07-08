@@ -9,7 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	mf "github.com/jcrossley3/manifestival"
+	mfc "github.com/manifestival/controller-runtime-client"
+	mf "github.com/manifestival/manifestival"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/pkg/flag"
 	trnsfm "github.com/tektoncd/operator/pkg/utils/transform"
@@ -277,7 +278,7 @@ func mfFor(resource string, cl client.Client) (mf.Manifest, error) {
 	_, filename, _, _ := rt.Caller(0)
 	root := path.Join(path.Dir(filename), "../../..")
 	pipelinePath := filepath.Join(root, flag.ResourceDir, resource)
-	return mf.NewManifest(pipelinePath, flag.Recursive, cl)
+	return mf.ManifestFrom(sourceBasedOnRecursion(pipelinePath), mf.UseClient(mfc.NewClient(cl)))
 }
 
 func feedConfigMock(config *op.Config) client.Client {

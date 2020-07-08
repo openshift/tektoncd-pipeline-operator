@@ -3,14 +3,12 @@ package testsuites
 import (
 	"testing"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/tektoncd/operator/pkg/flag"
-
 	"github.com/operator-framework/operator-sdk/pkg/test"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/pkg/flag"
 	"github.com/tektoncd/operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

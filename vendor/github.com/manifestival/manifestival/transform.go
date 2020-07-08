@@ -21,20 +21,21 @@ type Owner interface {
 // Transform applies an ordered set of Transformer functions to the
 // `Resources` in this Manifest.  If an error occurs, no resources are
 // transformed.
-func (f *Manifest) Transform(fns ...Transformer) error {
-	var results []unstructured.Unstructured
-	for i := 0; i < len(f.Resources); i++ {
-		spec := f.Resources[i].DeepCopy()
+func (m Manifest) Transform(fns ...Transformer) (Manifest, error) {
+	result := m
+	result.resources = m.Resources() // deep copies
+	for i := range result.resources {
+		spec := &result.resources[i]
 		for _, transform := range fns {
-			err := transform(spec)
-			if err != nil {
-				return err
+			if transform != nil {
+				err := transform(spec)
+				if err != nil {
+					return Manifest{}, err
+				}
 			}
 		}
-		results = append(results, *spec)
 	}
-	f.Resources = results
-	return nil
+	return result, nil
 }
 
 // InjectNamespace creates a Transformer which adds a namespace to existing
@@ -42,11 +43,27 @@ func (f *Manifest) Transform(fns ...Transformer) error {
 // the same namespace.
 func InjectNamespace(ns string) Transformer {
 	namespace := resolveEnv(ns)
+	updateService := func(obj map[string]interface{}, fields ...string) error {
+		srv, found, err := unstructured.NestedFieldNoCopy(obj, fields...)
+		if err != nil {
+			return err
+		}
+		if found {
+			m := srv.(map[string]interface{})
+			if _, ok := m["namespace"]; ok {
+				m["namespace"] = namespace
+			}
+		}
+		return nil
+	}
 	return func(u *unstructured.Unstructured) error {
+		if !isClusterScoped(u.GetKind()) {
+			u.SetNamespace(namespace)
+		}
 		switch strings.ToLower(u.GetKind()) {
 		case "namespace":
 			u.SetName(namespace)
-		case "clusterrolebinding":
+		case "clusterrolebinding", "rolebinding":
 			subjects, _, _ := unstructured.NestedFieldNoCopy(u.Object, "subjects")
 			for _, subject := range subjects.([]interface{}) {
 				m := subject.(map[string]interface{})
@@ -57,18 +74,14 @@ func InjectNamespace(ns string) Transformer {
 		case "validatingwebhookconfiguration", "mutatingwebhookconfiguration":
 			hooks, _, _ := unstructured.NestedFieldNoCopy(u.Object, "webhooks")
 			for _, hook := range hooks.([]interface{}) {
-				m := hook.(map[string]interface{})
-				if c, ok := m["clientConfig"]; ok {
-					cfg := c.(map[string]interface{})
-					if s, ok := cfg["service"]; ok {
-						srv := s.(map[string]interface{})
-						srv["namespace"] = namespace
-					}
+				if err := updateService(hook.(map[string]interface{}), "clientConfig", "service"); err != nil {
+					return err
 				}
 			}
-		}
-		if !isClusterScoped(u.GetKind()) {
-			u.SetNamespace(namespace)
+		case "apiservice":
+			return updateService(u.Object, "spec", "service")
+		case "customresourcedefinition":
+			return updateService(u.Object, "spec", "conversion", "webhookClientConfig", "service")
 		}
 		return nil
 	}

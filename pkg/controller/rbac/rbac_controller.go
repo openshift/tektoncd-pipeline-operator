@@ -4,9 +4,8 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/tektoncd/operator/pkg/flag"
-
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
+	"github.com/tektoncd/operator/pkg/flag"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
