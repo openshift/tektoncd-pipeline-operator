@@ -87,6 +87,22 @@ EOF
 
 }
 
+change_task_image() {
+  local dest_dir="$1"; shift
+  local version="${1//./-}"; shift
+
+  local task="$1"; shift
+  local task_path="$dest_dir/${task}/${task}-task.yaml"
+
+  local expr=$1; shift
+  local image=$1; shift
+  local loc=$1; shift
+
+  sed \
+      -i "s'$expr.*'$loc $image'" \
+      $task_path
+}
+
 get_tasks() {
   local dest_dir="$1"; shift
   local version="${1//./-}"; shift
@@ -159,6 +175,19 @@ main() {
 
   get_tasks "$dest_dir" "$version"  \
     "$OPENSHIFT_CATALOG"   "$catalog_version"  OPENSHIFT_CATALOG_TASKS
+
+  change_task_image "$dest_dir" "$version"  \
+    "buildah"  "default: quay.io/buildah"  \
+    "registry.redhat.io/rhel8/buildah"  "default:"
+
+  change_task_image "$dest_dir" "$version"  \
+    "s2i"  "image: quay.io/openshift-pipeline/s2i"  \
+    "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8" \
+    "image:"
+
+  change_task_image "$dest_dir" "$version"  \
+    "s2i"  "image: quay.io/buildah"  \
+    "registry.redhat.io/rhel8/buildah"  "image:"
 
   return $?
 }
