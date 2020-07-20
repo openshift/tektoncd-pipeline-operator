@@ -1,0 +1,46 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: s2i-dotnet-3
+  namespace: openshift
+  labels:
+    pipeline.openshift.io/runtime: dotnet
+    pipeline.openshift.io/type: openshift
+  annotations:
+    operator.tekton.dev/preserve-namespace: "true"
+spec:
+  params:
+    - name: APP_NAME
+      type: string
+  resources:
+    - name: app-source
+      type: git
+    - name: app-image
+      type: image
+
+  tasks:
+    - name: build
+      taskRef:
+        name: s2i-dotnet-3
+        kind: ClusterTask
+      resources:
+        inputs:
+          - name: source
+            resource: app-source
+        outputs:
+          - name: image
+            resource: app-image
+      params:
+        - name: TLSVERIFY
+          value: "false"
+
+    - name: deploy
+      taskRef:
+        name: openshift-client
+        kind: ClusterTask
+      runAfter:
+        - build
+      params:
+        - name: ARGS
+          value: ["rollout", "status", "dc/$(params.APP_NAME)"]
