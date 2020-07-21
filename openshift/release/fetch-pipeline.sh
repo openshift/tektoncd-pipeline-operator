@@ -8,6 +8,11 @@
 
 # set max shift to 0, so that when a version is explicitly specified that version is fetched
 # modify this in future if a workflow based on latest version and recent (shifted) versions is needed
+set -e
+
+set -x
+CURL_OPTIONS="-v" # -s for quiet, -v if you want debug
+
 MAX_SHIFT=1
 NIGHTLY_RELEASE="https://raw.githubusercontent.com/openshift/tektoncd-pipeline/release-next/openshift/release/tektoncd-pipeline-nightly.yaml"
 STABLE_RELEASE_URL='https://raw.githubusercontent.com/openshift/tektoncd-pipeline/${version}/openshift/release/tektoncd-pipeline-${version}.yaml'
@@ -15,7 +20,9 @@ PAYLOAD_PIPELINE_VERSION="release-next"
 
 function get_version {
     local shift=${1} # 0 is latest, increase is the version before etc...
-    local version=$(curl -s https://api.github.com/repos/tektoncd/pipeline/releases | python -c "from pkg_resources import parse_version;import sys, json;jeez=json.load(sys.stdin);print(sorted([x['tag_name'] for x in jeez], key=parse_version, reverse=True)[${shift}])")
+    tmpf=$(mktemp /tmp/.XXXXXX)
+    curl -f ${CURL_OPTIONS} -o ${tmpf} -v https://api.github.com/repos/tektoncd/pipeline/releases
+    local version=$(python -c "from pkg_resources import parse_version;import sys, json;jeez=json.load(open('${tmpf}'));print(sorted([x['tag_name'] for x in jeez], key=parse_version, reverse=True)[${shift}])")
     PAYLOAD_PIPELINE_VERSION=${version}
     echo $(eval echo ${STABLE_RELEASE_URL})
 }
@@ -26,13 +33,13 @@ function tryurl {
 
 function geturl() {
 
-    for (( i = 0; i < 10; i++ )); do
-      if tryurl ${NIGHTLY_RELEASE};then
-          echo ${NIGHTLY_RELEASE}
-          return 0
-      fi
-      sleep 30s
-    done
+    # for (( i = 0; i < 10; i++ )); do
+    #   if tryurl ${NIGHTLY_RELEASE};then
+    #       echo ${NIGHTLY_RELEASE}
+    #       return 0
+    #   fi
+    #   sleep 30s
+    # done
 
     for shifted in `seq 0 ${MAX_SHIFT}`;do
         versionyaml=$(get_version ${shifted})
