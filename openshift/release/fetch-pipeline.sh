@@ -9,8 +9,9 @@
 # set max shift to 0, so that when a version is explicitly specified that version is fetched
 # modify this in future if a workflow based on latest version and recent (shifted) versions is needed
 set -eu
+set -x
 
-CURL_OPTIONS="-s" # -s for quiet, -v if you want debug
+CURL_OPTIONS="-v" # -s for quiet, -v if you want debug
 
 MAX_SHIFT=1
 NIGHTLY_RELEASE="https://raw.githubusercontent.com/openshift/tektoncd-pipeline/release-next/openshift/release/tektoncd-pipeline-nightly.yaml"
@@ -24,6 +25,7 @@ trap clean EXIT
 function get_version {
     local shift=${1} # 0 is latest, increase is the version before etc...
     curl -f ${CURL_OPTIONS} -o ${TMPFILE} https://api.github.com/repos/tektoncd/pipeline/releases
+    cat >&2 ${TMPFILE}
     local version=$(python -c "from pkg_resources import parse_version;import json;jeez=json.load(open('${TMPFILE}'));print(sorted([x['tag_name'] for x in jeez], key=parse_version, reverse=True)[${shift}])")
     PAYLOAD_PIPELINE_VERSION=${version}
     echo $(eval echo ${STABLE_RELEASE_URL})
