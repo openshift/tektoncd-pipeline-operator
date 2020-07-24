@@ -24,7 +24,7 @@ trap clean EXIT
 function get_version {
     local shift=${1} # 0 is latest, increase is the version before etc...
     curl -f ${CURL_OPTIONS} -o ${TMPFILE} https://api.github.com/repos/tektoncd/pipeline/releases
-    local version=$(python -c "from pkg_resources import parse_version;import json;jeez=json.load(open('${TMPFILE}'));print(sorted([x['tag_name'] for x in jeez], key=parse_version, reverse=True)[${shift}])")
+    local version=$(cat ${TMPFILE} | python3 -c "from pkg_resources import parse_version;import json;jeez=json.load(open(0));print(sorted([x['tag_name'] for x in jeez], key=parse_version, reverse=True)[${shift}])")
     PAYLOAD_PIPELINE_VERSION=${version}
     echo $(eval echo ${STABLE_RELEASE_URL})
 }
