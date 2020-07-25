@@ -1,0 +1,52 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: s2i-dotnet-3-knative
+  namespace: openshift
+  labels:
+    pipeline.openshift.io/runtime: dotnet
+    pipeline.openshift.io/type: knative
+  annotations:
+    operator.tekton.dev/preserve-namespace: "true"
+spec:
+  params:
+    - name: APP_NAME
+      type: string
+  resources:
+    - name: app-source
+      type: git
+    - name: app-image
+      type: image
+
+  tasks:
+    - name: build
+      taskRef:
+        name: s2i-dotnet-3
+        kind: ClusterTask
+      resources:
+        inputs:
+          - name: source
+            resource: app-source
+        outputs:
+          - name: image
+            resource: app-image
+      params:
+        - name: TLSVERIFY
+          value: "false"
+
+    - name: kn-service-create
+      taskRef:
+        name: kn
+        kind: ClusterTask
+      runAfter:
+        - build
+      resources:
+        inputs:
+          - name: image
+            resource: app-image
+            from:
+              - build
+      params:
+        - name: ARGS
+          value: ["service", "create", "$(params.APP_NAME)", "--image=$(resources.inputs.image.url)", "--force"]
