@@ -16,9 +16,11 @@
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: tekton-pipelines
   labels:
     openshift.io/cluster-monitoring: "true"
-  name: tekton-pipelines
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -39,13 +41,16 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   name: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 spec:
   privileged: false
   allowPrivilegeEscalation: false
   volumes:
-  - 'emptyDir'
-  - 'configMap'
-  - 'secret'
+    - 'emptyDir'
+    - 'configMap'
+    - 'secret'
   hostNetwork: false
   hostIPC: false
   hostPID: false
@@ -56,13 +61,13 @@ spec:
   supplementalGroups:
     rule: 'MustRunAs'
     ranges:
-    - min: 1
-      max: 65535
+      - min: 1
+        max: 65535
   fsGroup:
     rule: 'MustRunAs'
     ranges:
-    - min: 1
-      max: 65535
+      - min: 1
+        max: 65535
 
 ---
 # Copyright 2020 The Tekton Authors
@@ -83,6 +88,10 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: tekton-pipelines-controller-cluster-access
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 rules:
   - apiGroups: [""]
     # Namespace access is required because the controller timeout handling logic
@@ -112,6 +121,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   # This is the access that the controller needs on a per-namespace basis.
   name: tekton-pipelines-controller-tenant-access
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 rules:
   - apiGroups: [""]
     resources: ["pods", "pods/log", "secrets", "events", "serviceaccounts", "configmaps", "persistentvolumeclaims", "limitranges"]
@@ -119,7 +132,7 @@ rules:
     # Unclear if this access is actually required.  Simply a hold-over from the previous
     # incarnation of the controller's ClusterRole.
   - apiGroups: ["apps"]
-    resources: ["deployments"]
+    resources: ["deployments", "statefulsets"]
     verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
   - apiGroups: ["apps"]
     resources: ["deployments/finalizers"]
@@ -129,6 +142,10 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: tekton-pipelines-webhook-cluster-access
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 rules:
   # The webhook needs to be able to list and update customresourcedefinitions,
   # mainly to update the webhook certificates.
@@ -161,6 +178,19 @@ rules:
     resources: ["podsecuritypolicies"]
     resourceNames: ["tekton-pipelines"]
     verbs: ["use"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tekton-pipelines-leader-election
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+rules:
+  # We uses leases for leaderelection
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
 
 ---
 # Copyright 2020 The Tekton Authors
@@ -182,6 +212,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
@@ -197,6 +231,10 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
@@ -205,7 +243,7 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get"]
-    resourceNames: ["config-logging", "config-observability"]
+    resourceNames: ["config-logging", "config-observability", "config-leader-election"]
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["list", "watch"]
@@ -236,12 +274,20 @@ kind: ServiceAccount
 metadata:
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -262,6 +308,10 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: tekton-pipelines-controller-cluster-access
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 subjects:
   - kind: ServiceAccount
     name: tekton-pipelines-controller
@@ -269,6 +319,23 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: tekton-pipelines-controller-cluster-access
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-pipelines-controller-leaderelection
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+subjects:
+  - kind: ServiceAccount
+    name: tekton-pipelines-controller
+    namespace: tekton-pipelines
+roleRef:
+  kind: ClusterRole
+  name: tekton-pipelines-leader-election
   apiGroup: rbac.authorization.k8s.io
 ---
 # If this ClusterRoleBinding is replaced with a RoleBinding
@@ -279,6 +346,10 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: tekton-pipelines-controller-tenant-access
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 subjects:
   - kind: ServiceAccount
     name: tekton-pipelines-controller
@@ -292,6 +363,10 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: tekton-pipelines-webhook-cluster-access
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 subjects:
   - kind: ServiceAccount
     name: tekton-pipelines-webhook
@@ -300,6 +375,24 @@ roleRef:
   kind: ClusterRole
   name: tekton-pipelines-webhook-cluster-access
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-pipelines-webhook-leaderelection
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+subjects:
+  - kind: ServiceAccount
+    name: tekton-pipelines-webhook
+    namespace: tekton-pipelines
+roleRef:
+  kind: ClusterRole
+  name: tekton-pipelines-leader-election
+  apiGroup: rbac.authorization.k8s.io
+
 
 ---
 # Copyright 2020 The Tekton Authors
@@ -321,6 +414,10 @@ kind: RoleBinding
 metadata:
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 subjects:
   - kind: ServiceAccount
     name: tekton-pipelines-controller
@@ -335,6 +432,10 @@ kind: RoleBinding
 metadata:
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 subjects:
   - kind: ServiceAccount
     name: tekton-pipelines-webhook
@@ -364,8 +465,10 @@ kind: CustomResourceDefinition
 metadata:
   name: clustertasks.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -381,18 +484,18 @@ spec:
       # See issue: https://github.com/knative/serving/issues/912
       x-kubernetes-preserve-unknown-fields: true
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
+    - name: v1alpha1
+      served: true
+      storage: false
+    - name: v1beta1
+      served: true
+      storage: true
   names:
     kind: ClusterTask
     plural: clustertasks
     categories:
-    - tekton
-    - tekton-pipelines
+      - tekton
+      - tekton-pipelines
   scope: Cluster
   # Opt into the status subresource so metadata.generation
   # starts to increment
@@ -425,8 +528,10 @@ kind: CustomResourceDefinition
 metadata:
   name: conditions.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   names:
@@ -462,6 +567,8 @@ kind: CustomResourceDefinition
 metadata:
   name: images.caching.internal.knative.dev
   labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
     knative.dev/crd-install: "true"
 spec:
   group: caching.internal.knative.dev
@@ -499,8 +606,10 @@ kind: CustomResourceDefinition
 metadata:
   name: pipelineruns.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -516,21 +625,21 @@ spec:
       # See issue: https://github.com/knative/serving/issues/912
       x-kubernetes-preserve-unknown-fields: true
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
+    - name: v1alpha1
+      served: true
+      storage: false
+    - name: v1beta1
+      served: true
+      storage: true
   names:
     kind: PipelineRun
     plural: pipelineruns
     categories:
-    - tekton
-    - tekton-pipelines
+      - tekton
+      - tekton-pipelines
     shortNames:
-    - pr
-    - prs
+      - pr
+      - prs
   scope: Namespaced
   additionalPrinterColumns:
     - name: Succeeded
@@ -576,8 +685,10 @@ kind: CustomResourceDefinition
 metadata:
   name: pipelines.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -593,18 +704,18 @@ spec:
       # See issue: https://github.com/knative/serving/issues/912
       x-kubernetes-preserve-unknown-fields: true
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
+    - name: v1alpha1
+      served: true
+      storage: false
+    - name: v1beta1
+      served: true
+      storage: true
   names:
     kind: Pipeline
     plural: pipelines
     categories:
-    - tekton
-    - tekton-pipelines
+      - tekton
+      - tekton-pipelines
   scope: Namespaced
   # Opt into the status subresource so metadata.generation
   # starts to increment
@@ -637,16 +748,18 @@ kind: CustomResourceDefinition
 metadata:
   name: pipelineresources.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   names:
     kind: PipelineResource
     plural: pipelineresources
     categories:
-    - tekton
-    - tekton-pipelines
+      - tekton
+      - tekton-pipelines
   scope: Namespaced
   # Opt into the status subresource so metadata.generation
   # starts to increment
@@ -674,8 +787,10 @@ kind: CustomResourceDefinition
 metadata:
   name: taskruns.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -691,35 +806,35 @@ spec:
       # See issue: https://github.com/knative/serving/issues/912
       x-kubernetes-preserve-unknown-fields: true
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
+    - name: v1alpha1
+      served: true
+      storage: false
+    - name: v1beta1
+      served: true
+      storage: true
   names:
     kind: TaskRun
     plural: taskruns
     categories:
-    - tekton
-    - tekton-pipelines
+      - tekton
+      - tekton-pipelines
     shortNames:
-    - tr
-    - trs
+      - tr
+      - trs
   scope: Namespaced
   additionalPrinterColumns:
-  - name: Succeeded
-    type: string
-    JSONPath: ".status.conditions[?(@.type==\"Succeeded\")].status"
-  - name: Reason
-    type: string
-    JSONPath: ".status.conditions[?(@.type==\"Succeeded\")].reason"
-  - name: StartTime
-    type: date
-    JSONPath: .status.startTime
-  - name: CompletionTime
-    type: date
-    JSONPath: .status.completionTime
+    - name: Succeeded
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Succeeded\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Succeeded\")].reason"
+    - name: StartTime
+      type: date
+      JSONPath: .status.startTime
+    - name: CompletionTime
+      type: date
+      JSONPath: .status.completionTime
   # Opt into the status subresource so metadata.generation
   # starts to increment
   subresources:
@@ -751,8 +866,10 @@ kind: CustomResourceDefinition
 metadata:
   name: tasks.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
+    version: v0.14.2
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -768,18 +885,18 @@ spec:
       # See issue: https://github.com/knative/serving/issues/912
       x-kubernetes-preserve-unknown-fields: true
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
-  - name: v1beta1
-    served: true
-    storage: false
+    - name: v1alpha1
+      served: true
+      storage: false
+    - name: v1beta1
+      served: true
+      storage: true
   names:
     kind: Task
     plural: tasks
     categories:
-    - tekton
-    - tekton-pipelines
+      - tekton
+      - tekton-pipelines
   scope: Namespaced
   # Opt into the status subresource so metadata.generation
   # starts to increment
@@ -813,7 +930,10 @@ metadata:
   name: webhook-certs
   namespace: tekton-pipelines
   labels:
-    pipeline.tekton.dev/release: v0.12.1
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
 # The data is populated at install time.
 
 ---
@@ -822,17 +942,20 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validation.webhook.pipeline.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
 webhooks:
-- admissionReviewVersions:
-  - v1beta1
-  clientConfig:
-    service:
-      name: tekton-pipelines-webhook
-      namespace: tekton-pipelines
-  failurePolicy: Fail
-  sideEffects: None
-  name: validation.webhook.pipeline.tekton.dev
+  - admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        name: tekton-pipelines-webhook
+        namespace: tekton-pipelines
+    failurePolicy: Fail
+    sideEffects: None
+    name: validation.webhook.pipeline.tekton.dev
 
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
@@ -840,17 +963,20 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: webhook.pipeline.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
 webhooks:
-- admissionReviewVersions:
-  - v1beta1
-  clientConfig:
-    service:
-      name: tekton-pipelines-webhook
-      namespace: tekton-pipelines
-  failurePolicy: Fail
-  sideEffects: None
-  name: webhook.pipeline.tekton.dev
+  - admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        name: tekton-pipelines-webhook
+        namespace: tekton-pipelines
+    failurePolicy: Fail
+    sideEffects: None
+    name: webhook.pipeline.tekton.dev
 
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
@@ -858,21 +984,23 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: config.webhook.pipeline.tekton.dev
   labels:
-    pipeline.tekton.dev/release: v0.12.1
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
+    pipeline.tekton.dev/release: v0.14.2
 webhooks:
-- admissionReviewVersions:
-  - v1beta1
-  clientConfig:
-    service:
-      name: tekton-pipelines-webhook
-      namespace: tekton-pipelines
-  failurePolicy: Fail
-  sideEffects: None
-  name: config.webhook.pipeline.tekton.dev
-  namespaceSelector:
-    matchExpressions:
-    - key: pipeline.tekton.dev/release
-      operator: Exists
+  - admissionReviewVersions:
+      - v1beta1
+    clientConfig:
+      service:
+        name: tekton-pipelines-webhook
+        namespace: tekton-pipelines
+    failurePolicy: Fail
+    sideEffects: None
+    name: config.webhook.pipeline.tekton.dev
+    objectSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: tekton-pipelines
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -894,27 +1022,29 @@ kind: ClusterRole
 metadata:
   name: tekton-aggregate-edit
   labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
-- apiGroups:
-  - tekton.dev
-  resources:
-  - tasks
-  - taskruns
-  - pipelines
-  - pipelineruns
-  - pipelineresources
-  - conditions
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - tasks
+      - taskruns
+      - pipelines
+      - pipelineruns
+      - pipelineresources
+      - conditions
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -936,21 +1066,23 @@ kind: ClusterRole
 metadata:
   name: tekton-aggregate-view
   labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
     rbac.authorization.k8s.io/aggregate-to-view: "true"
 rules:
-- apiGroups:
-  - tekton.dev
-  resources:
-  - tasks
-  - taskruns
-  - pipelines
-  - pipelineruns
-  - pipelineresources
-  - conditions
-  verbs:
-  - get
-  - list
-  - watch
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - tasks
+      - taskruns
+      - pipelines
+      - pipelineruns
+      - pipelineresources
+      - conditions
+    verbs:
+      - get
+      - list
+      - watch
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -972,6 +1104,9 @@ kind: ConfigMap
 metadata:
   name: config-artifact-bucket
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 #  data:
 #    # location of the gcs bucket to be used for artifact storage
 #    location: "gs://bucket-name"
@@ -1001,6 +1136,9 @@ kind: ConfigMap
 metadata:
   name: config-artifact-pvc
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 # data:
 #   # size of the PVC volume
 #   size: 5Gi
@@ -1028,6 +1166,9 @@ kind: ConfigMap
 metadata:
   name: config-defaults
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 data:
   _example: |
     ################################
@@ -1063,6 +1204,13 @@ data:
     # TaskRun and PipelineRun, if none is specified. If a pod template
     # is specified, the default pod template is ignored.
     # default-pod-template:
+
+    # default-cloud-events-sink contains the default CloudEvents sink to be
+    # used for TaskRun and PipelineRun, when no sink is specified.
+    # Note that right now it is still not possible to set a PipelineRun or
+    # TaskRun specific sink, so the default is the only option available.
+    # If no sink is specified, no CloudEvent is generated
+    # default-cloud-events-sink:
 ---
 # Copyright 2019 The Tekton Authors
 #
@@ -1083,7 +1231,19 @@ kind: ConfigMap
 metadata:
   name: feature-flags
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 data:
+  # Setting this flag to "true" will prevent Tekton to create an
+  # Affinity Assistant for every TaskRun sharing a PVC workspace
+  #
+  # The default behaviour is for Tekton to create Affinity Assistants
+  #
+  # See more in the workspace documentation about Affinity Assistant
+  # https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md#affinity-assistant-and-specifying-workspace-order-in-a-pipeline
+  # or https://github.com/tektoncd/pipeline/pull/2630 for more info.
+  disable-affinity-assistant: "false"
   # Setting this flag to "true" will prevent Tekton overriding your
   # Task container's $HOME environment variable.
   #
@@ -1104,6 +1264,14 @@ data:
   # See https://github.com/tektoncd/pipeline/issues/1836 for more
   # info.
   disable-working-directory-overwrite: "false"
+  # This option should be set to false when Pipelines is running in a
+  # cluster that does not use injected sidecars such as Istio. Setting
+  # it to false should decrease the time it takes for a TaskRun to start
+  # running. For clusters that use injected sidecars, setting this
+  # option to false can lead to unexpected behavior.
+  #
+  # See https://github.com/tektoncd/pipeline/issues/2080 for more info.
+  running-in-environment-with-injected-sidecars: "true"
 
 ---
 # Copyright 2020 Tekton Authors LLC
@@ -1125,6 +1293,9 @@ kind: ConfigMap
 metadata:
   name: config-leader-election
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 data:
   # An inactive but valid configuration follows; see example.
   resourceLock: "leases"
@@ -1152,6 +1323,9 @@ kind: ConfigMap
 metadata:
   name: config-logging
   namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 data:
   # Common configuration for all knative codebase
   zap-logger-config: |
@@ -1204,7 +1378,9 @@ kind: ConfigMap
 metadata:
   name: config-observability
   namespace: tekton-pipelines
-
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 data:
   _example: |
     ################################
@@ -1261,72 +1437,93 @@ metadata:
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
   labels:
-    app.kubernetes.io/name: tekton-pipelines
+    app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: v0.14.2
+    app.kubernetes.io/part-of: tekton-pipelines
+    # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
+    pipeline.tekton.dev/release: v0.14.2
+    # labels below are related to istio and should not be used for resource lookup
+    version: v0.14.2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tekton-pipelines-controller
+      app.kubernetes.io/name: controller
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: default
+      app.kubernetes.io/part-of: tekton-pipelines
   template:
     metadata:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
       labels:
-        app: tekton-pipelines-controller
-        app.kubernetes.io/name: tekton-pipelines
+        app.kubernetes.io/name: controller
         app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: default
+        app.kubernetes.io/version: v0.14.2
+        app.kubernetes.io/part-of: tekton-pipelines
         # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-        pipeline.tekton.dev/release: v0.12.1
-        version: v0.12.1
+        pipeline.tekton.dev/release: v0.14.2
+        # labels below are related to istio and should not be used for resource lookup
+        app: tekton-pipelines-controller
+        version: v0.14.2
     spec:
       serviceAccountName: tekton-pipelines-controller
       containers:
-      - name: tekton-pipelines-controller
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.12.1
-        args: [
-          # These images are built on-demand by `ko resolve` and are replaced
-          # by image references by digest.
-          "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.12.1",
-          "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.12.1",
-          "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.12.1",
-          "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.12.1",
-          "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.12.1",
-          "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.12.1",
-          "-build-gcs-fetcher-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gcs-fetcher:v0.12.1",
+        - name: tekton-pipelines-controller
+          image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.14.2
+          args: [
+            # These images are built on-demand by `ko resolve` and are replaced
+            # by image references by digest.
+            "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.14.2",
+            "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.14.2",
+            "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.14.2",
+            "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.14.2",
+            "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.14.2",
+            "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.14.2",
+            "-build-gcs-fetcher-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gcs-fetcher:v0.14.2",
 
-          # These images are pulled from Dockerhub, by digest, as of April 15, 2020.
-          "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.12.1",
-          "-shell-image", "registry.access.redhat.com/ubi8/ubi-minimal:latest",
-          "-gsutil-image", "google/cloud-sdk@sha256:6e8676464c7581b2dc824956b112a61c95e4144642bec035e6db38e3384cae2e",
-        ]
-        volumeMounts:
-        - name: config-logging
-          mountPath: /etc/config-logging
-        env:
-        - name: SYSTEM_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        # If you are changing these names, you will also need to update
-        # the controller's Role in 200-role.yaml to include the new
-        # values in the "configmaps" "get" rule.
-        - name: CONFIG_LOGGING_NAME
-          value: config-logging
-        - name: CONFIG_OBSERVABILITY_NAME
-          value: config-observability
-        - name: CONFIG_ARTIFACT_BUCKET_NAME
-          value: config-artifact-bucket
-        - name: CONFIG_ARTIFACT_PVC_NAME
-          value: config-artifact-pvc
-        - name: CONFIG_FEATURE_FLAGS_NAME
-          value: feature-flags
-        - name: CONFIG_LEADERELECTION_NAME
-          value: config-leader-election
-        - name: METRICS_DOMAIN
-          value: tekton.dev/pipeline
+            # This image is used as a placeholder pod, the Affinity Assistant
+            # TODO(#2640) We may want to create a custom, minimal binary
+            # As of June 8, 2020, tag 1.19.0
+            "-affinity-assistant-image", "nginx@sha256:c870bf53de0357813af37b9500cb1c2ff9fb4c00120d5fe1d75c21591293c34d",
+
+            # These images are pulled from Dockerhub, by digest, as of May 19, 2020.
+            # As of May 29, 2020 new sha for nop image
+            "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.14.2",
+            # This is google/cloud-sdk:293.0.0-slim
+            "-gsutil-image", "google/cloud-sdk@sha256:37654ada9b7afbc32828b537030e85de672a9dd468ac5c92a36da1e203a98def",
+            # The shell image must be root in order to create directories and copy files to PVCs.
+            # gcr.io/distroless/base:debug as of May 19, 2020
+            "-shell-image", "registry.access.redhat.com/ubi8/ubi-minimal:latest",
+          ]
+          volumeMounts:
+            - name: config-logging
+              mountPath: /etc/config-logging
+          env:
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            # If you are changing these names, you will also need to update
+            # the controller's Role in 200-role.yaml to include the new
+            # values in the "configmaps" "get" rule.
+            - name: CONFIG_LOGGING_NAME
+              value: config-logging
+            - name: CONFIG_OBSERVABILITY_NAME
+              value: config-observability
+            - name: CONFIG_ARTIFACT_BUCKET_NAME
+              value: config-artifact-bucket
+            - name: CONFIG_ARTIFACT_PVC_NAME
+              value: config-artifact-pvc
+            - name: CONFIG_FEATURE_FLAGS_NAME
+              value: feature-flags
+            - name: CONFIG_LEADERELECTION_NAME
+              value: config-leader-election
+            - name: METRICS_DOMAIN
+              value: tekton.dev/pipeline
       volumes:
         - name: config-logging
           configMap:
@@ -1336,19 +1533,29 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: v0.14.2
+    app.kubernetes.io/part-of: tekton-pipelines
+    # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
+    pipeline.tekton.dev/release: v0.14.2
+    # labels below are related to istio and should not be used for resource lookup
     app: tekton-pipelines-controller
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    version: v0.14.2
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
 spec:
   ports:
-  - name: http-metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
+    - name: http-metrics
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
   selector:
-    app: tekton-pipelines-controller
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -1374,94 +1581,112 @@ metadata:
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
   labels:
-    app.kubernetes.io/name: tekton-pipelines
-    app.kubernetes.io/component: webhook-controller
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    app.kubernetes.io/name: webhook
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: v0.14.2
+    app.kubernetes.io/part-of: tekton-pipelines
+    # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
+    pipeline.tekton.dev/release: v0.14.2
+    # labels below are related to istio and should not be used for resource lookup
+    version: v0.14.2
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tekton-pipelines-webhook
-      role: webhook
+      app.kubernetes.io/name: webhook
+      app.kubernetes.io/component: webhook
+      app.kubernetes.io/instance: default
+      app.kubernetes.io/part-of: tekton-pipelines
   template:
     metadata:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
       labels:
+        app.kubernetes.io/name: webhook
+        app.kubernetes.io/component: webhook
+        app.kubernetes.io/instance: default
+        app.kubernetes.io/version: v0.14.2
+        app.kubernetes.io/part-of: tekton-pipelines
+        # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
+        pipeline.tekton.dev/release: v0.14.2
+        # labels below are related to istio and should not be used for resource lookup
         app: tekton-pipelines-webhook
-        role: webhook
-        app.kubernetes.io/name: tekton-pipelines
-        app.kubernetes.io/component: webhook-controller
-        pipeline.tekton.dev/release: v0.12.1
-        version: v0.12.1
+        version: v0.14.2
     spec:
       serviceAccountName: tekton-pipelines-webhook
       containers:
-      - name: webhook
-        # This is the Go import path for the binary that is containerized
-        # and substituted here.
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.12.1
-        env:
-        - name: SYSTEM_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        # If you are changing these names, you will also need to update
-        # the webhook's Role in 200-role.yaml to include the new
-        # values in the "configmaps" "get" rule.
-        - name: CONFIG_LOGGING_NAME
-          value: config-logging
-        - name: CONFIG_OBSERVABILITY_NAME
-          value: config-observability
-        - name: CONFIG_LEADERELECTION_NAME
-          value: config-leader-election
-        - name: WEBHOOK_SERVICE_NAME
-          value: tekton-pipelines-webhook
-        - name: WEBHOOK_SECRET_NAME
-          value: webhook-certs
-        - name: METRICS_DOMAIN
-          value: tekton.dev/pipeline
-        securityContext:
-          allowPrivilegeEscalation: false
-
-        ports:
-        - name: metrics
-          containerPort: 9090
-        - name: profiling
-          containerPort: 8008
-        - name: https-webhook
-          containerPort: 8443
+        - name: webhook
+          # This is the Go import path for the binary that is containerized
+          # and substituted here.
+          image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.14.2
+          env:
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            # If you are changing these names, you will also need to update
+            # the webhook's Role in 200-role.yaml to include the new
+            # values in the "configmaps" "get" rule.
+            - name: CONFIG_LOGGING_NAME
+              value: config-logging
+            - name: CONFIG_OBSERVABILITY_NAME
+              value: config-observability
+            - name: CONFIG_LEADERELECTION_NAME
+              value: config-leader-election
+            - name: WEBHOOK_SERVICE_NAME
+              value: tekton-pipelines-webhook
+            - name: WEBHOOK_SECRET_NAME
+              value: webhook-certs
+            - name: METRICS_DOMAIN
+              value: tekton.dev/pipeline
+          securityContext:
+            allowPrivilegeEscalation: false
+          ports:
+            - name: metrics
+              containerPort: 9090
+            - name: profiling
+              containerPort: 8008
+            - name: https-webhook
+              containerPort: 8443
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/name: webhook
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: v0.14.2
+    app.kubernetes.io/part-of: tekton-pipelines
+    # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
+    pipeline.tekton.dev/release: v0.14.2
+    # labels below are related to istio and should not be used for resource lookup
     app: tekton-pipelines-webhook
-    role: webhook
-    pipeline.tekton.dev/release: v0.12.1
-    version: v0.12.1
+    version: v0.14.2
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
 spec:
   ports:
-  # Define metrics and profiling for them to be accessible within service meshes.
-  - name: http-metrics
-    port: 9090
-    targetPort: 9090
-  - name: http-profiling
-    port: 8008
-    targetPort: 8008
-  - name: https-webhook
-    port: 443
-    targetPort: 8443
+    # Define metrics and profiling for them to be accessible within service meshes.
+    - name: http-metrics
+      port: 9090
+      targetPort: 9090
+    - name: http-profiling
+      port: 8008
+      targetPort: 8008
+    - name: https-webhook
+      port: 443
+      targetPort: 8443
   selector:
-    app: tekton-pipelines-webhook
-    role: webhook
+    app.kubernetes.io/name: webhook
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-pipelines
 
 ---
 ---
-# Copyright 2018 The Knative Authors
+# Copyright 2018 The Tekton Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1518,7 +1743,8 @@ metadata:
 spec:
   endpoints:
     - interval: 10s
-      port: metrics
+      port: http-metrics
+  jobLabel: app
   namespaceSelector:
     matchNames:
       - openshift-pipelines
