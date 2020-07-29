@@ -357,19 +357,61 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	}
 	r.addons = newAddons
 
-	if err := r.addons.Apply(); err != nil {
-		log.Error(err, "failed to apply addons yaml manifest")
+	if err := r.addons.Filter(mf.Not(deployment)).Apply(); err != nil {
+		log.Error(err, "failed to apply addons yaml non deployment manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
 			Code:    op.AddonsError,
 			Details: err.Error(),
 			Version: flag.TektonVersion})
-		return reconcile.Result{}, err
+		return reconcile.Result{}, fmt.Errorf("failed to apply non deployment manifest: %w", err)
 	}
+	if err := r.addons.Filter(deployment).Apply(); err != nil {
+		if errors.IsInvalid(err) {
+			if err := r.deleteAndCreateAddon(); err != nil {
+				_ = r.updateStatus(cfg, op.ConfigCondition{
+					Code:    op.AddonsError,
+					Details: err.Error(),
+					Version: flag.TektonVersion})
+				return reconcile.Result{}, fmt.Errorf("failed to apply deployment manifest: %w", err)
+			}
+		} else {
+			_ = r.updateStatus(cfg, op.ConfigCondition{
+				Code:    op.AddonsError,
+				Details: err.Error(),
+				Version: flag.TektonVersion})
+
+			return reconcile.Result{}, fmt.Errorf("failed to apply deployments: %w", err)
+		}
+	}
+
 	log.Info("successfully applied all addon resources")
 
 	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedAddons, Version: flag.TektonVersion})
 	return reconcile.Result{Requeue: true}, err
+}
+
+func (r *ReconcileConfig) deleteAndCreateAddon() error {
+	timeout := time.Duration(replaceTimeout) * time.Second
+
+	propPolicy := mf.PropagationPolicy(metav1.DeletePropagationForeground)
+	if err := r.addons.Filter(deployment).Delete(propPolicy); err != nil {
+		log.Error(err, "failed to delete Deployment resources")
+		return err
+	}
+
+	if err := wait.PollImmediate(1*time.Second, timeout, func() (bool, error) {
+		for _, deploy := range r.addons.Filter(deployment).Resources() {
+			if _, err := r.addons.Client.Get(&deploy); !apierrors.IsNotFound(err) {
+				return false, err
+			}
+		}
+		return true, nil
+	}); err != nil {
+		return err
+	}
+
+	return r.addons.Filter(deployment).Apply()
 }
 
 func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
