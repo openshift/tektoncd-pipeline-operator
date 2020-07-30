@@ -38,6 +38,12 @@ type ConfigCondition struct {
 
 	// The version of OpenShift pipelines
 	Version string `json:"version"`
+
+	// The version of OpenShift pipelines
+	PipelineVersion string `json:"pipelineVersion"`
+
+	// The version of OpenShift triggers
+	TriggersVersion string `json:"triggersVersion"`
 }
 
 // InstallStatus describes the state of installation of pipelines
