@@ -52,7 +52,6 @@ var (
 	OperatorUUID           string
 	CommunityResourceURLs  = []string{
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/jib-maven/0.1/jib-maven.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-clone/0.1/git-clone.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/maven/0.1/maven.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/tkn/0.1/tkn.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/kn/0.1/kn.yaml",
