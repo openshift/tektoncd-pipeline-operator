@@ -7,7 +7,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: ClusterTask
 metadata:
-  name: buildah
+  name: buildah-v0-14-3
   labels:
     app.kubernetes.io/version: "0.1"
   annotations:

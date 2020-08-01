@@ -6,7 +6,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: ClusterTask
 metadata:
-  name: s2i-dotnet-3
+  name: s2i-dotnet-3-v0-14-3
   labels:
     app.kubernetes.io/version: "0.1"
   annotations:

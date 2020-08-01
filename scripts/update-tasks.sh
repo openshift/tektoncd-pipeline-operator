@@ -45,6 +45,7 @@ declare -r TEKTON_CATALOG="https://raw.githubusercontent.com/openshift/tektoncd-
 declare -r TEKTON_CATALOG_TASKS=(
   s2i
   openshift-client
+  git-clone
   buildah
 )
 
@@ -59,6 +60,15 @@ declare -r OPENSHIFT_CATALOG_TASKS=(
   s2i-php
   s2i-ruby
   s2i-dotnet-3
+  s2i-go-pr
+  s2i-java-8-pr
+  s2i-java-11-pr
+  s2i-python-3-pr
+  s2i-nodejs-pr
+  s2i-perl-pr
+  s2i-php-pr
+  s2i-ruby-pr
+  s2i-dotnet-3-pr
 )
 
 
@@ -93,6 +103,7 @@ change_task_image() {
 
   local task="$1"; shift
   local task_path="$dest_dir/${task}/${task}-task.yaml"
+  local task_path_version="$dest_dir/${task}/${task}-$version-task.yaml"
 
   local expr=$1; shift
   local image=$1; shift
@@ -101,6 +112,10 @@ change_task_image() {
   sed \
       -i "s'$expr.*'$loc $image'" \
       $task_path
+
+  sed \
+      -i "s'$expr.*'$loc $image'" \
+      $task_path_version
 }
 
 get_tasks() {
@@ -121,14 +136,12 @@ get_tasks() {
     # task filenames do not follow a naming convention,
     # some are taskname.yaml while others are taskname-task.yaml
     # so, try both before failing
-    local task_url="$catalog/$catalog_version/$t/${t}-task.yaml"
-    local task_alt_url="$catalog/$catalog_version/$t/${t}.yaml"
+    local task_url="$catalog/$catalog_version/task/$t/0.1/${t}.yaml"
 
     mkdir -p "$dest_dir/$t/"
     local task_path="$dest_dir/$t/$t-task.yaml"
 
     download_task  "$task_path" "$task_url"  ||
-      download_task "$task_path" "$task_alt_url"  ||
       die 1 "Failed to download $t"
 
     create_version "$task_path" "$t" "$version"  ||
@@ -188,6 +201,18 @@ main() {
   change_task_image "$dest_dir" "$version"  \
     "s2i"  "image: quay.io/buildah"  \
     "registry.redhat.io/rhel8/buildah"  "image:"
+
+  for t in ${OPENSHIFT_CATALOG_TASKS[@]} ; do
+    change_task_image "$dest_dir" "$version"  \
+      "$t"  "image: quay.io/openshift-pipeline/s2i"  \
+      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8" \
+      "image:"
+
+    change_task_image "$dest_dir" "$version"  \
+      "$t"  "image: quay.io/buildah"  \
+      "registry.redhat.io/rhel8/buildah"  "image:"
+
+  done
 
   return $?
 }
