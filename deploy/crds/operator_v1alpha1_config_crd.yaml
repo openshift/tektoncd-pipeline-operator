@@ -42,11 +42,19 @@ spec:
                   details:
                     description: Additional details about the Code
                     type: string
+                  pipelineVersion:
+                    description: The version of OpenShift pipelines
+                    type: string
+                  triggersVersion:
+                    description: The version of OpenShift triggers
+                    type: string
                   version:
-                    description: The version of tekton pipelines
+                    description: The version of OpenShift pipelines
                     type: string
                 required:
                 - code
+                - pipelineVersion
+                - triggersVersion
                 - version
                 type: object
               type: array

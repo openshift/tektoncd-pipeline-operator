@@ -36,8 +36,10 @@ import (
 const replaceTimeout = 60
 
 var (
-	ctrlLog    = logf.Log.WithName("ctrl").WithName("config")
-	deployment = mf.Any(mf.ByKind("Deployment"))
+	ctrlLog         = logf.Log.WithName("ctrl").WithName("config")
+	deployment      = mf.Any(mf.ByKind("Deployment"))
+	pipelineVersion = ""
+	triggersVersion = ""
 )
 
 func init() {
@@ -255,9 +257,11 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		log.Error(err, "failed to apply manifest transformations on pipeline-core")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineApplyError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.PipelineApplyError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	r.pipeline = newPipeline
@@ -290,7 +294,12 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	}
 	log.Info("successfully applied all pipeline resources")
 
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedPipeline, Version: flag.TektonVersion})
+	err = r.updateStatus(cfg, op.ConfigCondition{
+		Code:            op.AppliedPipeline,
+		PipelineVersion: pipelineVersion,
+		TriggersVersion: triggersVersion,
+		Version:         flag.TektonVersion,
+	})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -350,9 +359,11 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.AddonsError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.AddonsError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	r.addons = newAddons
@@ -387,7 +398,13 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 
 	log.Info("successfully applied all addon resources")
 
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.AppliedAddons, Version: flag.TektonVersion})
+	triggersVersion = getComponentVersion(r.addons, flag.TriggerControllerName, "triggers.tekton.dev/release")
+	err = r.updateStatus(cfg, op.ConfigCondition{
+		Code:            op.AppliedAddons,
+		PipelineVersion: pipelineVersion,
+		TriggersVersion: triggersVersion,
+		Version:         flag.TektonVersion,
+	})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -414,6 +431,12 @@ func (r *ReconcileConfig) deleteAndCreateAddon() error {
 	return r.addons.Filter(deployment).Apply()
 }
 
+// this will give the component version from the respective controller label
+func getComponentVersion(manifest mf.Manifest, controllerName string, labelName string) string {
+	labels := manifest.Filter(mf.ByKind("Deployment"), mf.ByName(controllerName)).Resources()[0].GetLabels()
+	return labels[labelName]
+}
+
 func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
 	log := requestLogger(req, "apply-non-redhat-resources")
 
@@ -430,9 +453,11 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 		log.Error(err, "failed to apply manifest transformations on pipeline-addons")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.CommunityResourcesError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.CommunityResourcesError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	r.community = newCommunityResources
@@ -441,14 +466,21 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 		log.Error(err, "failed to apply non Red Hat resources yaml manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.CommunityResourcesError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.CommunityResourcesError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 	log.Info("successfully applied all non Red Hat resources")
 
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.InstalledStatus, Version: flag.TektonVersion})
+	err = r.updateStatus(cfg, op.ConfigCondition{
+		Code:            op.InstalledStatus,
+		PipelineVersion: pipelineVersion,
+		TriggersVersion: triggersVersion,
+		Version:         flag.TektonVersion,
+	})
 	return reconcile.Result{Requeue: true}, err
 }
 
@@ -472,9 +504,11 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 	if err != nil {
 		log.Error(err, "failed to validate pipeline controller deployments")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineValidateError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.PipelineValidateError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, err
 	}
 
@@ -486,16 +520,24 @@ func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config
 	if err != nil {
 		log.Error(err, "failed to validate mutating webhook")
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineValidateError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.PipelineValidateError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, err
 	}
 	if !found {
 		return reconcile.Result{Requeue: true, RequeueAfter: 15 * time.Second}, nil
 	}
 
-	err = r.updateStatus(cfg, op.ConfigCondition{Code: op.ValidatedPipeline, Version: flag.TektonVersion})
+	pipelineVersion = getComponentVersion(r.pipeline, flag.PipelineControllerName, "pipeline.tekton.dev/release")
+	err = r.updateStatus(cfg, op.ConfigCondition{
+		Code:            op.ValidatedPipeline,
+		PipelineVersion: pipelineVersion,
+		TriggersVersion: triggersVersion,
+		Version:         flag.TektonVersion,
+	})
 	if err != nil {
 		return reconcile.Result{}, err
 
@@ -562,9 +604,11 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 func (r *ReconcileConfig) markInvalidResource(cfg *op.Config) {
 	err := r.updateStatus(cfg,
 		op.ConfigCondition{
-			Code:    op.InvalidResource,
-			Details: "metadata.name must be " + flag.ResourceWatched,
-			Version: "unknown"})
+			Code:            op.InvalidResource,
+			Details:         "metadata.name must be " + flag.ResourceWatched,
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         "unknown"})
 	if err != nil {
 		ctrlLog.Info("failed to update status as invalid")
 	}
