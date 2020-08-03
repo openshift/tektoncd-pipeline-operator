@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,9 +19,11 @@ import (
 	"github.com/tektoncd/operator/pkg/utils/validate"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -30,8 +33,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const replaceTimeout = 60
+
 var (
 	ctrlLog         = logf.Log.WithName("ctrl").WithName("config")
+	deployment      = mf.Any(mf.ByKind("Deployment"))
 	pipelineVersion = ""
 	triggersVersion = ""
 )
@@ -260,16 +266,31 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 	}
 	r.pipeline = newPipeline
 
-	if err := r.pipeline.Apply(); err != nil {
-		log.Error(err, "failed to apply release.yaml")
+	if err := r.pipeline.Filter(mf.Not(deployment)).Apply(); err != nil {
+		log.Error(err, "failed to apply non deployment manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:            op.PipelineApplyError,
-			Details:         err.Error(),
-			PipelineVersion: pipelineVersion,
-			TriggersVersion: triggersVersion,
-			Version:         flag.TektonVersion})
-		return reconcile.Result{}, err
+			Code:    op.PipelineApplyError,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, fmt.Errorf("failed to apply non deployment manifest: %w", err)
+	}
+	if err := r.pipeline.Filter(deployment).Apply(); err != nil {
+		if errors.IsInvalid(err) {
+			if err := r.deleteAndCreate(); err != nil {
+				_ = r.updateStatus(cfg, op.ConfigCondition{
+					Code:    op.PipelineApplyError,
+					Details: err.Error(),
+					Version: flag.TektonVersion})
+				return reconcile.Result{}, fmt.Errorf("failed to recreate deployments: %w", err)
+			}
+		} else {
+			_ = r.updateStatus(cfg, op.ConfigCondition{
+				Code:    op.PipelineApplyError,
+				Details: err.Error(),
+				Version: flag.TektonVersion})
+			return reconcile.Result{}, fmt.Errorf("failed to apply deployments: %w", err)
+		}
 	}
 	log.Info("successfully applied all pipeline resources")
 
@@ -280,6 +301,29 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		Version:         flag.TektonVersion,
 	})
 	return reconcile.Result{Requeue: true}, err
+}
+
+func (r *ReconcileConfig) deleteAndCreate() error {
+	timeout := time.Duration(replaceTimeout) * time.Second
+
+	propPolicy := mf.PropagationPolicy(metav1.DeletePropagationForeground)
+	if err := r.pipeline.Filter(deployment).Delete(propPolicy); err != nil {
+		log.Error(err, "failed to delete Deployment resources")
+		return err
+	}
+
+	if err := wait.PollImmediate(1*time.Second, timeout, func() (bool, error) {
+		for _, deploy := range r.pipeline.Filter(deployment).Resources() {
+			if _, err := r.pipeline.Client.Get(&deploy); !apierrors.IsNotFound(err) {
+				return false, err
+			}
+		}
+		return true, nil
+	}); err != nil {
+		return err
+	}
+
+	return r.pipeline.Filter(deployment).Apply()
 }
 
 func (r *ReconcileConfig) validateVersion(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
@@ -324,17 +368,34 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 	}
 	r.addons = newAddons
 
-	if err := r.addons.Apply(); err != nil {
-		log.Error(err, "failed to apply addons yaml manifest")
+	if err := r.addons.Filter(mf.Not(deployment)).Apply(); err != nil {
+		log.Error(err, "failed to apply addons yaml non deployment manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:            op.AddonsError,
-			Details:         err.Error(),
-			PipelineVersion: pipelineVersion,
-			TriggersVersion: triggersVersion,
-			Version:         flag.TektonVersion})
-		return reconcile.Result{}, err
+			Code:    op.AddonsError,
+			Details: err.Error(),
+			Version: flag.TektonVersion})
+		return reconcile.Result{}, fmt.Errorf("failed to apply non deployment manifest: %w", err)
 	}
+	if err := r.addons.Filter(deployment).Apply(); err != nil {
+		if errors.IsInvalid(err) {
+			if err := r.deleteAndCreateAddon(); err != nil {
+				_ = r.updateStatus(cfg, op.ConfigCondition{
+					Code:    op.AddonsError,
+					Details: err.Error(),
+					Version: flag.TektonVersion})
+				return reconcile.Result{}, fmt.Errorf("failed to apply deployment manifest: %w", err)
+			}
+		} else {
+			_ = r.updateStatus(cfg, op.ConfigCondition{
+				Code:    op.AddonsError,
+				Details: err.Error(),
+				Version: flag.TektonVersion})
+
+			return reconcile.Result{}, fmt.Errorf("failed to apply deployments: %w", err)
+		}
+	}
+
 	log.Info("successfully applied all addon resources")
 
 	triggersVersion = getComponentVersion(r.addons, flag.TriggerControllerName, "triggers.tekton.dev/release")
@@ -345,6 +406,29 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		Version:         flag.TektonVersion,
 	})
 	return reconcile.Result{Requeue: true}, err
+}
+
+func (r *ReconcileConfig) deleteAndCreateAddon() error {
+	timeout := time.Duration(replaceTimeout) * time.Second
+
+	propPolicy := mf.PropagationPolicy(metav1.DeletePropagationForeground)
+	if err := r.addons.Filter(deployment).Delete(propPolicy); err != nil {
+		log.Error(err, "failed to delete Deployment resources")
+		return err
+	}
+
+	if err := wait.PollImmediate(1*time.Second, timeout, func() (bool, error) {
+		for _, deploy := range r.addons.Filter(deployment).Resources() {
+			if _, err := r.addons.Client.Get(&deploy); !apierrors.IsNotFound(err) {
+				return false, err
+			}
+		}
+		return true, nil
+	}); err != nil {
+		return err
+	}
+
+	return r.addons.Filter(deployment).Apply()
 }
 
 // this will give the component version from the respective controller label
