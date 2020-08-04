@@ -18,10 +18,10 @@ spec:
       taskRef:
         name: s2i
         kind: ClusterTask
+      workspaces:
+        - name: source
+          workspace: workspace
       resources:
-        inputs:
-          - name: source
-            value: app-source
         outputs:
           - name: image
             value: app-image
