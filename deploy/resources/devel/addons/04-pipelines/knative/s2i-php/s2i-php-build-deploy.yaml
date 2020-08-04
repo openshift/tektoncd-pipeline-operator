@@ -13,25 +13,44 @@ spec:
   params:
     - name: APP_NAME
       type: string
-  resources:
-    - name: app-source
-      type: git
-    - name: app-image
-      type: image
-
+    - name: GIT_REPO
+      type: string
+    - name: GIT_REVISION
+      type: string
+    - name: IMAGE_NAME
+      type: string
+  workspaces:
+    - name: workspace
   tasks:
+    - name: fetch-repository
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: workspace
+      params:
+        - name: url
+          value: $(params.GIT_REPO)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: subdirectory
+          value: ""
+        - name: deleteExisting
+          value: "true"
+
     - name: build
       taskRef:
         name: s2i-php
         kind: ClusterTask
-      resources:
-        inputs:
-          - name: source
-            resource: app-source
-        outputs:
-          - name: image
-            resource: app-image
+      runAfter:
+        - fetch-repository
+      workspaces:
+        - name: source
+          workspace: workspace
       params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME)
         - name: TLSVERIFY
           value: "false"
 
@@ -41,12 +60,6 @@ spec:
         kind: ClusterTask
       runAfter:
         - build
-      resources:
-        inputs:
-          - name: image
-            resource: app-image
-            from:
-              - build
       params:
         - name: ARGS
-          value: ["service", "create", "$(params.APP_NAME)", "--image=$(resources.inputs.image.url)", "--force"]
+          value: ["service", "create", "$(params.APP_NAME)", "--image=$(params.IMAGE_NAME)", "--force"]
