@@ -270,25 +270,31 @@ func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (
 		log.Error(err, "failed to apply non deployment manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.PipelineApplyError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.PipelineApplyError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, fmt.Errorf("failed to apply non deployment manifest: %w", err)
 	}
 	if err := r.pipeline.Filter(deployment).Apply(); err != nil {
 		if errors.IsInvalid(err) {
 			if err := r.deleteAndCreate(); err != nil {
 				_ = r.updateStatus(cfg, op.ConfigCondition{
-					Code:    op.PipelineApplyError,
-					Details: err.Error(),
-					Version: flag.TektonVersion})
+					Code:            op.PipelineApplyError,
+					Details:         err.Error(),
+					PipelineVersion: pipelineVersion,
+					TriggersVersion: triggersVersion,
+					Version:         flag.TektonVersion})
 				return reconcile.Result{}, fmt.Errorf("failed to recreate deployments: %w", err)
 			}
 		} else {
 			_ = r.updateStatus(cfg, op.ConfigCondition{
-				Code:    op.PipelineApplyError,
-				Details: err.Error(),
-				Version: flag.TektonVersion})
+				Code:            op.PipelineApplyError,
+				Details:         err.Error(),
+				PipelineVersion: pipelineVersion,
+				TriggersVersion: triggersVersion,
+				Version:         flag.TektonVersion})
 			return reconcile.Result{}, fmt.Errorf("failed to apply deployments: %w", err)
 		}
 	}
@@ -372,25 +378,31 @@ func (r *ReconcileConfig) applyAddons(req reconcile.Request, cfg *op.Config) (re
 		log.Error(err, "failed to apply addons yaml non deployment manifest")
 		// ignoring failure to update
 		_ = r.updateStatus(cfg, op.ConfigCondition{
-			Code:    op.AddonsError,
-			Details: err.Error(),
-			Version: flag.TektonVersion})
+			Code:            op.AddonsError,
+			Details:         err.Error(),
+			PipelineVersion: pipelineVersion,
+			TriggersVersion: triggersVersion,
+			Version:         flag.TektonVersion})
 		return reconcile.Result{}, fmt.Errorf("failed to apply non deployment manifest: %w", err)
 	}
 	if err := r.addons.Filter(deployment).Apply(); err != nil {
 		if errors.IsInvalid(err) {
 			if err := r.deleteAndCreateAddon(); err != nil {
 				_ = r.updateStatus(cfg, op.ConfigCondition{
-					Code:    op.AddonsError,
-					Details: err.Error(),
-					Version: flag.TektonVersion})
+					Code:            op.AddonsError,
+					Details:         err.Error(),
+					PipelineVersion: pipelineVersion,
+					TriggersVersion: triggersVersion,
+					Version:         flag.TektonVersion})
 				return reconcile.Result{}, fmt.Errorf("failed to apply deployment manifest: %w", err)
 			}
 		} else {
 			_ = r.updateStatus(cfg, op.ConfigCondition{
-				Code:    op.AddonsError,
-				Details: err.Error(),
-				Version: flag.TektonVersion})
+				Code:            op.AddonsError,
+				Details:         err.Error(),
+				PipelineVersion: pipelineVersion,
+				TriggersVersion: triggersVersion,
+				Version:         flag.TektonVersion})
 
 			return reconcile.Result{}, fmt.Errorf("failed to apply deployments: %w", err)
 		}
