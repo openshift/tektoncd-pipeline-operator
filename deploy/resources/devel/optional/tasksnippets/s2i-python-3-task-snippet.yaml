@@ -7,7 +7,7 @@ spec:
   targetResource:
     apiVersion: tekton.dev/v1beta1
     kind: Pipeline
-  title: S2I-Python-3 Task
+  title: S2I-Python-3 Workspace based Task
   description: |
     An s2i task to build python 3 based source.
     Source-to-Image (S2I) is a toolkit and workflow for building reproducible container images from source code.
@@ -19,14 +19,12 @@ spec:
       taskRef:
         name: s2i-python-3
         kind: ClusterTask
-      resources:
-        inputs:
-          - name: source
-            resource: app-source
-        outputs:
-          - name: image
-            resource: app-image
+      workspaces:
+        - name: source
+          workspace: workspace
       params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME)
         - name: MINOR_VERSION
           value: "6"
         - name: PATH_CONTEXT

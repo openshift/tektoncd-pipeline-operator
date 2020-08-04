@@ -18,17 +18,15 @@ spec:
       taskRef:
         name: buildah
         kind: ClusterTask
-      resources:
-        inputs:
-          - name: source
-            resource: app-source
-        outputs:
-          - name: image
-            resource: app-image
-        params:
-          - name: BUILDER_IMAGE
-            value: quay.io/buildah/stable:v1.11.0
-          - name: DOCKERFILE
-            value: ./Dockerfile
-          - name: TLSVERIFY
-            value: "true"
+      workspaces:
+        - name: source
+          workspace: workspace
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME)
+        - name: BUILDER_IMAGE
+          value: quay.io/buildah/stable:v1.11.0
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: TLSVERIFY
+          value: "true"
