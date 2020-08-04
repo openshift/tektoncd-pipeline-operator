@@ -202,6 +202,10 @@ main() {
     "s2i"  "image: quay.io/buildah"  \
     "registry.redhat.io/rhel8/buildah"  "image:"
 
+  change_task_image "$dest_dir" "$version"  \
+    "openshift-client"  "image: quay.io/openshift/origin-cli:latest"  \
+    "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"  "image:"
+
   for t in ${OPENSHIFT_CATALOG_TASKS[@]} ; do
     change_task_image "$dest_dir" "$version"  \
       "$t"  "image: quay.io/openshift-pipeline/s2i"  \
