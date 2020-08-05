@@ -36,7 +36,7 @@ type ConfigCondition struct {
 	// Additional details about the Code
 	Details string `json:"details,omitempty"`
 
-	// The version of OpenShift pipelines
+	// The version of OpenShift pipelines operator
 	Version string `json:"version"`
 
 	// The version of OpenShift pipelines

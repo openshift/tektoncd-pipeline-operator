@@ -49,7 +49,7 @@ spec:
                     description: The version of OpenShift triggers
                     type: string
                   version:
-                    description: The version of OpenShift pipelines
+                    description: The version of OpenShift pipelines operator
                     type: string
                 required:
                 - code

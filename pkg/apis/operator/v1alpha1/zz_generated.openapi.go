@@ -85,7 +85,7 @@ func schema_pkg_apis_operator_v1alpha1_ConfigCondition(ref common.ReferenceCallb
 					},
 					"version": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The version of OpenShift pipelines",
+							Description: "The version of OpenShift pipelines operator",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -149,13 +149,20 @@ func schema_pkg_apis_operator_v1alpha1_ConfigStatus(ref common.ReferenceCallback
 					"conditions": {
 						SchemaProps: spec.SchemaProps{
 							Description: "installation status sorted in reverse chronological order",
-							Ref:         ref("github.com/openshift/openshift-pipelines-operator/pkg/apis/operator/v1alpha1.ConfigConditions"),
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/openshift/openshift-pipelines-operator/pkg/apis/operator/v1alpha1.ConfigCondition"),
+									},
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/openshift/openshift-pipelines-operator/pkg/apis/operator/v1alpha1.ConfigConditions"},
+			"github.com/openshift/openshift-pipelines-operator/pkg/apis/operator/v1alpha1.ConfigCondition"},
 	}
 }
