@@ -40,7 +40,7 @@ const (
 var (
 	flagSet *pflag.FlagSet
 
-	TektonVersion          = "devel"
+	TektonVersion          = "v1.1.0"
 	PipelineSA             string
 	IgnorePattern          string
 	ResourceWatched        string
