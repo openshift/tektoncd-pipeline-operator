@@ -1722,6 +1722,8 @@ kind: RoleBinding
 metadata:
   name: openshift-pipelines-prometheus-k8s-read-binding
   namespace: tekton-pipelines
+  annotations:
+    operator.tekton.dev/preserve-rb-subject-namespace: "true"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

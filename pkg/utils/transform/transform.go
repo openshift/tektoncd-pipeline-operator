@@ -69,6 +69,23 @@ func InjectNamespaceConditional(preserveNamespace, targetNamespace string) mf.Tr
 	}
 }
 
+func InjectNamespaceRoleBindingConditional(preserveNS, preserveRBSubjectNS, targetNamespace string) mf.Transformer {
+	tf := InjectNamespaceRoleBindingSubjects(targetNamespace)
+
+	return func(u *unstructured.Unstructured) error {
+		annotations := u.GetAnnotations()
+		val, ok := annotations[preserveNS]
+		if !(ok && val == "true") {
+			u.SetNamespace(targetNamespace)
+		}
+		val, ok = annotations[preserveRBSubjectNS]
+		if ok && val == "true" {
+			return nil
+		}
+		return tf(u)
+	}
+}
+
 func InjectNamespaceRoleBindingSubjects(targetNamespace string) mf.Transformer {
 	return func(u *unstructured.Unstructured) error {
 		kind := strings.ToLower(u.GetKind())
