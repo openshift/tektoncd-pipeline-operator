@@ -38,6 +38,7 @@ const replaceTimeout = 60
 var (
 	ctrlLog         = logf.Log.WithName("ctrl").WithName("config")
 	deployment      = mf.Any(mf.ByKind("Deployment"))
+	roleBinding     = mf.Any(mf.ByKind("RoleBinding"))
 	pipelineVersion = ""
 	triggersVersion = ""
 )
@@ -497,15 +498,31 @@ func (r *ReconcileConfig) applyCommunityResources(req reconcile.Request, cfg *op
 }
 
 func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transformer) (mf.Manifest, error) {
+	rbManifest := m.Filter(roleBinding)
+	rest := m.Filter(mf.Not(roleBinding))
 	tfs := []mf.Transformer{
 		mf.InjectOwner(cfg),
 		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
-		transform.InjectNamespaceRoleBindingSubjects(cfg.Spec.TargetNamespace),
 		transform.InjectNamespaceCRDWebhookClientConfig(cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
 	}
+
 	tfs = append(tfs, addnTfrms...)
-	return m.Transform(tfs...)
+	rest, err := rest.Transform(tfs...)
+	if err != nil {
+		return *m, err
+	}
+
+	tfs = []mf.Transformer{
+		mf.InjectOwner(cfg),
+		transform.InjectNamespaceRoleBindingConditional(flag.AnnotationPreserveNS,
+			flag.AnnotationPreserveRBSubjectNS, cfg.Spec.TargetNamespace),
+	}
+	rbManifest, err = rbManifest.Transform(tfs...)
+	if err != nil {
+		return *m, err
+	}
+	return rest.Append(rbManifest), nil
 }
 
 func (r *ReconcileConfig) validatePipeline(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
