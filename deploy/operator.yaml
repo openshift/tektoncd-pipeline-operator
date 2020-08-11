@@ -25,7 +25,7 @@ spec:
         - name: WATCH_NAMESPACE
           value: ""
         - name: IMAGE_ADDONS_PARAM_KN_IMAGE
-          value: registry.redhat.io/openshift-serverless-1/client-kn-rhel8
+          value: registry.redhat.io/openshift-serverless-1/client-kn-rhel8:0.13.2
         - name: POD_NAME
           valueFrom:
             fieldRef:
