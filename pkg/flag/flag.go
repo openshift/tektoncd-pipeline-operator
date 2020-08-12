@@ -52,10 +52,10 @@ var (
 	Recursive              bool
 	OperatorUUID           string
 	CommunityResourceURLs  = []string{
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/jib-maven/0.1/jib-maven.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/maven/0.1/maven.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/tkn/0.1/tkn.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/kn/0.1/kn.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/755fed024504f8ed6ce89a338c3693e8a30de11b/task/jib-maven/0.1/jib-maven.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/755fed024504f8ed6ce89a338c3693e8a30de11b/task/maven/0.1/maven.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/755fed024504f8ed6ce89a338c3693e8a30de11b/task/tkn/0.1/tkn.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/755fed024504f8ed6ce89a338c3693e8a30de11b/task/kn/0.1/kn.yaml",
 	}
 )
 
