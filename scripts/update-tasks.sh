@@ -43,7 +43,6 @@ EOF
 
 declare -r TEKTON_CATALOG="https://raw.githubusercontent.com/openshift/tektoncd-catalog"
 declare -r TEKTON_CATALOG_TASKS=(
-  s2i
   openshift-client
   git-clone
   buildah
@@ -51,6 +50,7 @@ declare -r TEKTON_CATALOG_TASKS=(
 
 declare -r OPENSHIFT_CATALOG="https://raw.githubusercontent.com/openshift/pipelines-catalog"
 declare -r OPENSHIFT_CATALOG_TASKS=(
+  buildah-pr
   s2i-go
   s2i-java-8
   s2i-java-11
@@ -194,18 +194,14 @@ main() {
     "registry.redhat.io/rhel8/buildah"  "default:"
 
   change_task_image "$dest_dir" "$version"  \
-    "s2i"  "image: quay.io/openshift-pipeline/s2i"  \
-    "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8" \
-    "image:"
-
-  change_task_image "$dest_dir" "$version"  \
-    "s2i"  "image: quay.io/buildah"  \
-    "registry.redhat.io/rhel8/buildah"  "image:"
+    "buildah-pr"  "default: quay.io/buildah"  \
+    "registry.redhat.io/rhel8/buildah"  "default:"
 
   change_task_image "$dest_dir" "$version"  \
     "openshift-client"  "image: quay.io/openshift/origin-cli:latest"  \
     "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"  "image:"
 
+  # this will do the change for all pipelines catalog tasks except buildah-pr
   for t in ${OPENSHIFT_CATALOG_TASKS[@]} ; do
     change_task_image "$dest_dir" "$version"  \
       "$t"  "image: quay.io/openshift-pipeline/s2i"  \
