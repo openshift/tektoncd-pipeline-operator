@@ -13,6 +13,9 @@ const (
 	DefaultSA            = "pipeline"
 	DefaultIgnorePattern = "^(openshift|kube)-"
 
+	// DefaultDisableAffinityAssistant is default value of disable affinity assistant flag
+	DefaultDisableAffinityAssistant = "true"
+
 	ClusterCRName   = "cluster"
 	DefaultTargetNs = "openshift-pipelines"
 

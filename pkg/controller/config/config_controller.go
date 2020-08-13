@@ -505,6 +505,7 @@ func transformManifest(cfg *op.Config, m *mf.Manifest, addnTfrms ...mf.Transform
 		transform.InjectNamespaceConditional(flag.AnnotationPreserveNS, cfg.Spec.TargetNamespace),
 		transform.InjectNamespaceCRDWebhookClientConfig(cfg.Spec.TargetNamespace),
 		transform.InjectDefaultSA(flag.DefaultSA),
+		transform.SetDisableAffinityAssistant(flag.DefaultDisableAffinityAssistant),
 	}
 
 	tfs = append(tfs, addnTfrms...)
