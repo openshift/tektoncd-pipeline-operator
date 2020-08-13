@@ -32,6 +32,16 @@ func TestTransformManifest_WithoutAnnotation(t *testing.T) {
 	assertNamespace(t, newManifest.Resources()[0], "target")
 }
 
+func TestTransformManifest_SetDisableAffinityAssistant(t *testing.T) {
+	resource := "testdata/test-set-disableaffinityassistant.yaml"
+	manifest, err := mf.ManifestFrom(mf.Recursive(resource))
+	assertNoEror(t, err)
+	tf := SetDisableAffinityAssistant("true")
+	newManifest, err := manifest.Transform(tf)
+	assertNoEror(t, err)
+	assertConfigMapKeyValue(t, newManifest.Resources()[0], "disable-affinity-assistant", "true")
+}
+
 func TestReplaceKind(t *testing.T) {
 	fromKind := "Task"
 	fromKindMismatch := "Pod"
@@ -311,6 +321,17 @@ func assertDeployContainerArgsHasImage(t *testing.T, resources []unstructured.Un
 				}
 			}
 		}
+	}
+}
+
+func assertConfigMapKeyValue(t *testing.T, resource unstructured.Unstructured, key string, value string) {
+	t.Helper()
+
+	data, found, err := unstructured.NestedStringMap(resource.Object, "data")
+	assertNoEror(t, err)
+	got, ok := data[key]
+	if !found || !ok || got != value {
+		t.Errorf("expected %s, got %s", value, got)
 	}
 }
 
