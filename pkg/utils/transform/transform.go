@@ -57,6 +57,33 @@ func InjectDefaultSA(defaultSA string) mf.Transformer {
 	}
 }
 
+// SetDisableAffinityAssistant set value of disable-affinity-assistant into feature-flags configMap
+func SetDisableAffinityAssistant(disableAffinityAssistant string) mf.Transformer {
+	return func(u *unstructured.Unstructured) error {
+		if strings.ToLower(u.GetKind()) != "configmap" {
+			return nil
+		}
+		if u.GetName() != "feature-flags" {
+			return nil
+		}
+
+		cm := &corev1.ConfigMap{}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, cm)
+		if err != nil {
+			return err
+		}
+
+		cm.Data["disable-affinity-assistant"] = disableAffinityAssistant
+		unstrObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(cm)
+		if err != nil {
+			return err
+		}
+
+		u.SetUnstructuredContent(unstrObj)
+		return nil
+	}
+}
+
 func InjectNamespaceConditional(preserveNamespace, targetNamespace string) mf.Transformer {
 	tf := mf.InjectNamespace(targetNamespace)
 	return func(u *unstructured.Unstructured) error {
