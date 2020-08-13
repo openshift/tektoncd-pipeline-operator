@@ -21,7 +21,7 @@ spec:
   params:
     - name: VERSION
       description: The version of the nodejs
-      default: '10'
+      default: '12'
       type: string
     - name: PATH_CONTEXT
       description: The location of the path to run s2i from.
@@ -41,7 +41,7 @@ spec:
     - name: generate
       image: registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8
       workingDir: $(workspaces.source.path)
-      command: ['s2i', 'build', '$(params.PATH_CONTEXT)', 'registry.access.redhat.com/rhscl/nodejs-$(params.VERSION)-rhel7', '--as-dockerfile', '/gen-source/Dockerfile.gen']
+      command: ['s2i', 'build', '$(params.PATH_CONTEXT)', 'image-registry.openshift-image-registry.svc:5000/openshift/nodejs:$(params.VERSION)', '--as-dockerfile', '/gen-source/Dockerfile.gen']
       volumeMounts:
         - name: gen-source
           mountPath: /gen-source
