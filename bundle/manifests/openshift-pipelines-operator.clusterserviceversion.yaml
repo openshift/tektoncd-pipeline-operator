@@ -15,17 +15,17 @@ metadata:
           }
         }
       ]
-    capabilities: Basic Install
+    capabilities: Seamless Upgrades
     categories: Developer Tools, Integration & Delivery
     certified: "false"
-    containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.10.7
+    containerImage: quay.io/openshift-pipeline/openshift-pipelines-operator-controller:v0.15.2-1
     createdAt: "2019-03-15T19:44:21Z"
     description: OpenShift Pipelines is a cloud-native CI/CD solution for building
       pipelines using Tekton concepts which run natively on OpenShift and Kubernetes.
     operators.operatorframework.io/internal-objects: '["config.operator.tekton.dev"]'
     repository: https://github.com/openshift/tektoncd-pipeline-operator
     support: Red Hat, Inc.
-  name: openshift-pipelines-operator.v0.10.7
+  name: openshift-pipelines-operator.v0.15.2-1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -212,6 +212,7 @@ spec:
           - secrets
           - services
           - serviceaccounts
+          - limitranges
           verbs:
           - '*'
         - apiGroups:
@@ -254,6 +255,7 @@ spec:
           - admissionregistration.k8s.io
           resources:
           - mutatingwebhookconfigurations
+          - validatingwebhookconfigurations
           verbs:
           - get
           - list
@@ -317,7 +319,9 @@ spec:
           verbs:
           - get
           - update
+          - create
           - use
+          - delete
         - apiGroups:
           - operator.tekton.dev
           resources:
@@ -331,9 +335,16 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - triggers.tekton.dev
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
           - console.openshift.io
           resources:
           - consoleyamlsamples
+          - consoleclidownloads
           verbs:
           - '*'
         serviceAccountName: openshift-pipelines-operator
@@ -359,13 +370,15 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: IMAGE_ADDONS_PARAM_KN_IMAGE
+                  value: registry.redhat.io/openshift-serverless-1/client-kn-rhel8:0.13.2
                 - name: POD_NAME
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: openshift-pipelines-operator
-                image: quay.io/openshift-pipeline/openshift-pipelines-operator:v0.10.7
+                image: quay.io/openshift-pipeline/openshift-pipelines-operator-controller:v0.15.2-1
                 imagePullPolicy: Always
                 name: openshift-pipelines-operator
                 resources: {}
@@ -396,13 +409,4 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  replaces: openshift-pipelines-operator.v0.8.2
-  skips:
-  - openshift-pipelines-operator.v0.9.0
-  - openshift-pipelines-operator.v0.9.1
-  - openshift-pipelines-operator.v0.10.2
-  - openshift-pipelines-operator.v0.10.3
-  - openshift-pipelines-operator.v0.10.4
-  - openshift-pipelines-operator.v0.10.5
-  - openshift-pipelines-operator.v0.10.6
-  version: 0.10.7
+  version: 0.15.2-1

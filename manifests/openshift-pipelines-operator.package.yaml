@@ -1,4 +1,0 @@
-packageName: REPLACE_PACKAGE
-channels:
-- name: alpha
-  currentCSV: REPLACE_NAME.vREPLACE_VERSION

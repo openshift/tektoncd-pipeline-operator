@@ -14,6 +14,7 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         apiVersion:
           type: string
@@ -41,11 +42,19 @@ spec:
                   details:
                     description: Additional details about the Code
                     type: string
+                  pipelineVersion:
+                    description: The version of OpenShift pipelines
+                    type: string
+                  triggersVersion:
+                    description: The version of OpenShift triggers
+                    type: string
                   version:
-                    description: The version of tekton pipelines
+                    description: The version of OpenShift pipelines operator
                     type: string
                 required:
                 - code
+                - pipelineVersion
+                - triggersVersion
                 - version
                 type: object
               type: array
