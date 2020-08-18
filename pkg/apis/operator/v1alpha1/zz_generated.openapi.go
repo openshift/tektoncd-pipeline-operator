@@ -105,7 +105,7 @@ func schema_pkg_apis_operator_v1alpha1_ConfigCondition(ref common.ReferenceCallb
 						},
 					},
 				},
-				Required: []string{"code", "version", "pipelineVersion", "triggersVersion"},
+				Required: []string{"code", "version"},
 			},
 		},
 	}
