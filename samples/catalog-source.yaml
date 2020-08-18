@@ -1,0 +1,13 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: openshift-pipelines-operators
+  namespace: openshift-marketplace
+spec:
+  displayName: OpenShift Pipelines
+  image: quay.io/openshift-pipeline/openshift-pipelines-operator-midstr-index:latest
+  publisher: openshift-pipelines
+  sourceType: grpc
+  updateStrategy:
+    registryPoll:
+      interval: 15m

@@ -51,4 +51,7 @@ gen-operator-source: push-quay-app
 	@sed -i -e 's,REPLACE_REPOSITORY,$(QYAPP_REPOSITORY),g' /tmp/artifacts/operator-source.yaml
 
 .PHONY: test-csv
-test-csv: gen-csv
+#test-csv: gen-csv
+test-csv:
+	@echo "skip this check based on old operator format"
+	@echo "reuse this target for tests on new format"

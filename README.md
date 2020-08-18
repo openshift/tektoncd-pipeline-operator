@@ -59,8 +59,8 @@ You must install these tools:
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/): For
    interacting with your kube cluster
-1. operator-sdk: https://github.com/operator-framework/operator-sdk
-1. minikube: https://kubernetes.io/docs/tasks/tools/install-minikube/
+1. [operator-sdk](https://github.com/operator-framework/operator-sdk)
+1. [opm](https://github.com/operator-framework/operator-registry/releases/tag/v1.13.7)
 
 ### Install Minikube
 
@@ -81,19 +81,7 @@ eval $(minikube docker-env -p mk-tekton)
 
 ### Development build
 
-1. Change directory to '${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator'
-```
-cd ${GOPATH}/src/github.com/openshift/tektoncd-pipeline-operator
-```
-2. Build go and the container image
-```
-make osdk-image IMAGE_TAG=${YOUR_REGISTRY}/openshift-pipelines-operator:${YOUR_IMAGE_TAG}
-```
-3. Push the container image
-```
-docker push ${YOUR_REGISTRY}/openshift-pipelines-operator:${YOUR_IMAGE_TAG}
-```
-4. Edit the 'image' value in deploy/operator.yaml to match to your image
+[Development Guide](docs/development.md)
 
 #### [Running tests](docs/tests.md)
 

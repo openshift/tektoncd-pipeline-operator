@@ -15,6 +15,7 @@ include ./make/test.mk
 include ./make/docker.mk
 include ./make/csv.mk
 include ./opo-makefile.mk
+include ./opo-makefile-new-bundle-format.mk
 
 BUILD_OUTPUT_DIR ?= ./out/
 BUILD_OUTPUT_FILE ?= operator
