@@ -18,7 +18,7 @@ PAYLOAD_ROOT=${PROJECT_ROOT}/deploy/resources
 git fetch openshift master
 git checkout openshift/master -B ${BRANCH_NAME}
 
-#create payload dir (path where pipeline, addons/triggers, addons/clustertasks are copied)
+#create payload dir (path where pipeline, triggers, addons/clustertasks are copied)
 PAYLOAD_PATH=${PAYLOAD_ROOT}/${VERSION}
 [[ -d ${PAYLOAD_PATH} ]] && rm -rf ${PAYLOAD_PATH}
 mkdir -p ${PAYLOAD_PATH}
