@@ -56,7 +56,7 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		assertContainerArgHasImage(deployment, arg, argImage, r.client, t)
 	})
 
-	t.Run("for_triggers_addon", func(t *testing.T) {
+	t.Run("for_triggers", func(t *testing.T) {
 		var (
 			configName = "cluster"
 			namespace  = "openshift-pipelines"
@@ -72,16 +72,16 @@ func TestConfigControllerReplaceImages(t *testing.T) {
 		os.Setenv(trnsfm.TriggersImagePrefix+trnsfm.ArgPrefix+strings.ToUpper(arg), argImage)
 		config := newConfig(configName, namespace)
 		cl := feedConfigMock(config)
-		addons, err := mfFor("addons", cl)
-		assertNoEror(err, "failed to create manifestival for triggers addons;", t)
+		triggers, err := mfFor("triggers", cl)
+		assertNoEror(err, "failed to create manifestival for triggers;", t)
 		req := newRequest(configName, namespace)
-		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, addons: addons}
+		r := ReconcileConfig{scheme: scheme.Scheme, client: cl, triggers: triggers}
 
 		// WHEN
-		_, err = r.applyAddons(req, config)
+		_, err = r.applyTriggers(req, config)
 
 		// THEN
-		assertNoEror(err, "failed to reconcile for applyAddons;", t)
+		assertNoEror(err, "failed to reconcile for applyTriggers;", t)
 		assertContainerHasImage(deployment, container, image, r.client, t)
 		assertContainerArgHasImage(deployment, arg, argImage, r.client, t)
 	})
@@ -129,7 +129,7 @@ func TestValidateDeployment(t *testing.T) {
 		cl := feedAll(config, deployments, t)
 		r := ReconcileConfig{scheme: scheme.Scheme, client: cl}
 		req := newRequest(configName, ns)
-		result, err := r.validateDeployments(req, config)
+		result, err := r.validateDeployments(req, config, flag.PipelineControllerName, flag.PipelineWebhookName)
 
 		if result == false || err != nil {
 			t.Fatalf("Validation failed, expected state %v, got %v, err %v", true, result, err)
@@ -177,7 +177,7 @@ func TestValidateDeployment(t *testing.T) {
 		cl := feedAll(config, deployments, t)
 		r := ReconcileConfig{scheme: scheme.Scheme, client: cl}
 		req := newRequest(configName, ns)
-		result, err := r.validateDeployments(req, config)
+		result, err := r.validateDeployments(req, config, flag.PipelineControllerName, flag.PipelineWebhookName)
 
 		if result == true || err != nil {
 			t.Fatalf("Validation failed, expected state %v, got %v, err %v", false, result, err)
@@ -277,8 +277,8 @@ func deploymentFor(name string, cl client.Client, t *testing.T) []v1.Container {
 func mfFor(resource string, cl client.Client) (mf.Manifest, error) {
 	_, filename, _, _ := rt.Caller(0)
 	root := path.Join(path.Dir(filename), "../../..")
-	pipelinePath := filepath.Join(root, flag.ResourceDir, resource)
-	return mf.ManifestFrom(sourceBasedOnRecursion(pipelinePath), mf.UseClient(mfc.NewClient(cl)))
+	resourcePath := filepath.Join(root, flag.ResourceDir, resource)
+	return mf.ManifestFrom(sourceBasedOnRecursion(resourcePath), mf.UseClient(mfc.NewClient(cl)))
 }
 
 func feedConfigMock(config *op.Config) client.Client {
