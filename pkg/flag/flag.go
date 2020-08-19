@@ -28,8 +28,9 @@ const (
 	SccAnnotationKey             = "operator.tekton.dev"
 
 	// Name of the trigger deployment
-	TriggerControllerName = "tekton-triggers-controller"
-	TriggerWebhookName    = "tekton-triggers-webhook"
+	TriggerControllerName       = "tekton-triggers-controller"
+	TriggerWebhookName          = "tekton-triggers-webhook"
+	TriggerWebhookConfiguration = "webhook.triggers.tekton.dev"
 
 	AnnotationPreserveNS          = "operator.tekton.dev/preserve-namespace"
 	AnnotationPreserveRBSubjectNS = "operator.tekton.dev/preserve-rb-subject-namespace"
