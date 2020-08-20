@@ -55,3 +55,6 @@ gen-operator-source: push-quay-app
 test-csv:
 	@echo "skip this check based on old operator format"
 	@echo "reuse this target for tests on new format"
+
+test-script:
+	openshift/bundle-tests.sh
