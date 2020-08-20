@@ -719,6 +719,11 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 		return reconcile.Result{}, err
 	}
 
+	if err := r.triggers.Delete(propPolicy); err != nil {
+		log.Error(err, "failed to delete triggers")
+		return reconcile.Result{}, err
+	}
+
 	if err := r.pipeline.Delete(propPolicy); err != nil {
 		log.Error(err, "failed to delete pipeline core")
 		return reconcile.Result{}, err
