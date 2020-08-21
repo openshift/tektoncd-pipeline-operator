@@ -5,7 +5,6 @@
 
 set -e
 BRANCH_NAME=release-next
-VERSION=release-next
 
 PROJECT_ROOT=$(git rev-parse --show-toplevel)
 REPO_NAME=`basename ${PROJECT_ROOT}`
@@ -18,38 +17,11 @@ PAYLOAD_ROOT=${PROJECT_ROOT}/deploy/resources
 git fetch openshift master
 git checkout openshift/master -B ${BRANCH_NAME}
 
-#create payload dir (path where pipeline, addons/triggers, addons/clustertasks are copied)
-PAYLOAD_PATH=${PAYLOAD_ROOT}/${VERSION}
-[[ -d ${PAYLOAD_PATH} ]] && rm -rf ${PAYLOAD_PATH}
-mkdir -p ${PAYLOAD_PATH}
-
 #get pipeline manifest
-${PROJECT_ROOT}/openshift/release/fetch-pipeline.sh ${PAYLOAD_PATH}
-
-sed -i 's/^[[:space:]]*TektonVersion.*/TektonVersion = "'${VERSION}'"/' ${PROJECT_ROOT}/pkg/flag/flag.go
-go fmt ${PROJECT_ROOT}/pkg/flag/flag.go
-
-# copy rest of the payload from the previous release
-# TODO get triggers from nightly or latest release
-# TODO run scripts/update-tasks.sh to get cluster tasks
-#get triggers manifest
-#get cluster task manifest
-#get consoleSample
-# this is a hack, filter out all versions with single digit minor versions to get the sort working as expected
-LATEST_RELEASE=$(ls ${PAYLOAD_ROOT} | sort | grep -v 'v0\.[[:digit:]]\.' | tail -n 1)
-for d in $(ls ${PAYLOAD_ROOT}/${LATEST_RELEASE}); do
-  echo $d
-  if [[ "${d}" = "pipelines" ]]; then
-    cp  ${PAYLOAD_ROOT}/${LATEST_RELEASE}/${d}/01-clusterrole.yaml ${PAYLOAD_PATH}/${d}/
-    cp  ${PAYLOAD_ROOT}/${LATEST_RELEASE}/${d}/02-rolebinding.yaml ${PAYLOAD_PATH}/${d}/
-    continue
-  fi
-  cp -r ${PAYLOAD_ROOT}/${LATEST_RELEASE}/${d} ${PAYLOAD_PATH}/${d}
-done
+${PROJECT_ROOT}/openshift/release/fetch-pipeline.sh ${PAYLOAD_ROOT}
 
 git add deploy/resources
-git add  pkg/flag/flag.go
-git commit -m ":Add payload: pipelines,clustertasks,triggers,consolesampleyamls"
+git commit -m ":Add nightly or last release pipeline manifest"
 git push -f openshift release-next
 
 # Trigger CI
