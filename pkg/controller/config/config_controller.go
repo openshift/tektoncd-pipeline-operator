@@ -718,8 +718,9 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 	// Requested object not found, could have been deleted after reconcile request.
 	// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 	propPolicy := mf.PropagationPolicy(metav1.DeletePropagationForeground)
-	if err := r.addons.Delete(propPolicy); err != nil {
-		log.Error(err, "failed to delete pipeline addons")
+
+	if err := r.pipeline.Delete(propPolicy); err != nil {
+		log.Error(err, "failed to delete pipeline core")
 		return reconcile.Result{}, err
 	}
 
@@ -728,8 +729,8 @@ func (r *ReconcileConfig) reconcileDeletion(req reconcile.Request, cfg *op.Confi
 		return reconcile.Result{}, err
 	}
 
-	if err := r.pipeline.Delete(propPolicy); err != nil {
-		log.Error(err, "failed to delete pipeline core")
+	if err := r.addons.Delete(propPolicy); err != nil {
+		log.Error(err, "failed to delete pipeline addons")
 		return reconcile.Result{}, err
 	}
 
