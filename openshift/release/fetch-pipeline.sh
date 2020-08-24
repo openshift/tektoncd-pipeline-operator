@@ -61,4 +61,4 @@ echo Pipeline Payload URL: ${URL}
 arg=${1:-"/tmp"}
 
 [[ -d ${arg}/pipelines ]] || mkdir -p ${arg}/pipelines
-curl -Ls ${URL} -o ${arg}/pipelines/release.yaml
+curl -Ls ${URL} -o ${arg}/pipelines/00-release.yaml
