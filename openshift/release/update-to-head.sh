@@ -16,7 +16,7 @@ PAYLOAD_ROOT=${PROJECT_ROOT}/deploy/resources
 # after moving openshift-pipelines-operator development to https://github.com/openshift/tektoncd-operator
 # the release-next branch should be synced from upstream/master (upstream=tektoncd/operator)
 git fetch openshift master
-git checkout openshift/master -B ${BRANCH_NAME}
+git checkout master -B ${BRANCH_NAME}
 
 # get pipeline manifest
 ${PROJECT_ROOT}/openshift/release/fetch-pipeline.sh ${PAYLOAD_ROOT}
