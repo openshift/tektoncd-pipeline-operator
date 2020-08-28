@@ -55,7 +55,7 @@ spec:
   hostIPC: false
   hostPID: false
   runAsUser:
-    rule: 'RunAsAny'
+    rule: 'MustRunAsNonRoot'
   seLinux:
     rule: 'RunAsAny'
   supplementalGroups:
@@ -111,10 +111,6 @@ rules:
   - apiGroups: ["tekton.dev"]
     resources: ["tasks/status", "clustertasks/status", "taskruns/status", "pipelines/status", "pipelineruns/status", "pipelineresources/status"]
     verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
-  - apiGroups: ["policy"]
-    resources: ["podsecuritypolicies"]
-    resourceNames: ["tekton-pipelines"]
-    verbs: ["use"]
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -225,6 +221,10 @@ rules:
     resources: ["configmaps"]
     verbs: ["get"]
     resourceNames: ["config-logging", "config-observability", "config-artifact-bucket", "config-artifact-pvc", "feature-flags", "config-leader-election"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["tekton-pipelines"]
+    verbs: ["use"]
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
@@ -254,6 +254,10 @@ rules:
     resources: ["secrets"]
     verbs: ["get", "update"]
     resourceNames: ["webhook-certs"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["tekton-pipelines"]
+    verbs: ["use"]
 
 ---
 # Copyright 2019 The Tekton Authors
@@ -466,8 +470,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -529,8 +533,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   names:
@@ -607,8 +611,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -686,8 +690,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -749,8 +753,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   names:
@@ -788,8 +792,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -861,8 +865,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -940,8 +944,8 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
-    version: v0.15.2
+    pipeline.tekton.dev/release: nightly
+    version: nightly
 spec:
   group: tekton.dev
   preserveUnknownFields: false
@@ -1005,7 +1009,7 @@ metadata:
     app.kubernetes.io/component: webhook
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
 # The data is populated at install time.
 
 ---
@@ -1017,7 +1021,7 @@ metadata:
     app.kubernetes.io/component: webhook
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -1038,7 +1042,7 @@ metadata:
     app.kubernetes.io/component: webhook
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -1059,7 +1063,7 @@ metadata:
     app.kubernetes.io/component: webhook
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -1179,17 +1183,18 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: tekton-pipelines
-#  data:
-#    # location of the gcs bucket to be used for artifact storage
-#    location: "gs://bucket-name"
-#    # name of the secret that will contain the credentials for the service account
-#    # with access to the bucket
-#    bucket.service.account.secret.name:
-#    # The key in the secret with the required service account json
-#    bucket.service.account.secret.key:
-#    # The field name that should be used for the service account
-#    # Valid values: GOOGLE_APPLICATION_CREDENTIALS, BOTO_CONFIG.
-#    bucket.service.account.field.name: GOOGLE_APPLICATION_CREDENTIALS
+# data:
+#  # location of the gcs bucket to be used for artifact storage
+#  location: "gs://bucket-name"
+#  # name of the secret that will contain the credentials for the service account
+#  # with access to the bucket
+#  bucket.service.account.secret.name:
+#  # The key in the secret with the required service account json
+#  bucket.service.account.secret.key:
+#  # The field name that should be used for the service account
+#  # Valid values: GOOGLE_APPLICATION_CREDENTIALS, BOTO_CONFIG.
+#  bucket.service.account.field.name: GOOGLE_APPLICATION_CREDENTIALS
+
 ---
 # Copyright 2019 The Tekton Authors
 #
@@ -1521,12 +1526,12 @@ metadata:
     app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: v0.15.2
+    app.kubernetes.io/version: nightly
     app.kubernetes.io/part-of: tekton-pipelines
     # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
     # labels below are related to istio and should not be used for resource lookup
-    version: v0.15.2
+    version: nightly
 spec:
   replicas: 1
   selector:
@@ -1543,35 +1548,35 @@ spec:
         app.kubernetes.io/name: controller
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: default
-        app.kubernetes.io/version: v0.15.2
+        app.kubernetes.io/version: nightly
         app.kubernetes.io/part-of: tekton-pipelines
         # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-        pipeline.tekton.dev/release: v0.15.2
+        pipeline.tekton.dev/release: nightly
         # labels below are related to istio and should not be used for resource lookup
         app: tekton-pipelines-controller
-        version: v0.15.2
+        version: nightly
     spec:
       serviceAccountName: tekton-pipelines-controller
       containers:
       - name: tekton-pipelines-controller
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:v0.15.2
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-controller:nightly
         args: [
           # These images are built on-demand by `ko resolve` and are replaced
           # by image references by digest.
-          "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:v0.15.2",
-          "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:v0.15.2",
-          "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:v0.15.2",
-          "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:v0.15.2",
-          "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:v0.15.2",
-          "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:v0.15.2",
-          "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:v0.15.2",
-          "-build-gcs-fetcher-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gcs-fetcher:v0.15.2",
+          "-kubeconfig-writer-image", "quay.io/openshift-pipeline/tektoncd-pipeline-kubeconfigwriter:nightly",
+          "-creds-image", "quay.io/openshift-pipeline/tektoncd-pipeline-creds-init:nightly",
+          "-git-image", "quay.io/openshift-pipeline/tektoncd-pipeline-git-init:nightly",
+          "-entrypoint-image", "quay.io/openshift-pipeline/tektoncd-pipeline-entrypoint:nightly",
+          "-nop-image", "quay.io/openshift-pipeline/tektoncd-pipeline-nop:nightly",
+          "-imagedigest-exporter-image", "quay.io/openshift-pipeline/tektoncd-pipeline-imagedigestexporter:nightly",
+          "-pr-image", "quay.io/openshift-pipeline/tektoncd-pipeline-pullrequest-init:nightly",
+          "-build-gcs-fetcher-image", "quay.io/openshift-pipeline/tektoncd-pipeline-gcs-fetcher:nightly",
 
-          # This is google/cloud-sdk:293.0.0-slim
-          "-gsutil-image", "google/cloud-sdk@sha256:37654ada9b7afbc32828b537030e85de672a9dd468ac5c92a36da1e203a98def",
+          # This is google/cloud-sdk:302.0.0-slim
+          "-gsutil-image", "google/cloud-sdk@sha256:27b2c22bf259d9bc1a291e99c63791ba0c27a04d2db0a43241ba0f1f20f4067f",
           # The shell image must be root in order to create directories and copy files to PVCs.
-          # gcr.io/distroless/base:debug as of July 23, 2020
-          "-shell-image", "registry.access.redhat.com/ubi8/ubi-minimal:latest",
+          # gcr.io/distroless/base:debug-nonroot as of July 23, 2020
+          "-shell-image", "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         ]
         volumeMounts:
         - name: config-logging
@@ -1600,6 +1605,8 @@ spec:
           value: config-leader-election
         - name: METRICS_DOMAIN
           value: tekton.dev/pipeline
+        securityContext:
+          allowPrivilegeEscalation: false
       volumes:
         - name: config-logging
           configMap:
@@ -1612,13 +1619,13 @@ metadata:
     app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: v0.15.2
+    app.kubernetes.io/version: nightly
     app.kubernetes.io/part-of: tekton-pipelines
     # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
     # labels below are related to istio and should not be used for resource lookup
     app: tekton-pipelines-controller
-    version: v0.15.2
+    version: nightly
   name: tekton-pipelines-controller
   namespace: tekton-pipelines
 spec:
@@ -1660,12 +1667,12 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/component: webhook
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: v0.15.2
+    app.kubernetes.io/version: nightly
     app.kubernetes.io/part-of: tekton-pipelines
     # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
     # labels below are related to istio and should not be used for resource lookup
-    version: v0.15.2
+    version: nightly
 spec:
   replicas: 1
   selector:
@@ -1682,20 +1689,20 @@ spec:
         app.kubernetes.io/name: webhook
         app.kubernetes.io/component: webhook
         app.kubernetes.io/instance: default
-        app.kubernetes.io/version: v0.15.2
+        app.kubernetes.io/version: nightly
         app.kubernetes.io/part-of: tekton-pipelines
         # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-        pipeline.tekton.dev/release: v0.15.2
+        pipeline.tekton.dev/release: nightly
         # labels below are related to istio and should not be used for resource lookup
         app: tekton-pipelines-webhook
-        version: v0.15.2
+        version: nightly
     spec:
       serviceAccountName: tekton-pipelines-webhook
       containers:
       - name: webhook
         # This is the Go import path for the binary that is containerized
         # and substituted here.
-        image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:v0.15.2
+        image: quay.io/openshift-pipeline/tektoncd-pipeline-webhook:nightly
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
@@ -1733,13 +1740,13 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/component: webhook
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: v0.15.2
+    app.kubernetes.io/version: nightly
     app.kubernetes.io/part-of: tekton-pipelines
     # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
-    pipeline.tekton.dev/release: v0.15.2
+    pipeline.tekton.dev/release: nightly
     # labels below are related to istio and should not be used for resource lookup
     app: tekton-pipelines-webhook
-    version: v0.15.2
+    version: nightly
   name: tekton-pipelines-webhook
   namespace: tekton-pipelines
 spec:
