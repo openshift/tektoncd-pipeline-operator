@@ -40,10 +40,10 @@ type ConfigCondition struct {
 	Version string `json:"version"`
 
 	// The version of OpenShift pipelines
-	PipelineVersion string `json:"pipelineVersion"`
+	PipelineVersion string `json:"pipelineVersion,omitempty"`
 
 	// The version of OpenShift triggers
-	TriggersVersion string `json:"triggersVersion"`
+	TriggersVersion string `json:"triggersVersion,omitempty"`
 }
 
 // InstallStatus describes the state of installation of pipelines
@@ -79,6 +79,22 @@ const (
 	// InvalidResource indicates that the resource specification is invalid
 	// Check details field for additional details
 	InvalidResource InstallStatus = "invalid-resource"
+
+	// AppliedTriggers indicates that the triggers
+	// have been applied on the cluster
+	AppliedTriggers InstallStatus = "applied-triggers"
+
+	// TriggersError indicates that there was an error installing triggers
+	// Check details field for additional details
+	TriggersError InstallStatus = "error-triggers"
+
+	// ValidatedTriggers indicates that core triggers resources have been
+	// installed successfully
+	ValidatedTriggers InstallStatus = "validated-triggers"
+
+	// TriggersVali indicates that there was an error installing triggers resources
+	// Check details field for additional details
+	TriggersValidateError InstallStatus = "error-triggers-validate"
 
 	// AppliedAddons indicates that the pipeline addons
 	// have been applied on the cluster
