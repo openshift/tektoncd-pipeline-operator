@@ -65,11 +65,11 @@ endif
 
 .PHONY: opo-test-e2e-up-local
 opo-test-e2e-up-local: opo-test-clean
-	operator-sdk test local ./test/e2e/ --up-local --namespace openshift-pipelines  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
+	operator-sdk test local ./test/e2e/ --up-local --operator-namespace openshift-pipelines --watch-namespace "" --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
 
 .PHONY: opo-test-e2e
 opo-test-e2e: opo-test-clean
-	operator-sdk test local ./test/e2e/ --namespace openshift-operators  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
+	operator-sdk test local ./test/e2e/ --operator-namespace openshift-operators  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
 
 # make targets for release
 .PHONY: opo-clean
@@ -127,7 +127,7 @@ ifndef CHANNEL
 	@echo CHANNEL not set
 	@exit 1
 endif
-	operator-sdk olm-catalog gen-csv \
+	operator-sdk generate csv \
       --csv-channel ${CHANNEL} \
       --csv-version ${VERSION} \
       --from-version ${FROM_VERSION} \

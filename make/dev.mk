@@ -21,7 +21,7 @@ LOCAL_TEST_NAMESPACE ?= "local-test"
 ## Run Operator locally
 local: deploy-rbac build deploy-crd
 	$(Q)-oc new-project $(LOCAL_TEST_NAMESPACE)
-	$(Q)operator-sdk up local --namespace=$(APP_NAMESPACE)
+	$(Q)operator-sdk run --local --watch-namespace=$(APP_NAMESPACE)
 
 .PHONY: deploy-rbac
 ## Setup service account and deploy RBAC
@@ -34,8 +34,7 @@ deploy-rbac:
 .PHONY: deploy-crd
 ## Deploy CRD
 deploy-crd:
-	$(Q)-oc apply -f deploy/crds/openshift-pipelines-operator-tekton-v1alpha1_install_crd.yaml
-	$(Q)-oc apply -f deploy/crds/openshift_v1alpha1_install_crd.yaml
+	$(Q)-oc apply -f deploy/crds/operator_v1alpha1_config_crd.yaml
 
 .PHONY: deploy-operator
 ## Deploy Operator
@@ -75,8 +74,7 @@ clean-resources:
 	@echo "Deleting Service Account"
 	@oc delete -f ./deploy/service_account.yaml || true
 	@echo "Deleting Custom Resource Definitions..."
-	@oc delete -f ./deploy/crds/openshift-pipelines-operator-tekton-v1alpha1_install_crd.yaml || true
-	@oc delete -f ./deploy/crds/openshift_v1alpha1_install_crd.yaml || true
+	@oc delete -f ./deploy/crds/operator_v1alpha1_config_crd.yaml || true
 
 .PHONY: deploy-operator
 deploy-operator: build build-operator-image deploy-operator-only

@@ -240,7 +240,7 @@ It assumes you have already followed install [minikube](#install-minikube) and [
 #### Generate new image, CSV
 
 1. Make changes to the operator
-1. Test operator locally with `operator-sdk up local`
+1. Test operator locally with `operator-sdk run --local`
 1. Build operator image `operator-sdk build <imagename:tag>`
 1. Update image reference in `deploy/operator.yaml`
 1. Update image reference in CSV `deploy/olm-catalog/openshift-pipelines-operator/0.3.1/openshift-pipelines-operator.v0.3.1.clusterserviceversion.yaml`

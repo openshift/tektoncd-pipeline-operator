@@ -12,7 +12,7 @@ import (
 
 // ClusterCRD is the test group for testing config.operator.tekton.dev CRD
 func ClusterCRD(t *testing.T) {
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 
 	err := deployOperator(t, ctx)
@@ -23,7 +23,7 @@ func ClusterCRD(t *testing.T) {
 	t.Run("delete-pipelines", testsuites.ValidateDeletion)
 }
 
-func deployOperator(t *testing.T, ctx *test.TestCtx) error {
+func deployOperator(t *testing.T, ctx *test.Context) error {
 	err := ctx.InitializeClusterResources(
 		&test.CleanupOptions{
 			TestContext:   ctx,

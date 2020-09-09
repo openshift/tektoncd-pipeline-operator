@@ -12,7 +12,7 @@ import (
 // ValidateAutoInstall creates an instance of install.tekton.dev
 // and checks whether openshift pipelines deployment are created
 func ValidateAutoInstall(t *testing.T) {
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 
 	cr := helpers.WaitForClusterCR(t, flag.ClusterCRName)
@@ -31,7 +31,7 @@ func ValidateAutoInstall(t *testing.T) {
 // ValidateDeletion ensures that deleting the cluster CR  deletes the already
 // installed tekton pipeline
 func ValidateDeletion(t *testing.T) {
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 
 	cr := helpers.WaitForClusterCR(t, flag.ClusterCRName)

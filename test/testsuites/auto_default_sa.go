@@ -15,7 +15,7 @@ import (
 // ValidateDefaultSA validates that tekton controller creates
 // a Default pipelines SA for existing and new namespaces
 func ValidateDefaultSA(t *testing.T) {
-	ctx := test.NewTestCtx(t)
+	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
 
 	// ensure the controllers are running and pipeline is installed

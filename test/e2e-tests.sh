@@ -9,6 +9,6 @@ fi
 
 operator-sdk test local ./test/e2e \
   --image ${IMAGE_FORMAT//\$\{component\}/tektoncd-pipeline-operator} \
-	--namespace ${TEST_NAMESPACE} \
+	--operator-namespace ${TEST_NAMESPACE} \
 	--go-test-flags "-v -timeout=15m" \
 	--debug
