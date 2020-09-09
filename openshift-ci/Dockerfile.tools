@@ -62,7 +62,7 @@ RUN OPENSHIFT_CLIENT_VERSION=$(curl -s https://mirror.openshift.com/pub/openshif
 # install operator-sdk (from git with no history and only the tag)
 RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && cd $GOPATH/src/github.com/operator-framework \
-    && git clone --depth 1 -b v0.10.0 https://github.com/operator-framework/operator-sdk \
+    && git clone --depth 1 -b v0.17.2 https://github.com/operator-framework/operator-sdk \
     && cd operator-sdk \
     && GO111MODULE=on make install
 
