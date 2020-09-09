@@ -65,7 +65,7 @@ endif
 
 .PHONY: opo-test-e2e-up-local
 opo-test-e2e-up-local: opo-test-clean
-	operator-sdk test local ./test/e2e/ --up-local --operator-namespace openshift-pipelines  --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
+	operator-sdk test local ./test/e2e/ --up-local --operator-namespace openshift-pipelines --watch-namespace "" --go-test-flags "-v -timeout=10m" --local-operator-flags "--recursive"
 
 .PHONY: opo-test-e2e
 opo-test-e2e: opo-test-clean
