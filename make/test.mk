@@ -139,7 +139,7 @@ test-e2e-ci: get-test-namespace ./vendor
 	$(Q)sed -e 's|REPLACE_NAMESPACE|$(TEST_NAMESPACE)|g' ./deploy/test/role_binding_test.yaml | oc apply -f -
 	$(Q)sed -e 's|REPLACE_IMAGE|registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:tektoncd-pipeline-operator|g' ./deploy/test/operator_test.yaml  | oc apply -f - --namespace $(TEST_NAMESPACE)
 	$(eval DEPLOYED_NAMESPACE := $(TEST_NAMESPACE))
-	$(Q)operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --no-setup --go-test-flags "-v -timeout=15m"
+	$(Q)operator-sdk test local ./test/e2e --operator-namespace $(TEST_NAMESPACE) --no-setup --go-test-flags "-v -timeout=15m"
 
 #-------------------------------------------------------------------------------
 # e2e test in dev mode
@@ -192,7 +192,7 @@ else
 	$(Q)sed -i 's|$(TEST_NAMESPACE)|REPLACE_NAMESPACE|g' ./deploy/test/role_binding_test.yaml
 	$(Q)sed -i 's|172.30.1.1:5000/$(TEST_NAMESPACE)/tektoncd-pipeline-operator:latest|REPLACE_IMAGE|g' ./deploy/test/operator_test.yaml
 endif
-	$(Q)eval $$(minishift docker-env) && operator-sdk test local ./test/e2e --namespace $(TEST_NAMESPACE) --no-setup --go-test-flags "-v"
+	$(Q)eval $$(minishift docker-env) && operator-sdk test local ./test/e2e --operator-namespace $(TEST_NAMESPACE) --no-setup --go-test-flags "-v"
 endif
 
 .PHONY: test-upgrade-ci

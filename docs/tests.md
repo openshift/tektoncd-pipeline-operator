@@ -18,7 +18,7 @@ oc create namespace openshift-pipelines-operator
 
 ```
 operator-sdk test local --up-local ./test/e2e \
-  --namespace openshift-pipelines-operator \
+  --operator-namespace openshift-pipelines-operator \
   --verbose --debug
 ```
 
