@@ -1,6 +1,6 @@
 # Running E2E Tests
 
-1. Ensure **operator-sdk** **v0.14.1** is installed.
+1. Ensure **operator-sdk** **v0.17.2** is installed.
 
 2. If the namespace **openshift-pipelines-operator** exists, delete it. Do this to make sure the namespace is clean.
 
