@@ -8,6 +8,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type RuntimeSpec struct {
+	Runtime           string
+	Version           string
+	MinorVersion      string
+	SupportedVersions string
+}
+
 const (
 	// DefaultSA is the default service account
 	DefaultSA            = "pipeline"
@@ -39,6 +46,11 @@ const (
 	ProviderTypeRedHat            = "redhat"
 	ProviderTypeCertified         = "certified"
 
+	AnnotationPipelineSupportedVersions = "pipeline.openshift.io/supported-versions"
+	LabelPipelineEnvironmentType        = "pipeline.openshift.io/type"
+	LabelPipelineRuntime                = "pipeline.openshift.io/runtime"
+	LabelPipelineStrategy               = "pipeline.openshift.io/strategy"
+
 	uuidPath = "deploy/uuid"
 )
 
@@ -60,6 +72,19 @@ var (
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/maven/0.1/maven.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/tkn/0.1/tkn.yaml",
 		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/kn/0.1/kn.yaml",
+	}
+
+	Runtimes = map[string]RuntimeSpec{
+		"s2i-dotnet-3": {Runtime: "dotnet", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[3.1,3.0]"},
+		"s2i-go":       {Runtime: "golang"},
+		"s2i-java-8":   {Runtime: "java", SupportedVersions: "[8]"},
+		"s2i-java-11":  {Runtime: "java", SupportedVersions: "[11]"},
+		"s2i-nodejs":   {Runtime: "nodejs", Version: "$(params.MAJOR_VERSION)", SupportedVersions: "[10,12]"},
+		"s2i-perl":     {Runtime: "perl", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[5.26,5.24]"},
+		"s2i-php":      {Runtime: "php", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[7.2,7.3]"},
+		"s2i-python-3": {Runtime: "python", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[3.6,3.5]"},
+		"s2i-ruby":     {Runtime: "ruby", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[2.5,2.4,2.3]"},
+		"buildah":      {},
 	}
 )
 
