@@ -59,8 +59,9 @@ You must install these tools:
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/): For
    interacting with your kube cluster
-1. [operator-sdk](https://github.com/operator-framework/operator-sdk)
+1. [operator-sdk](https://github.com/operator-framework/operator-sdk/releases/tag/v0.17.2)
 1. [opm](https://github.com/operator-framework/operator-registry/releases/tag/v1.13.7)
+1. [yamllint](https://pypi.org/project/yamllint/)
 
 ### Install Minikube
 
