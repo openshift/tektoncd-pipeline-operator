@@ -1,0 +1,31 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  namespace: openshift
+spec:
+  params:
+    - name: APP_NAME
+      type: string
+  resources:
+    - name: app-source
+      type: git
+    - name: app-image
+      type: image
+
+  tasks:
+    - name: build
+      taskRef:
+        kind: ClusterTask
+      resources:
+        inputs:
+          - name: source
+            resource: app-source
+        outputs:
+          - name: image
+            resource: app-image
+      params:
+        - name: TLSVERIFY
+          value: "false"
+
+    - name: deploy
