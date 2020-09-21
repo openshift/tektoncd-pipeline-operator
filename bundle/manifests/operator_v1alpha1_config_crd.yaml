@@ -53,8 +53,6 @@ spec:
                     type: string
                 required:
                 - code
-                - pipelineVersion
-                - triggersVersion
                 - version
                 type: object
               type: array
