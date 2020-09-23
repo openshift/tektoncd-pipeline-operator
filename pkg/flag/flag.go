@@ -51,7 +51,8 @@ const (
 	LabelPipelineRuntime                = "pipeline.openshift.io/runtime"
 	LabelPipelineStrategy               = "pipeline.openshift.io/strategy"
 
-	uuidPath = "deploy/uuid"
+	uuidPath     = "deploy/uuid"
+	TemplatePath = "deploy/resources/templates"
 )
 
 var (

@@ -2,10 +2,6 @@ package addons
 
 import (
 	"fmt"
-	"strings"
-	"testing"
-
-	mf "github.com/manifestival/manifestival"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"gotest.tools/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"strings"
+	"testing"
 )
 
 func TestCreatePipeline(t *testing.T) {
@@ -25,13 +23,10 @@ func TestCreatePipeline(t *testing.T) {
 		config := newConfig(configName, namespace)
 		cl := feedConfigMock(config)
 
-		template, err := mf.NewManifest("testdata/pipelinetemplate.yaml")
+		mfs, err := CreatePipelines("testdata", cl)
 		assertNoEror(t, err)
 
-		manifs, err := CreatePipelines(template, cl)
-		assertNoEror(t, err)
-
-		for _, m := range manifs.Resources() {
+		for _, m := range mfs.Resources() {
 			jsonPipeline, err := m.MarshalJSON()
 			assertNoEror(t, err)
 			golden.Assert(t, string(jsonPipeline), strings.ReplaceAll(fmt.Sprintf("%s.golden", m.GetName()), "/", "-"))

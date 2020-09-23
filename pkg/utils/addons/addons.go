@@ -5,14 +5,14 @@ import (
 	mf "github.com/manifestival/manifestival"
 	"github.com/tektoncd/operator/pkg/flag"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type generateDeployTask func(map[string]interface{}) map[string]interface{}
 type taskGenerator interface {
-	generate(pipeline unstructured.Unstructured) (unstructured.Unstructured, error)
+	generate(pipeline unstructured.Unstructured, usingPipelineResource bool) (unstructured.Unstructured, error)
 }
-
-type generateDeployTask func(interface{}) map[string]interface{}
 
 type pipeline struct {
 	environment string
@@ -20,63 +20,74 @@ type pipeline struct {
 	generateDeployTask
 }
 
-func (p *pipeline) generate(pipeline unstructured.Unstructured) (unstructured.Unstructured, error) {
+func (p *pipeline) generate(pipeline unstructured.Unstructured, usingPipelineResource bool) (unstructured.Unstructured, error) {
 	newTempRes := unstructured.Unstructured{}
 	pipeline.DeepCopyInto(&newTempRes)
 	labels := newTempRes.GetLabels()
 	labels[flag.LabelPipelineEnvironmentType] = p.environment
 	newTempRes.SetLabels(labels)
-	name := newTempRes.GetName()
-	newTempRes.SetName(name + p.nameSuffix)
+	updatedName := newTempRes.GetName()
+	updatedName += p.nameSuffix
 	taskDeploy, found, err := unstructured.NestedFieldNoCopy(newTempRes.Object, "spec", "tasks")
 	if !found || err != nil {
 		return unstructured.Unstructured{}, err
 	}
-	p.generateDeployTask(taskDeploy)
+
+	var index = 2
+	if usingPipelineResource {
+		index = 1
+		updatedName += "-pr"
+	}
+	newTempRes.SetName(updatedName)
+
+	p.generateDeployTask(taskDeploy.([]interface{})[index].(map[string]interface{}))
 	return newTempRes, nil
 }
 
-func openshiftDeployTask(task interface{}) map[string]interface{} {
-	taskDeployMap := task.([]interface{})[2].(map[string]interface{})
-	taskDeployMap["taskRef"] = map[string]interface{}{"name": "openshift-client", "kind": "ClusterTask"}
-	taskDeployMap["runAfter"] = []interface{}{"build"}
-	taskDeployMap["params"] = []interface{}{
+func openshiftDeployTask(deployTask map[string]interface{}) map[string]interface{} {
+	deployTask["taskRef"] = map[string]interface{}{"name": "openshift-client", "kind": "ClusterTask"}
+	deployTask["runAfter"] = []interface{}{"build"}
+	deployTask["params"] = []interface{}{
 		map[string]interface{}{"name": "ARGS", "value": []interface{}{"rollout", "status", "dc/$(params.APP_NAME)"}},
 	}
-	return taskDeployMap
+	return deployTask
 }
 
-func kubernetesDeployTask(task interface{}) map[string]interface{} {
-	taskDeployMap := task.([]interface{})[2].(map[string]interface{})
-	taskDeployMap["taskRef"] = map[string]interface{}{"name": "openshift-client", "kind": "ClusterTask"}
-	taskDeployMap["runAfter"] = []interface{}{"build"}
-	taskDeployMap["params"] = []interface{}{
+func kubernetesDeployTask(deployTask map[string]interface{}) map[string]interface{} {
+	deployTask["taskRef"] = map[string]interface{}{"name": "openshift-client", "kind": "ClusterTask"}
+	deployTask["runAfter"] = []interface{}{"build"}
+	deployTask["params"] = []interface{}{
 		map[string]interface{}{"name": "SCRIPT", "value": "kubectl $@"},
 		map[string]interface{}{"name": "ARGS", "value": []interface{}{"rollout", "status", "deploy/$(params.APP_NAME)"}},
 	}
-	return taskDeployMap
+	return deployTask
 }
 
-func knativeDeployTask(task interface{}) map[string]interface{} {
-	taskDeployMap := task.([]interface{})[2].(map[string]interface{})
-	taskDeployMap["name"] = "kn-service-create"
-	taskDeployMap["taskRef"] = map[string]interface{}{"name": "kn", "kind": "ClusterTask"}
-	taskDeployMap["runAfter"] = []interface{}{"build"}
-
-	taskDeployMap["params"] = []interface{}{
+func knativeDeployTask(deployTask map[string]interface{}) map[string]interface{} {
+	deployTask["name"] = "kn-service-create"
+	deployTask["taskRef"] = map[string]interface{}{"name": "kn", "kind": "ClusterTask"}
+	deployTask["runAfter"] = []interface{}{"build"}
+	deployTask["params"] = []interface{}{
 		map[string]interface{}{"name": "ARGS", "value": []interface{}{"service", "create", "$(params.APP_NAME)", "--image=$(params.IMAGE_NAME)", "--force"}},
 	}
-	return taskDeployMap
+	return deployTask
 }
 
-func CreatePipelines(template mf.Manifest, client client.Client) (mf.Manifest, error) {
-	var pipelines []unstructured.Unstructured
-
-	taskGenerators := []taskGenerator{
-		&pipeline{environment: "openshift", nameSuffix: "", generateDeployTask: openshiftDeployTask},
-		&pipeline{environment: "kubernetes", nameSuffix: "-deployment", generateDeployTask: kubernetesDeployTask},
-		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeDeployTask},
+func knativeResourcedDeployTask(deployTask map[string]interface{}) map[string]interface{} {
+	deployTask["name"] = "kn-service-create"
+	deployTask["taskRef"] = map[string]interface{}{"name": "kn", "kind": "ClusterTask"}
+	deployTask["runAfter"] = []interface{}{"build"}
+	deployTask["resources"] = map[string]interface{}{
+		"inputs": []interface{}{map[string]interface{}{"name": "image", "resource": "app-image", "from": []interface{}{"build"}}},
 	}
+	deployTask["params"] = []interface{}{
+		map[string]interface{}{"name": "ARGS", "value": []interface{}{"service", "create", "$(params.APP_NAME)", "--image=$(resources.inputs.image.url)", "--force"}},
+	}
+	return deployTask
+}
+
+func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, usingPipelineResource bool) ([]unstructured.Unstructured, error) {
+	var pipelines []unstructured.Unstructured
 
 	for name, spec := range flag.Runtimes {
 		newTempRes := unstructured.Unstructured{}
@@ -98,18 +109,26 @@ func CreatePipelines(template mf.Manifest, client client.Client) (mf.Manifest, e
 		newTempRes.SetName(name)
 		pipelineParams, found, err := unstructured.NestedFieldNoCopy(newTempRes.Object, "spec", "params")
 		if !found || err != nil {
-			return mf.Manifest{}, err
+			return nil, err
 		}
 
 		tasks, found, err := unstructured.NestedFieldNoCopy(newTempRes.Object, "spec", "tasks")
 		if !found || err != nil {
-			return mf.Manifest{}, err
+			return nil, err
 		}
-		taskBuild := tasks.([]interface{})[1].(map[string]interface{})
-		taskBuild["taskRef"] = map[string]interface{}{"name": name, "kind": "ClusterTask"}
+
+		taskName := name
+		var index = 1
+		if usingPipelineResource {
+			index = 0
+			taskName += "-pr"
+		}
+
+		taskBuild := tasks.([]interface{})[index].(map[string]interface{})
+		taskBuild["taskRef"] = map[string]interface{}{"name": taskName, "kind": "ClusterTask"}
 		taskParams, found, err := unstructured.NestedFieldNoCopy(taskBuild, "params")
 		if !found || err != nil {
-			return mf.Manifest{}, err
+			return nil, err
 		}
 
 		if spec.Version != "" {
@@ -120,27 +139,66 @@ func CreatePipelines(template mf.Manifest, client client.Client) (mf.Manifest, e
 			taskParams = append(taskParams.([]interface{}), map[string]interface{}{"name": "MINOR_VERSION", "value": spec.MinorVersion})
 			pipelineParams = append(pipelineParams.([]interface{}), map[string]interface{}{"name": "MINOR_VERSION", "type": "string"})
 		}
+
 		if err := unstructured.SetNestedField(newTempRes.Object, pipelineParams, "spec", "params"); err != nil {
-			return mf.Manifest{}, err
+			return nil, err
 		}
 
 		if err := unstructured.SetNestedField(taskBuild, taskParams, "params"); err != nil {
-			return mf.Manifest{}, nil
+			return nil, nil
 		}
 
 		//adding the deploy task
 		for _, tg := range taskGenerators {
-			p, err := tg.generate(newTempRes)
+			p, err := tg.generate(newTempRes, usingPipelineResource)
 			if err != nil {
-				return mf.Manifest{}, err
+				return nil, err
 			}
 			pipelines = append(pipelines, p)
 		}
-
 	}
-	manifests, err := mf.ManifestFrom(mf.Slice(pipelines), mf.UseClient(mfc.NewClient(client)))
+	return pipelines, nil
+}
+
+func CreatePipelines(templatePath string, client client.Client) (mf.Manifest, error) {
+	var pipelines []unstructured.Unstructured
+	usginPipelineResource := true
+	workspacedTemplate, err := mf.NewManifest(path.Join(templatePath, "pipeline_using_workspace.yaml"))
 	if err != nil {
 		return mf.Manifest{}, err
 	}
-	return manifests, nil
+
+	workspacedTaskGenerators := []taskGenerator{
+		&pipeline{environment: "openshift", nameSuffix: "", generateDeployTask: openshiftDeployTask},
+		&pipeline{environment: "kubernetes", nameSuffix: "-deployment", generateDeployTask: kubernetesDeployTask},
+		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeDeployTask},
+	}
+
+	wps, err := generateBasePipeline(workspacedTemplate, workspacedTaskGenerators, !usginPipelineResource)
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	pipelines = append(pipelines, wps...)
+
+	resourcedTemplate, err := mf.NewManifest(path.Join(templatePath, "pipeline_using_resource.yaml"))
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+
+	resourcedTaskGenerators := []taskGenerator{
+		&pipeline{environment: "openshift", nameSuffix: "", generateDeployTask: openshiftDeployTask},
+		&pipeline{environment: "kubernetes", nameSuffix: "-deployment", generateDeployTask: kubernetesDeployTask},
+		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeResourcedDeployTask},
+	}
+	rps, err := generateBasePipeline(resourcedTemplate, resourcedTaskGenerators, usginPipelineResource)
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	pipelines = append(pipelines, rps...)
+
+	updatedMf, err := mf.ManifestFrom(mf.Slice(pipelines), mf.UseClient(mfc.NewClient(client)))
+	if err != nil {
+		return mf.Manifest{}, err
+	}
+	return updatedMf, nil
 }
