@@ -13,6 +13,9 @@ spec:
       type: string
     - name: IMAGE_NAME
       type: string
+    - name: PATH_CONTEXT
+      type: string
+      default: .
   workspaces:
     - name: workspace
 

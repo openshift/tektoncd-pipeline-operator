@@ -1,11 +1,12 @@
 package addons
 
 import (
+	"path"
+
 	mfc "github.com/manifestival/controller-runtime-client"
 	mf "github.com/manifestival/manifestival"
 	"github.com/tektoncd/operator/pkg/flag"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -90,12 +91,14 @@ func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, 
 	var pipelines []unstructured.Unstructured
 
 	for name, spec := range flag.Runtimes {
+		contextParamName := "PATH_CONTEXT"
 		newTempRes := unstructured.Unstructured{}
 		template.Resources()[0].DeepCopyInto(&newTempRes)
 		labels := map[string]string{}
 		annotations := map[string]string{}
 		if name == "buildah" {
 			labels[flag.LabelPipelineStrategy] = "docker"
+			contextParamName = "CONTEXT"
 		} else {
 			labels[flag.LabelPipelineRuntime] = spec.Runtime
 		}
@@ -131,6 +134,8 @@ func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, 
 			return nil, err
 		}
 
+		taskParams = append(taskParams.([]interface{}), map[string]interface{}{"name": contextParamName, "value": "$(params.PATH_CONTEXT)"})
+
 		if spec.Version != "" {
 			taskParams = append(taskParams.([]interface{}), map[string]interface{}{"name": "VERSION", "value": spec.Version})
 			pipelineParams = append(pipelineParams.([]interface{}), map[string]interface{}{"name": "MAJOR_VERSION", "type": "string"})
@@ -162,7 +167,7 @@ func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, 
 
 func CreatePipelines(templatePath string, client client.Client) (mf.Manifest, error) {
 	var pipelines []unstructured.Unstructured
-	usginPipelineResource := true
+	usingPipelineResource := true
 	workspacedTemplate, err := mf.NewManifest(path.Join(templatePath, "pipeline_using_workspace.yaml"))
 	if err != nil {
 		return mf.Manifest{}, err
@@ -174,7 +179,7 @@ func CreatePipelines(templatePath string, client client.Client) (mf.Manifest, er
 		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeDeployTask},
 	}
 
-	wps, err := generateBasePipeline(workspacedTemplate, workspacedTaskGenerators, !usginPipelineResource)
+	wps, err := generateBasePipeline(workspacedTemplate, workspacedTaskGenerators, !usingPipelineResource)
 	if err != nil {
 		return mf.Manifest{}, err
 	}
@@ -190,7 +195,7 @@ func CreatePipelines(templatePath string, client client.Client) (mf.Manifest, er
 		&pipeline{environment: "kubernetes", nameSuffix: "-deployment", generateDeployTask: kubernetesDeployTask},
 		&pipeline{environment: "knative", nameSuffix: "-knative", generateDeployTask: knativeResourcedDeployTask},
 	}
-	rps, err := generateBasePipeline(resourcedTemplate, resourcedTaskGenerators, usginPipelineResource)
+	rps, err := generateBasePipeline(resourcedTemplate, resourcedTaskGenerators, usingPipelineResource)
 	if err != nil {
 		return mf.Manifest{}, err
 	}

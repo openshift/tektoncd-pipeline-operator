@@ -7,6 +7,9 @@ spec:
   params:
     - name: APP_NAME
       type: string
+    - name: PATH_CONTEXT
+      type: string
+      default: .
   resources:
     - name: app-source
       type: git
