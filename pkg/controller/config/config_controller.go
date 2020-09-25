@@ -131,13 +131,13 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	}
 	addons = addons.Append(optionalResources)
 
-	// create all the pipeline dynamicallyCreatePipelines
-	addonsPipelineTemplates, err := paddons.CreatePipelines(flag.TemplatePath, mgr.GetClient())
+	// create all the pipeline dynamically
+	addonPipelineTemplates, err := paddons.CreatePipelines(flag.TemplatePath, mgr.GetClient())
 	if err != nil {
 		return mf.Manifest{}, err
 	}
 
-	addons = addons.Append(addonsPipelineTemplates)
+	addons = addons.Append(addonPipelineTemplates)
 	return addons, nil
 }
 

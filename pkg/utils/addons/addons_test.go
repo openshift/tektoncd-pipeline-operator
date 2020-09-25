@@ -2,6 +2,9 @@ package addons
 
 import (
 	"fmt"
+	"strings"
+	"testing"
+
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"gotest.tools/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -9,8 +12,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"strings"
-	"testing"
 )
 
 func TestCreatePipeline(t *testing.T) {
