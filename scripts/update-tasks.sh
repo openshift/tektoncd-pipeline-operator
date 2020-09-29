@@ -34,7 +34,7 @@ USAGE:
     $SCRIPT_NAME CATALOG_VERSION DEST_DIR VERSION
 
 Example:
-  $SCRIPT_NAME release-v0.7 deploy/resources/v0.7.0 v0.7.0
+  $SCRIPT_NAME release-v0.7 deploy/resources v0.7.0
 EOF
   exit 1
 }
@@ -42,33 +42,33 @@ EOF
 #declare -r CATALOG_VERSION="release-v0.7"
 
 declare -r TEKTON_CATALOG="https://raw.githubusercontent.com/openshift/tektoncd-catalog"
-declare -r TEKTON_CATALOG_TASKS=(
-  openshift-client
-  git-clone
-  buildah
+declare -A TEKTON_CATALOG_TASKS=(
+  ["openshift-client"]="0.1"
+  ["git-clone"]="0.2"
+  ["buildah"]="0.1"
 )
 
 declare -r OPENSHIFT_CATALOG="https://raw.githubusercontent.com/openshift/pipelines-catalog"
-declare -r OPENSHIFT_CATALOG_TASKS=(
-  buildah-pr
-  s2i-go
-  s2i-java-8
-  s2i-java-11
-  s2i-python-3
-  s2i-nodejs
-  s2i-perl
-  s2i-php
-  s2i-ruby
-  s2i-dotnet-3
-  s2i-go-pr
-  s2i-java-8-pr
-  s2i-java-11-pr
-  s2i-python-3-pr
-  s2i-nodejs-pr
-  s2i-perl-pr
-  s2i-php-pr
-  s2i-ruby-pr
-  s2i-dotnet-3-pr
+declare -A OPENSHIFT_CATALOG_TASKS=(
+  ["buildah-pr"]="0.1"
+  ["s2i-go"]="0.1"
+  ["s2i-java-8"]="0.1"
+  ["s2i-java-11"]="0.1"
+  ["s2i-python-3"]="0.1"
+  ["s2i-nodejs"]="0.1"
+  ["s2i-perl"]="0.1"
+  ["s2i-php"]="0.1"
+  ["s2i-ruby"]="0.1"
+  ["s2i-dotnet-3"]="0.1"
+  ["s2i-go-pr"]="0.1"
+  ["s2i-java-8-pr"]="0.1"
+  ["s2i-java-11-pr"]="0.1"
+  ["s2i-python-3-pr"]="0.1"
+  ["s2i-nodejs-pr"]="0.1"
+  ["s2i-perl-pr"]="0.1"
+  ["s2i-php-pr"]="0.1"
+  ["s2i-ruby-pr"]="0.1"
+  ["s2i-dotnet-3-pr"]="0.1"
 )
 
 
@@ -107,14 +107,13 @@ change_task_image() {
 
   local expr=$1; shift
   local image=$1; shift
-  local loc=$1; shift
 
   sed \
-      -i "s'$expr.*'$loc $image'" \
+      -i "s'$expr.*'$image'" \
       $task_path
 
   sed \
-      -i "s'$expr.*'$loc $image'" \
+      -i "s'$expr.*'$image'" \
       $task_path_version
 }
 
@@ -125,19 +124,17 @@ get_tasks() {
   local catalog="$1"; shift
   local catalog_version="$1"; shift
 
-  # NOTE: receives array by its name
-  local catalog_tasks_ref="$1[@]"; shift
-  local tasks=("${!catalog_tasks_ref}")
-
+  local -n tasks=$1
 
 
   info "Downloading tasks from catalog $catalog to $dest_dir directory"
-  for t in ${tasks[@]} ; do
+  for t in ${!tasks[@]} ; do
     # task filenames do not follow a naming convention,
     # some are taskname.yaml while others are taskname-task.yaml
     # so, try both before failing
-    local task_url="$catalog/$catalog_version/task/$t/0.1/${t}.yaml"
-
+    echo  test
+    local task_url="$catalog/$catalog_version/task/$t/${tasks[$t]}/${t}.yaml"
+    echo "$catalog/$catalog_version/task/$t/${tasks[$t]}/${t}.yaml"
     mkdir -p "$dest_dir/$t/"
     local task_path="$dest_dir/$t/$t-task.yaml"
 
@@ -190,27 +187,26 @@ main() {
     "$OPENSHIFT_CATALOG"   "$catalog_version"  OPENSHIFT_CATALOG_TASKS
 
   change_task_image "$dest_dir" "$version"  \
-    "buildah"  "default: quay.io/buildah"  \
-    "registry.redhat.io/rhel8/buildah"  "default:"
+    "buildah"  "quay.io/buildah"  \
+    "registry.redhat.io/rhel8/buildah"
 
   change_task_image "$dest_dir" "$version"  \
-    "buildah-pr"  "default: quay.io/buildah"  \
-    "registry.redhat.io/rhel8/buildah"  "default:"
+    "buildah-pr"  "quay.io/buildah"  \
+    "registry.redhat.io/rhel8/buildah"
 
   change_task_image "$dest_dir" "$version"  \
-    "openshift-client"  "image: quay.io/openshift/origin-cli:latest"  \
-    "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"  "image:"
+    "openshift-client"  "quay.io/openshift/origin-cli:latest"  \
+    "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
 
   # this will do the change for all pipelines catalog tasks except buildah-pr
-  for t in ${OPENSHIFT_CATALOG_TASKS[@]} ; do
+  for t in ${!OPENSHIFT_CATALOG_TASKS[@]} ; do
     change_task_image "$dest_dir" "$version"  \
-      "$t"  "image: quay.io/openshift-pipeline/s2i"  \
-      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8" \
-      "image:"
+      "$t"  "quay.io/openshift-pipeline/s2i"  \
+      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8"
 
     change_task_image "$dest_dir" "$version"  \
-      "$t"  "image: quay.io/buildah"  \
-      "registry.redhat.io/rhel8/buildah"  "image:"
+      "$t"  "quay.io/buildah"  \
+      "registry.redhat.io/rhel8/buildah"
 
   done
 
