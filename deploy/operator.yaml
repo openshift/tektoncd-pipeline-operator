@@ -26,6 +26,8 @@ spec:
           value: ""
         - name: IMAGE_ADDONS_PARAM_KN_IMAGE
           value: registry.redhat.io/openshift-serverless-1/client-kn-rhel8:0.13.2
+        - name: IMAGE_ADDONS_SKOPEO_COPY
+          value: registry.redhat.io/rhel8/skopeo:8.2
         - name: POD_NAME
           valueFrom:
             fieldRef:
