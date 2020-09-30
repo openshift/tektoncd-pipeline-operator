@@ -27,7 +27,7 @@ spec:
             resource: app-image
         params:
           - name: BUILDER_IMAGE
-            value: quay.io/buildah/stable:v1.11.0
+            value: registry.redhat.io/rhel8/buildah
           - name: DOCKERFILE
             value: ./Dockerfile
           - name: TLSVERIFY
