@@ -58,7 +58,7 @@ const (
 var (
 	flagSet *pflag.FlagSet
 
-	TektonVersion          = "v1.2"
+	TektonVersion          = "v1.2.0"
 	PipelineSA             string
 	IgnorePattern          string
 	ResourceWatched        string
@@ -69,16 +69,16 @@ var (
 	Recursive              bool
 	OperatorUUID           string
 	CommunityResourceURLs  = []string{
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/jib-maven/0.1/jib-maven.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/maven/0.1/maven.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/tkn/0.1/tkn.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/helm-upgrade-from-source/0.1/helm-upgrade-from-source.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/helm-upgrade-from-repo/0.1/helm-upgrade-from-repo.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/skopeo-copy/0.1/skopeo-copy.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/trigger-jenkins-job/0.1/trigger-jenkins-job.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-cli/0.1/git-cli.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/pull-request/0.1/pull-request.yaml",
-		"https://raw.githubusercontent.com/tektoncd/catalog/master/task/kubeconfig-creator/0.1/kubeconfig-creator.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/jib-maven/0.1/jib-maven.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/maven/0.1/maven.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/tkn/0.1/tkn.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/helm-upgrade-from-source/0.1/helm-upgrade-from-source.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/helm-upgrade-from-repo/0.1/helm-upgrade-from-repo.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/skopeo-copy/0.1/skopeo-copy.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/trigger-jenkins-job/0.1/trigger-jenkins-job.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/git-cli/0.1/git-cli.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/pull-request/0.1/pull-request.yaml",
+		"https://raw.githubusercontent.com/tektoncd/catalog/1f6d742aab0ce933d8204c905e7d0d50558cfa3c/task/kubeconfig-creator/0.1/kubeconfig-creator.yaml",
 	}
 
 	Runtimes = map[string]RuntimeSpec{
