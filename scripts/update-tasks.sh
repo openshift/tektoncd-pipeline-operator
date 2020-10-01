@@ -46,6 +46,7 @@ declare -A TEKTON_CATALOG_TASKS=(
   ["openshift-client"]="0.1"
   ["git-clone"]="0.2"
   ["buildah"]="0.1"
+  ["kn"]="0.1"
 )
 
 declare -r OPENSHIFT_CATALOG="https://raw.githubusercontent.com/openshift/pipelines-catalog"
@@ -197,6 +198,10 @@ main() {
   change_task_image "$dest_dir" "$version"  \
     "openshift-client"  "quay.io/openshift/origin-cli:latest"  \
     "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
+
+  change_task_image "$dest_dir" "$version"  \
+    "kn"  "gcr.io/knative-releases/knative.dev/client/cmd/kn:latest"  \
+    "registry.redhat.io/openshift-serverless-1/client-kn-rhel8:0.15.2"
 
   # this will do the change for all pipelines catalog tasks except buildah-pr
   for t in ${!OPENSHIFT_CATALOG_TASKS[@]} ; do
