@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	runtime1 "runtime"
 	"github.com/go-logr/logr"
 	mf "github.com/jcrossley3/manifestival"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
@@ -103,6 +103,10 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	if err != nil {
 		return mf.Manifest{}, err
 	}
+	if runtime1.GOARCH == "ppc64le" || runtime1.GOARCH == "s390x" {
+                log.Info("skip installation of tektoncd/catalog tasks if the platform is not x86_64")
+                return mf.Manifest{}, nil
+        }
 
 	// add optionals to addons if any
 	optionalResources, err := readOptional(mgr)
