@@ -104,7 +104,7 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 		return mf.Manifest{}, err
 	}
 	if runtime1.GOARCH == "ppc64le" || runtime1.GOARCH == "s390x" {
-                log.Info("skip installation of tektoncd/catalog tasks if the platform is not x86_64")
+                log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
                 return mf.Manifest{}, nil
         }
 
