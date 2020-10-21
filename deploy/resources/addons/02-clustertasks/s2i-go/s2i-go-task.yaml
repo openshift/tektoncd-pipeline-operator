@@ -35,14 +35,14 @@ spec:
       mountPath: /workspace/source
   steps:
     - name: generate
-      image: registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8
+      image: registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8@sha256:562dbdac04ae9260e21d457585b3251fd8cc5310966f8fc544fb77dc544c92f8
       workingDir: $(workspaces.source.path)
       command: ['s2i', 'build', '$(params.PATH_CONTEXT)', 'registry.access.redhat.com/devtools/go-toolset-rhel7', '--as-dockerfile', '/gen-source/Dockerfile.gen']
       volumeMounts:
         - name: gen-source
           mountPath: /gen-source
     - name: build
-      image: registry.redhat.io/rhel8/buildah
+      image: registry.redhat.io/rhel8/buildah@sha256:180c4d9849b6ab0e5465d30d4f3a77765cf0d852ca1cb1efb59d6e8c9f90d467
       workingDir: /gen-source
       command: ['buildah', 'bud', '--tls-verify=$(params.TLSVERIFY)', '--layers', '-f', '/gen-source/Dockerfile.gen', '-t', '$(params.IMAGE)', '.']
       volumeMounts:
@@ -53,7 +53,7 @@ spec:
       securityContext:
         privileged: true
     - name: push
-      image: registry.redhat.io/rhel8/buildah
+      image: registry.redhat.io/rhel8/buildah@sha256:180c4d9849b6ab0e5465d30d4f3a77765cf0d852ca1cb1efb59d6e8c9f90d467
       command: ['buildah', 'push', '--tls-verify=$(params.TLSVERIFY)', '$(params.IMAGE)', 'docker://$(params.IMAGE)']
       volumeMounts:
         - name: varlibcontainers
