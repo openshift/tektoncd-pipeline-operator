@@ -107,7 +107,21 @@ func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, err
 	}
 
+	err = r.ensureDefaultSAClusterRole()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	err = r.ensureRoleBindings(sa)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	err = r.ensureAnyuidRoleBinding(sa)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	return reconcile.Result{}, err
 
 }
@@ -173,6 +187,88 @@ func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
 
 	log.Info("found rbac", "subjects", editRB.Subjects)
 	return r.updateRoleBinding(editRB, sa)
+}
+
+func (r *ReconcileRBAC) ensureDefaultSAClusterRole() error {
+	log := ctrlLog.WithName("rb")
+
+	log.Info("finding cluster role pipeline-anyuid")
+
+	clusterRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{Name: flag.PipelineAnyuid},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{
+					"security.openshift.io",
+				},
+				ResourceNames: []string{
+					"anyuid",
+				},
+				Resources: []string{
+					"securitycontextconstraints",
+				},
+				Verbs: []string{
+					"use",
+				},
+			},
+		},
+	}
+
+	rbacClient := r.kc.RbacV1()
+	_, err := rbacClient.ClusterRoles().Get(flag.PipelineAnyuid, metav1.GetOptions{})
+
+	if err != nil {
+		if errors.IsNotFound(err) {
+			_, err = rbacClient.ClusterRoles().Create(clusterRole)
+		}
+		return err
+	}
+	_, err = rbacClient.ClusterRoles().Update(clusterRole)
+	return err
+}
+
+func (r *ReconcileRBAC) ensureAnyuidRoleBinding(sa *corev1.ServiceAccount) error {
+
+	log := ctrlLog.WithName("rb").WithValues("ns", sa.Namespace)
+
+	log.Info("finding role-binding pipeline-anyuid")
+	rbacClient := r.kc.RbacV1()
+	pipelineRB, rbErr := rbacClient.RoleBindings(sa.Namespace).Get(flag.PipelineAnyuid, metav1.GetOptions{})
+	if rbErr != nil && !errors.IsNotFound(rbErr) {
+		log.Error(rbErr, "rbac pipeline-anyuid get error")
+		return rbErr
+	}
+
+	log.Info("finding cluster role pipeline-anyuid")
+	if _, err := rbacClient.ClusterRoles().Get(flag.PipelineAnyuid, metav1.GetOptions{}); err != nil {
+		log.Error(err, "finding pipeline-anyuid cluster role failed")
+		return err
+	}
+
+	if rbErr != nil && errors.IsNotFound(rbErr) {
+		return r.createAnyuidRoleBinding(sa)
+	}
+
+	log.Info("found rbac", "subjects", pipelineRB.Subjects)
+	return r.updateRoleBinding(pipelineRB, sa)
+}
+
+func (r *ReconcileRBAC) createAnyuidRoleBinding(sa *corev1.ServiceAccount) error {
+	log := ctrlLog.WithName("rb").WithName("new")
+
+	log.Info("create new rolebinding pipeline-anyuid")
+	rbacClient := r.kc.RbacV1()
+	rb := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: flag.PipelineAnyuid, Namespace: sa.Namespace},
+		RoleRef:    rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: flag.PipelineAnyuid},
+		Subjects:   []rbacv1.Subject{{Kind: rbacv1.ServiceAccountKind, Name: sa.Name, Namespace: sa.Namespace}},
+	}
+
+	_, err := rbacClient.RoleBindings(sa.Namespace).Create(rb)
+	if err != nil {
+		log.Error(err, "creation of pipeline-anyuid rb failed")
+	}
+	return err
 }
 
 func (r *ReconcileRBAC) createRoleBinding(sa *corev1.ServiceAccount) error {

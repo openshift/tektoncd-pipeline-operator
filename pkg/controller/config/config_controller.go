@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/go-logr/logr"
 	mfc "github.com/manifestival/controller-runtime-client"
@@ -91,6 +96,8 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		community = mf.Manifest{}
 	}
 
+	kc, _ := k8s.NewForConfig(mgr.GetConfig())
+
 	return &ReconcileConfig{
 		client:    mgr.GetClient(),
 		scheme:    mgr.GetScheme(),
@@ -98,6 +105,7 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		triggers:  triggers,
 		addons:    addons,
 		community: community,
+		kc:        kc,
 	}, nil
 }
 
@@ -199,6 +207,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		log.Error(err, "creation of config resource failed")
 		return err
 	}
+
 	return nil
 }
 
@@ -215,6 +224,7 @@ type ReconcileConfig struct {
 	triggers  mf.Manifest
 	addons    mf.Manifest
 	community mf.Manifest
+	kc        *k8s.Clientset
 }
 
 // Reconcile reads that state of the cluster for a Config object and makes changes based on the state read
@@ -254,6 +264,38 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return reconcile.Result{}, err
 	}
 
+	namespaces := corev1.NamespaceList{}
+	err = r.client.List(context.TODO(), &namespaces, &client.ListOptions{})
+
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	for _, namespace := range namespaces.Items {
+		if ignore, _ := regexp.MatchString(flag.IgnorePattern, namespace.Name); ignore {
+			continue
+		}
+
+		downgraded := false
+		for _, excludedNamespace := range cfg.Spec.NamespaceExclusions {
+			if excludedNamespace == "*" || excludedNamespace == namespace.Name {
+				err = r.downgradeDefaultSA(namespace)
+				if err != nil {
+					return reconcile.Result{}, err
+				}
+				downgraded = true
+				break
+			}
+		}
+
+		if !downgraded {
+			err = r.upgradeDefaultSA(namespace)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+	}
+
 	pipelineVersion = getComponentVersion(r.pipeline, flag.PipelineControllerName, "pipeline.tekton.dev/release")
 	triggersVersion = getComponentVersion(r.triggers, flag.TriggerControllerName, "triggers.tekton.dev/release")
 
@@ -275,6 +317,45 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return r.validateVersion(req, cfg)
 	}
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileConfig) downgradeDefaultSA(ns corev1.Namespace) error {
+
+	rbacClient := r.kc.RbacV1()
+	pipelineAnyuidRoleBinding := "pipeline-anyuid"
+
+	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
+
+	log.Info("deleting role-binding", "name", pipelineAnyuidRoleBinding)
+
+	rbErr := rbacClient.RoleBindings(ns.Name).Delete(pipelineAnyuidRoleBinding, &metav1.DeleteOptions{})
+	if rbErr != nil && !errors.IsNotFound(rbErr) {
+		log.Error(rbErr, "rbac pipeline-anyuid delete error")
+		return rbErr
+	}
+	return nil
+}
+
+func (r *ReconcileConfig) upgradeDefaultSA(ns corev1.Namespace) error {
+
+	rbacClient := r.kc.RbacV1()
+	pipelineAnyuid := "pipeline-anyuid"
+
+	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
+
+	log.Info("creating role-binding", "name", pipelineAnyuid)
+
+	rb := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: pipelineAnyuid, Namespace: ns.Name},
+		RoleRef:    rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: pipelineAnyuid},
+		Subjects:   []rbacv1.Subject{{Kind: rbacv1.ServiceAccountKind, Name: flag.DefaultSA, Namespace: ns.Name}},
+	}
+
+	_, rbErr := rbacClient.RoleBindings(ns.Name).Create(rb)
+	if rbErr != nil && !errors.IsAlreadyExists(rbErr) {
+		return rbErr
+	}
+	return nil
 }
 
 func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {

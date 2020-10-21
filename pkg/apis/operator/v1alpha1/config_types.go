@@ -9,6 +9,9 @@ import (
 type ConfigSpec struct {
 	// namespace where OpenShift pipelines will be installed
 	TargetNamespace string `json:"targetNamespace"`
+
+	// namespaces where the default service account will not have high scc privileges.
+	NamespaceExclusions []string `json:"namespaceExclusions,omitempty"`
 }
 
 // ConfigStatus defines the observed state of Config
@@ -117,7 +120,7 @@ const (
 
 // Config is the Schema for the configs API
 // +k8s:openapi-gen=true
-// +kubebuilder:resource:path=config
+// +kubebuilder:resource:path=config,scope=Cluster
 // +kubebuilder:subresource:status
 type Config struct {
 	metav1.TypeMeta   `json:",inline"`
