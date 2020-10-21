@@ -190,11 +190,11 @@ main() {
 
   change_task_image "$dest_dir" "$version"  \
     "buildah"  "quay.io/buildah"  \
-    "registry.redhat.io/rhel8/buildah"
+    "registry.redhat.io/rhel8/buildah@sha256:180c4d9849b6ab0e5465d30d4f3a77765cf0d852ca1cb1efb59d6e8c9f90d467"
 
   change_task_image "$dest_dir" "$version"  \
     "buildah-pr"  "quay.io/buildah"  \
-    "registry.redhat.io/rhel8/buildah"
+    "registry.redhat.io/rhel8/buildah@sha256:180c4d9849b6ab0e5465d30d4f3a77765cf0d852ca1cb1efb59d6e8c9f90d467"
 
   change_task_image "$dest_dir" "$version"  \
     "openshift-client"  "quay.io/openshift/origin-cli:latest"  \
@@ -202,21 +202,21 @@ main() {
 
   change_task_image "$dest_dir" "$version"  \
     "kn"  "gcr.io/knative-releases/knative.dev/client/cmd/kn:latest"  \
-    "registry.redhat.io/openshift-serverless-1/client-kn-rhel8:0.15.2"
+    "registry.redhat.io/openshift-serverless-1/client-kn-rhel8@sha256:47bd682ee37236edbbf45ba584cf25a69be13fbf3116d0a139b48ab916eb984d"
 
   change_task_image "$dest_dir" "$version"  \
     "skopeo-copy"  "quay.io/skopeo/stable"  \
-    "registry.redhat.io/rhel8/skopeo:8.2"
+    "registry.redhat.io/rhel8/skopeo@sha256:81c640ecc22a49d6c3c8959aca8b92eba12777e87f2a5abc2a1ea9a91222845f"
 
   # this will do the change for all pipelines catalog tasks except buildah-pr
   for t in ${!OPENSHIFT_CATALOG_TASKS[@]} ; do
     change_task_image "$dest_dir" "$version"  \
       "$t"  "quay.io/openshift-pipeline/s2i"  \
-      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8"
+      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8@sha256:562dbdac04ae9260e21d457585b3251fd8cc5310966f8fc544fb77dc544c92f8"
 
     change_task_image "$dest_dir" "$version"  \
       "$t"  "quay.io/buildah"  \
-      "registry.redhat.io/rhel8/buildah"
+      "registry.redhat.io/rhel8/buildah@sha256:180c4d9849b6ab0e5465d30d4f3a77765cf0d852ca1cb1efb59d6e8c9f90d467"
 
   done
 
