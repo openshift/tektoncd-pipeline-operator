@@ -44,7 +44,7 @@ spec:
       default: "true"
   steps:
     - name: skopeo-copy
-      image: registry.redhat.io/rhel8/skopeo:8.2
+      image: registry.redhat.io/rhel8/skopeo@sha256:81c640ecc22a49d6c3c8959aca8b92eba12777e87f2a5abc2a1ea9a91222845f
       script: |
         # Function to copy multiple images.
         #
