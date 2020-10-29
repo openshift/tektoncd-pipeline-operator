@@ -293,14 +293,14 @@ func (r *ReconcileRBAC) ensureSCCRoleBinding(sa *corev1.ServiceAccount) error {
 	}
 
 	if rbErr != nil && errors.IsNotFound(rbErr) {
-		return r.createAnyuidRoleBinding(sa)
+		return r.createSCCRoleBinding(sa)
 	}
 
 	log.Info("found rbac", "subjects", pipelineRB.Subjects)
 	return r.updateRoleBinding(pipelineRB, sa)
 }
 
-func (r *ReconcileRBAC) createAnyuidRoleBinding(sa *corev1.ServiceAccount) error {
+func (r *ReconcileRBAC) createSCCRoleBinding(sa *corev1.ServiceAccount) error {
 	log := ctrlLog.WithName("rb").WithName("new")
 
 	log.Info("create new rolebinding pipeline-anyuid")
