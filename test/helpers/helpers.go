@@ -8,6 +8,8 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
 	"github.com/tektoncd/operator/test/config"
+	rbacv1 "k8s.io/api/rbac/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,6 +94,48 @@ func WaitForClusterCRStatus(t *testing.T, name string, installStatus op.InstallS
 		return true, nil
 	})
 	return err
+}
+
+func WaitForRolebinding(t *testing.T, ns, targetRoleBinding string) *rbacv1.RoleBinding {
+	t.Helper()
+
+	ret := &rbacv1.RoleBinding{}
+
+	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
+		rolebindingList, err := test.Global.KubeClient.RbacV1().RoleBindings(ns).List(metav1.ListOptions{})
+		for _, rb := range rolebindingList.Items {
+			if rb.Name == targetRoleBinding {
+				ret = &rb
+				return true, nil
+			}
+		}
+		return false, err
+	})
+
+	AssertNoError(t, err)
+	return ret
+
+}
+
+func WaitForClusterRole(t *testing.T, targetRoleBinding string) *rbacv1.ClusterRole {
+	t.Helper()
+
+	ret := &rbacv1.ClusterRole{}
+
+	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
+		clusterRoleList, err := test.Global.KubeClient.RbacV1().ClusterRoles().List(metav1.ListOptions{})
+		for _, rb := range clusterRoleList.Items {
+			if rb.Name == targetRoleBinding {
+				ret = &rb
+				return true, nil
+			}
+		}
+		return false, err
+	})
+
+	AssertNoError(t, err)
+	return ret
+
 }
 
 func WaitForServiceAccount(t *testing.T, ns, targetSA string) *corev1.ServiceAccount {

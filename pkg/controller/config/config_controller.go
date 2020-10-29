@@ -6,12 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	runtime1 "runtime"
 	"strings"
 	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/go-logr/logr"
 	mfc "github.com/manifestival/controller-runtime-client"
@@ -130,6 +127,10 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	addons, err := mf.ManifestFrom(sourceBasedOnRecursion(addonsPath), mf.UseClient(mfc.NewClient(mgr.GetClient())))
 	if err != nil {
 		return mf.Manifest{}, err
+	}
+	if runtime1.GOARCH == "ppc64le" || runtime1.GOARCH == "s390x" {
+		log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
+		return mf.Manifest{}, nil
 	}
 
 	// add optionals to addons if any
