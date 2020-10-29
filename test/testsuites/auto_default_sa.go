@@ -37,3 +37,55 @@ func ValidateDefaultSA(t *testing.T) {
 	}
 	helpers.WaitForServiceAccount(t, ns.Name, flag.DefaultSA)
 }
+
+// ValidateSCCRoleBinding validates that tekton controller creates
+// the cluster rolebinding for anyuid
+func ValidateSCCRoleBinding(t *testing.T) {
+	ctx := test.NewContext(t)
+	defer ctx.Cleanup()
+
+	// ensure the controllers are running and pipeline is installed
+	err := helpers.WaitForClusterCRStatus(t, flag.ClusterCRName, op.InstalledStatus)
+	helpers.AssertNoError(t, err)
+
+	helpers.WaitForRolebinding(t, "default", flag.PipelineAnyuid)
+
+	// Create a namespace
+	newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "foobar-rb-anyuid"}}
+	ns, err := test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
+	// cleanup
+	defer func() {
+		// lint complains about return err ignored
+		_ = test.Global.KubeClient.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
+	}()
+	if !apierrors.IsAlreadyExists(err) {
+		helpers.AssertNoError(t, err)
+	}
+	helpers.WaitForRolebinding(t, ns.Name, flag.PipelineAnyuid)
+}
+
+// ValidateClusterRole validates that tekton controller creates
+// the cluster role for anyuid
+func ValidateClusterRole(t *testing.T) {
+	ctx := test.NewContext(t)
+	defer ctx.Cleanup()
+
+	// ensure the controllers are running and pipeline is installed
+	err := helpers.WaitForClusterCRStatus(t, flag.ClusterCRName, op.InstalledStatus)
+	helpers.AssertNoError(t, err)
+
+	helpers.WaitForClusterRole(t, flag.PipelineAnyuid)
+
+	// Create a namespace
+	newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "foobar-crole-anyuid"}}
+	ns, err := test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
+	// cleanup
+	defer func() {
+		// lint complains about return err ignored
+		_ = test.Global.KubeClient.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
+	}()
+	if !apierrors.IsAlreadyExists(err) {
+		helpers.AssertNoError(t, err)
+	}
+	helpers.WaitForClusterRole(t, flag.PipelineAnyuid)
+}
