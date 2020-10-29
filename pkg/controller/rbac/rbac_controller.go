@@ -114,7 +114,7 @@ func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, erro
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	err = r.ensureAnyuidRoleBinding(sa)
+	err = r.ensureSCCRoleBinding(sa)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -274,7 +274,7 @@ func (r *ReconcileRBAC) ensureSCClusterRole() error {
 	return err
 }
 
-func (r *ReconcileRBAC) ensureAnyuidRoleBinding(sa *corev1.ServiceAccount) error {
+func (r *ReconcileRBAC) ensureSCCRoleBinding(sa *corev1.ServiceAccount) error {
 
 	log := ctrlLog.WithName("rb").WithValues("ns", sa.Namespace)
 
