@@ -4,6 +4,6 @@ metadata:
   name: pipelines-scc-role
 rules:
 - apiGroups: [security.openshift.io]
-  resourceNames: [anyuid]
+  resourceNames: [nonroot]
   resources: [securitycontextconstraints]
   verbs: [use]
