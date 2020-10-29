@@ -4,6 +4,6 @@ metadata:
   name: privileged-scc-role
 rules:
 - apiGroups: [security.openshift.io]
-  resourceNames: [privileged]
+  resourceNames: [anyuid]
   resources: [securitycontextconstraints]
   verbs: [use]
