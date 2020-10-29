@@ -11,6 +11,10 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	k8s "k8s.io/client-go/kubernetes"
+
 	mfc "github.com/manifestival/controller-runtime-client"
 	mf "github.com/manifestival/manifestival"
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
@@ -208,7 +212,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		log.Error(err, "creation of config resource failed")
 		return err
 	}
-
 	return nil
 }
 
@@ -271,7 +274,6 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-
 	for _, namespace := range namespaces.Items {
 		if ignore, _ := regexp.MatchString(flag.IgnorePattern, namespace.Name); ignore {
 			continue
@@ -318,45 +320,6 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 		return r.validateVersion(req, cfg)
 	}
 	return reconcile.Result{}, nil
-}
-
-func (r *ReconcileConfig) downgradeDefaultSA(ns corev1.Namespace) error {
-
-	rbacClient := r.kc.RbacV1()
-	pipelineAnyuidRoleBinding := "pipeline-anyuid"
-
-	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
-
-	log.Info("deleting role-binding", "name", pipelineAnyuidRoleBinding)
-
-	rbErr := rbacClient.RoleBindings(ns.Name).Delete(pipelineAnyuidRoleBinding, &metav1.DeleteOptions{})
-	if rbErr != nil && !errors.IsNotFound(rbErr) {
-		log.Error(rbErr, "rbac pipeline-anyuid delete error")
-		return rbErr
-	}
-	return nil
-}
-
-func (r *ReconcileConfig) upgradeDefaultSA(ns corev1.Namespace) error {
-
-	rbacClient := r.kc.RbacV1()
-	pipelineAnyuid := "pipeline-anyuid"
-
-	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
-
-	log.Info("creating role-binding", "name", pipelineAnyuid)
-
-	rb := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Name: pipelineAnyuid, Namespace: ns.Name},
-		RoleRef:    rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: pipelineAnyuid},
-		Subjects:   []rbacv1.Subject{{Kind: rbacv1.ServiceAccountKind, Name: flag.DefaultSA, Namespace: ns.Name}},
-	}
-
-	_, rbErr := rbacClient.RoleBindings(ns.Name).Create(rb)
-	if rbErr != nil && !errors.IsAlreadyExists(rbErr) {
-		return rbErr
-	}
-	return nil
 }
 
 func (r *ReconcileConfig) applyPipeline(req reconcile.Request, cfg *op.Config) (reconcile.Result, error) {
@@ -888,6 +851,45 @@ func createCR(c client.Client) error {
 	}
 
 	return err
+}
+
+func (r *ReconcileConfig) downgradeDefaultSA(ns corev1.Namespace) error {
+
+	rbacClient := r.kc.RbacV1()
+	pipelineAnyuidRoleBinding := "pipeline-anyuid"
+
+	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
+
+	log.Info("deleting role-binding", "name", pipelineAnyuidRoleBinding)
+
+	rbErr := rbacClient.RoleBindings(ns.Name).Delete(pipelineAnyuidRoleBinding, &metav1.DeleteOptions{})
+	if rbErr != nil && !errors.IsNotFound(rbErr) {
+		log.Error(rbErr, "rbac pipeline-anyuid delete error")
+		return rbErr
+	}
+	return nil
+}
+
+func (r *ReconcileConfig) upgradeDefaultSA(ns corev1.Namespace) error {
+
+	rbacClient := r.kc.RbacV1()
+	pipelineAnyuid := "pipeline-anyuid"
+
+	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
+
+	log.Info("creating role-binding", "name", pipelineAnyuid)
+
+	rb := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: pipelineAnyuid, Namespace: ns.Name},
+		RoleRef:    rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: pipelineAnyuid},
+		Subjects:   []rbacv1.Subject{{Kind: rbacv1.ServiceAccountKind, Name: flag.DefaultSA, Namespace: ns.Name}},
+	}
+
+	_, rbErr := rbacClient.RoleBindings(ns.Name).Create(rb)
+	if rbErr != nil && !errors.IsAlreadyExists(rbErr) {
+		return rbErr
+	}
+	return nil
 }
 
 func requestLogger(req reconcile.Request, context string) logr.Logger {
