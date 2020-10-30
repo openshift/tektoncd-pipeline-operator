@@ -172,8 +172,8 @@ func (r *ReconcileRBAC) ensureSA(ns *corev1.Namespace) (*corev1.ServiceAccount, 
 		},
 	}
 
-	r.client.Create(context.TODO(), sa)
-	return sa, nil
+	err := r.client.Create(context.TODO(), sa)
+	return sa, err
 }
 
 func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
