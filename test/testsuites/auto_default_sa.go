@@ -115,10 +115,6 @@ func ValidateDowngradeSA(t *testing.T) {
 		}
 	}()
 
-	cfg := &op.Config{}
-	err := test.Global.Client.Get(context.TODO(), types.NamespacedName{Name: flag.ClusterCRName}, cfg)
-	helpers.AssertNoError(t, err)
-
 	// Ensure namespaces exist before they are added to
 	// denylist.
 
@@ -127,6 +123,10 @@ func ValidateDowngradeSA(t *testing.T) {
 		_, err := test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
 		helpers.AssertNoError(t, err)
 	}
+
+	cfg := &op.Config{}
+	err := test.Global.Client.Get(context.TODO(), types.NamespacedName{Name: flag.ClusterCRName}, cfg)
+	helpers.AssertNoError(t, err)
 
 	cfg.Spec.NamespaceExclusions = oldForbiddenNamespaces
 	err = test.Global.Client.Update(context.TODO(), cfg)
@@ -140,6 +140,9 @@ func ValidateDowngradeSA(t *testing.T) {
 
 	// Namespace added to denylist before it was created,
 	// Namespaces in the existing denylist taken off list.
+
+	err = test.Global.Client.Get(context.TODO(), types.NamespacedName{Name: flag.ClusterCRName}, cfg)
+	helpers.AssertNoError(t, err)
 
 	cfg.Spec.NamespaceExclusions = newForbiddenNamespaces
 	err = test.Global.Client.Update(context.TODO(), cfg)
