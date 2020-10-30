@@ -95,19 +95,33 @@ func ValidateClusterRole(t *testing.T) {
 func WaitForDowngradedSA(t *testing.T, cfg *op.Config) error {
 
 	t.Helper()
-	createdNamespaces := []corev1.Namespace{}
 
-	/**
-		Namespaces already exist, later added to denylist.
-	**/
 	oldForbiddenNamespaces := []string{
 		"forbidden-ns-1",
 		"forbidden-ns-2",
 	}
+
+	newForbiddenNamespaces := []string{
+		"forbidden-ns-3",
+		"forbidden-ns-4",
+	}
+
+	// cleanup all created namespaces
+	defer func() {
+		for _, ns := range append(oldForbiddenNamespaces, newForbiddenNamespaces...) {
+			_ = test.Global.KubeClient.CoreV1().Namespaces().Delete(ns, &metav1.DeleteOptions{})
+		}
+	}()
+
+	// Ensure namespaces exist before they are added to
+	// denylist.
+
 	for _, n := range oldForbiddenNamespaces {
 		newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: n}}
-		test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
-		createdNamespaces = append(createdNamespaces, newNs)
+		_, err := test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
+		if err != nil {
+			return err
+		}
 	}
 
 	cfg.Spec.NamespaceExclusions = oldForbiddenNamespaces
@@ -123,15 +137,9 @@ func WaitForDowngradedSA(t *testing.T, cfg *op.Config) error {
 		}
 	}
 
-	/**
-		Namespace added to denylist before it was created,
-		Namespaces in existing denylist taken off list.
-	**/
+	// Namespace added to denylist before it was created,
+	// Namespaces in the existing denylist taken off list.
 
-	newForbiddenNamespaces := []string{
-		"forbidden-ns-3",
-		"forbidden-ns-4",
-	}
 	cfg.Spec.NamespaceExclusions = newForbiddenNamespaces
 	err = test.Global.Client.Update(context.TODO(), cfg)
 	if err != nil {
@@ -148,17 +156,11 @@ func WaitForDowngradedSA(t *testing.T, cfg *op.Config) error {
 	// Create the new namespaces, should trigger the rbac controller.
 	for _, n := range newForbiddenNamespaces {
 		newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: n}}
-		test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
-		createdNamespaces = append(createdNamespaces, newNs)
-	}
-
-	// cleanup all created namespaces
-	defer func() {
-		for _, ns := range createdNamespaces {
-			// lint complains about return err ignored
-			_ = test.Global.KubeClient.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
+		_, err = test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
+		if err != nil {
+			return err
 		}
-	}()
+	}
 
 	for _, n := range cfg.Spec.NamespaceExclusions {
 		err := helpers.WaitForRolebindingDeletion(t, n, flag.PipelineAnyuid)

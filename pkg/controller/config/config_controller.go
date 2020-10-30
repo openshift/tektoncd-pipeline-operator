@@ -20,6 +20,8 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/prometheus/common/log"
 	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+	"github.com/tektoncd/operator/pkg/exclusion"
+
 	"github.com/tektoncd/operator/pkg/flag"
 	paddons "github.com/tektoncd/operator/pkg/utils/addons"
 	"github.com/tektoncd/operator/pkg/utils/transform"
@@ -279,19 +281,13 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 			continue
 		}
 
-		downgraded := false
-		for _, excludedNamespace := range cfg.Spec.NamespaceExclusions {
-			if excludedNamespace == "*" || excludedNamespace == namespace.Name {
-				err = r.downgradeDefaultSA(namespace)
-				if err != nil {
-					return reconcile.Result{}, err
-				}
-				downgraded = true
-				break
+		if exclusion.IsNamespaceExcluded(cfg.Spec.NamespaceExclusions, namespace.Name) {
+			err = r.downgradeDefaultSA(namespace)
+			if err != nil {
+				return reconcile.Result{}, err
 			}
-		}
-
-		if !downgraded {
+			break
+		} else {
 			err = r.upgradeDefaultSA(namespace)
 			if err != nil {
 				return reconcile.Result{}, err
