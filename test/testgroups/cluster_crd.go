@@ -20,6 +20,8 @@ func ClusterCRD(t *testing.T) {
 
 	t.Run("auto-installs-pipelines", testsuites.ValidateAutoInstall)
 	t.Run("auto-create-sa", testsuites.ValidateDefaultSA)
+	t.Run("validate-anyuid-clusterrole", testsuites.ValidateClusterRole)
+	t.Run("validate-anyuid-rolebinding", testsuites.ValidateSCCRoleBinding)
 	t.Run("delete-pipelines", testsuites.ValidateDeletion)
 }
 
