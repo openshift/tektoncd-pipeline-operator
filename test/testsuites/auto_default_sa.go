@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // ValidateDefaultSA validates that tekton controller creates
@@ -92,9 +93,10 @@ func ValidateClusterRole(t *testing.T) {
 }
 
 // WaitForDowngradedSA waits for the default SA's rolebinding to be deleted.
-func WaitForDowngradedSA(t *testing.T, cfg *op.Config) error {
+func WaitForDowngradedSA(t *testing.T) error {
 
-	t.Helper()
+	ctx := test.NewContext(t)
+	defer ctx.Cleanup()
 
 	oldForbiddenNamespaces := []string{
 		"forbidden-ns-1",
@@ -113,6 +115,12 @@ func WaitForDowngradedSA(t *testing.T, cfg *op.Config) error {
 		}
 	}()
 
+	cfg := &op.Config{}
+	err := test.Global.Client.Get(context.TODO(), types.NamespacedName{Name: flag.ClusterCRName}, cfg)
+	if err != nil {
+		return err
+	}
+
 	// Ensure namespaces exist before they are added to
 	// denylist.
 
@@ -125,7 +133,7 @@ func WaitForDowngradedSA(t *testing.T, cfg *op.Config) error {
 	}
 
 	cfg.Spec.NamespaceExclusions = oldForbiddenNamespaces
-	err := test.Global.Client.Update(context.TODO(), cfg)
+	err = test.Global.Client.Update(context.TODO(), cfg)
 	if err != nil {
 		return err
 	}
