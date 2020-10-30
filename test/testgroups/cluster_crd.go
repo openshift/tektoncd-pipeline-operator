@@ -20,8 +20,9 @@ func ClusterCRD(t *testing.T) {
 
 	t.Run("auto-installs-pipelines", testsuites.ValidateAutoInstall)
 	t.Run("auto-create-sa", testsuites.ValidateDefaultSA)
-	t.Run("delete-pipelines", testsuites.ValidateDeletion)
 	t.Run("ValidateDowngradeSA", testsuites.ValidateDowngradeSA)
+
+	t.Run("delete-pipelines", testsuites.ValidateDeletion)
 }
 
 func deployOperator(t *testing.T, ctx *test.Context) error {
