@@ -92,8 +92,8 @@ func ValidateClusterRole(t *testing.T) {
 	helpers.WaitForClusterRole(t, flag.PipelineAnyuid)
 }
 
-// WaitForDowngradedSA waits for the default SA's rolebinding to be deleted.
-func WaitForDowngradedSA(t *testing.T) error {
+// ValidateDowngradeSA waits for the default SA's rolebinding to be deleted.
+func ValidateDowngradeSA(t *testing.T) {
 
 	ctx := test.NewContext(t)
 	defer ctx.Cleanup()
@@ -117,9 +117,7 @@ func WaitForDowngradedSA(t *testing.T) error {
 
 	cfg := &op.Config{}
 	err := test.Global.Client.Get(context.TODO(), types.NamespacedName{Name: flag.ClusterCRName}, cfg)
-	if err != nil {
-		return err
-	}
+	helpers.AssertNoError(t, err)
 
 	// Ensure namespaces exist before they are added to
 	// denylist.
@@ -127,22 +125,17 @@ func WaitForDowngradedSA(t *testing.T) error {
 	for _, n := range oldForbiddenNamespaces {
 		newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: n}}
 		_, err := test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
-		if err != nil {
-			return err
-		}
+		helpers.AssertNoError(t, err)
 	}
 
 	cfg.Spec.NamespaceExclusions = oldForbiddenNamespaces
 	err = test.Global.Client.Update(context.TODO(), cfg)
-	if err != nil {
-		return err
-	}
+	helpers.AssertNoError(t, err)
 
 	for _, n := range oldForbiddenNamespaces {
 		err := helpers.WaitForRolebindingDeletion(t, n, flag.PipelineAnyuid)
-		if err != nil {
-			return err
-		}
+		helpers.AssertNoError(t, err)
+
 	}
 
 	// Namespace added to denylist before it was created,
@@ -150,9 +143,7 @@ func WaitForDowngradedSA(t *testing.T) error {
 
 	cfg.Spec.NamespaceExclusions = newForbiddenNamespaces
 	err = test.Global.Client.Update(context.TODO(), cfg)
-	if err != nil {
-		return err
-	}
+	helpers.AssertNoError(t, err)
 
 	// Old exclusions now being taken off denylist
 	// They should have the rolebindings restored.
@@ -165,16 +156,11 @@ func WaitForDowngradedSA(t *testing.T) error {
 	for _, n := range newForbiddenNamespaces {
 		newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: n}}
 		_, err = test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
-		if err != nil {
-			return err
-		}
+		helpers.AssertNoError(t, err)
 	}
 
 	for _, n := range cfg.Spec.NamespaceExclusions {
 		err := helpers.WaitForRolebindingDeletion(t, n, flag.PipelineAnyuid)
-		if err != nil {
-			return err
-		}
+		helpers.AssertNoError(t, err)
 	}
-	return nil
 }
