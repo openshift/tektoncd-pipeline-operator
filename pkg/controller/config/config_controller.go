@@ -855,12 +855,18 @@ func (r *ReconcileConfig) downgradeDefaultSA(ns corev1.Namespace) error {
 
 	log := ctrlLog.WithName("rb").WithValues("ns", ns.Name)
 
-	log.Info("deleting role-binding", "name", flag.PipelineAnyuid)
+	_, err := rbacClient.RoleBindings(ns.Name).Get(flag.PipelineAnyuid, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
 
-	rbErr := rbacClient.RoleBindings(ns.Name).Delete(flag.PipelineAnyuid, &metav1.DeleteOptions{})
-	if rbErr != nil && !errors.IsNotFound(rbErr) {
-		log.Error(rbErr, "rbac pipeline-anyuid delete error")
-		return rbErr
+	err = rbacClient.RoleBindings(ns.Name).Delete(flag.PipelineAnyuid, &metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		log.Error(err, "rbac pipeline-anyuid delete error")
+		return err
 	}
 	return nil
 }

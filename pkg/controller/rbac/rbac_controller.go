@@ -111,7 +111,10 @@ func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, erro
 	}
 
 	cfg := &op.Config{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: flag.DefaultTargetNs}, cfg)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: flag.ClusterCRName}, cfg)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	isNamespaceExcluded := exclusion.IsNamespaceExcluded(cfg.Spec.NamespaceExclusions, ns.Name)
 
@@ -169,8 +172,8 @@ func (r *ReconcileRBAC) ensureSA(ns *corev1.Namespace) (*corev1.ServiceAccount, 
 		},
 	}
 
-	err := r.client.Create(context.TODO(), sa)
-	return sa, err
+	r.client.Create(context.TODO(), sa)
+	return sa, nil
 }
 
 func (r *ReconcileRBAC) ensureRoleBindings(sa *corev1.ServiceAccount) error {
