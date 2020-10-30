@@ -49,6 +49,30 @@ func WaitForDeploymentDeletion(t *testing.T, namespace, name string) error {
 	return err
 }
 
+// WaitForRolebindingDeletion waits for the rolebinding to be removed.
+func WaitForRolebindingDeletion(t *testing.T, namespace, name string) error {
+	t.Helper()
+
+	err := wait.Poll(config.APIRetry, config.APITimeout, func() (bool, error) {
+		kc := test.Global.KubeClient
+		_, err := kc.RbacV1().RoleBindings(namespace).Get(name, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsGone(err) || apierrors.IsNotFound(err) {
+				return true, nil
+			}
+			return false, err
+		}
+
+		t.Logf("Waiting for deletion of %s rolebinding\n", name)
+		return false, nil
+	})
+	if err == nil {
+		t.Logf("%s Rolebinding deleted\n", name)
+	}
+	return err
+
+}
+
 func WaitForClusterCR(t *testing.T, name string) *op.Config {
 	t.Helper()
 

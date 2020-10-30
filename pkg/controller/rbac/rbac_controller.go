@@ -4,6 +4,8 @@ import (
 	"context"
 	"regexp"
 
+	op "github.com/tektoncd/operator/pkg/apis/operator/v1alpha1"
+
 	"github.com/operator-framework/operator-sdk/pkg/predicate"
 	"github.com/tektoncd/operator/pkg/flag"
 	corev1 "k8s.io/api/core/v1"
@@ -107,6 +109,17 @@ func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, erro
 		return reconcile.Result{}, err
 	}
 
+	cfg := &op.Config{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: flag.DefaultTargetNs}, cfg)
+
+	isNamespaceExcluded := false
+	for _, n := range cfg.Spec.NamespaceExclusions {
+		if n == "*" || n == req.Namespace {
+			isNamespaceExcluded = true
+			break
+		}
+	}
+
 	// Maintaining a separate cluster role for the scc declaration.
 	// to assist us in managing this the scc association in a
 	// granular way.
@@ -114,9 +127,12 @@ func (r *ReconcileRBAC) Reconcile(req reconcile.Request) (reconcile.Result, erro
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	err = r.ensureSCCRoleBinding(sa)
-	if err != nil {
-		return reconcile.Result{}, err
+
+	if !isNamespaceExcluded {
+		err = r.ensureSCCRoleBinding(sa)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	err = r.ensureRoleBindings(sa)
