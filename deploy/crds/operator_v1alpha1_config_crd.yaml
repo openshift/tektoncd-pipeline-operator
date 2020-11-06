@@ -25,11 +25,11 @@ spec:
         spec:
           properties:
             namespaceExclusions:
-                description: namespaces where the default service account will not
-                  have high scc privileges.
-                items:
-                  type: string
-                type: array
+              description: namespaces where the default service account will not
+                have high scc privileges.
+              items:
+                type: string
+              type: array
             targetNamespace:
               description: namespace where OpenShift pipelines will be installed
               type: string
