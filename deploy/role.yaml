@@ -113,12 +113,25 @@ rules:
   - policy
   resources:
   - podsecuritypolicies
+  - poddisruptionbudgets
   verbs:
   - get
   - create
   - update
   - delete
   - use
+- apiGroups:
+  - autoscaling
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - patch
+  - watch
 - apiGroups:
   - security.openshift.io
   resources:
