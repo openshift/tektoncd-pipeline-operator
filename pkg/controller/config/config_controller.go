@@ -247,7 +247,7 @@ func (r *ReconcileConfig) Reconcile(req reconcile.Request) (reconcile.Result, er
 
 	// handle deletion of resource
 	if errors.IsNotFound(err) {
-		// User deleted the cluster resource so delete the pipeine resources
+		// User deleted the cluster resource so delete the pipeline resources
 		log.Info("resource has been deleted", "config", cfg.Spec, "status", cfg.Status)
 		return r.reconcileDeletion(req, cfg)
 	}
