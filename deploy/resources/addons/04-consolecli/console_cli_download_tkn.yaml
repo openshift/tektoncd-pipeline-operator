@@ -12,3 +12,7 @@ spec:
       text: Download tkn for Mac
     - href: https://mirror.openshift.com/pub/openshift-v4/clients/pipeline/0.13.1/tkn-windows-amd64-0.13.1.zip
       text: Download tkn for Windows
+    - href: https://mirror.openshift.com/pub/openshift-v4/clients/pipeline/0.13.1/tkn-linux-ppc64le-0.13.1.tar.gz
+      text: Download tkn for IBM Power
+    - href: https://mirror.openshift.com/pub/openshift-v4/clients/pipeline/0.13.1/tkn-linux-s390x-0.13.1.tar.gz
+      text: Download tkn for IBM Z
