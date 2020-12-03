@@ -212,7 +212,7 @@ main() {
   for t in ${!OPENSHIFT_CATALOG_TASKS[@]} ; do
     change_task_image "$dest_dir" "$version"  \
       "$t"  "quay.io/openshift-pipeline/s2i"  \
-      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8@sha256:562dbdac04ae9260e21d457585b3251fd8cc5310966f8fc544fb77dc544c92f8"
+      "registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8@sha256:9c761a0a0bb607913fbc04d3d435c70a6f90900583b52bd0e6a6187dad3f90cb"
 
     change_task_image "$dest_dir" "$version"  \
       "$t"  "quay.io/buildah"  \
