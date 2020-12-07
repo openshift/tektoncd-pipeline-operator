@@ -138,11 +138,11 @@ func generateBasePipeline(template mf.Manifest, taskGenerators []taskGenerator, 
 
 		if spec.Version != "" {
 			taskParams = append(taskParams.([]interface{}), map[string]interface{}{"name": "VERSION", "value": spec.Version})
-			pipelineParams = append(pipelineParams.([]interface{}), map[string]interface{}{"name": "MAJOR_VERSION", "type": "string"})
+			pipelineParams = append(pipelineParams.([]interface{}), map[string]interface{}{"name": "MAJOR_VERSION", "type": "string", "default": spec.Default})
 		}
 		if spec.MinorVersion != "" {
 			taskParams = append(taskParams.([]interface{}), map[string]interface{}{"name": "MINOR_VERSION", "value": spec.MinorVersion})
-			pipelineParams = append(pipelineParams.([]interface{}), map[string]interface{}{"name": "MINOR_VERSION", "type": "string"})
+			pipelineParams = append(pipelineParams.([]interface{}), map[string]interface{}{"name": "MINOR_VERSION", "type": "string", "default": spec.Default})
 		}
 
 		if err := unstructured.SetNestedField(newTempRes.Object, pipelineParams, "spec", "params"); err != nil {
