@@ -10,7 +10,7 @@ ENV GIT_COMMITTER_EMAIL pipelines-dev@redhat.com
 
 RUN yum install epel-release -y
 
-RUN yum --enablerepo=centosplus install -y  \
+RUN yum install -y  \
     findutils \
     git \
     make \
