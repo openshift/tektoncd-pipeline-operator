@@ -3,11 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-	runtime1 "runtime"
 	"github.com/go-logr/logr"
 	mfc "github.com/manifestival/controller-runtime-client"
 	mf "github.com/manifestival/manifestival"
@@ -25,6 +20,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"os"
+	"path/filepath"
+	runtime1 "runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -32,6 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
+	"time"
 )
 
 const (
@@ -124,9 +124,9 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 		return mf.Manifest{}, err
 	}
 	if runtime1.GOARCH == "ppc64le" || runtime1.GOARCH == "s390x" {
-                log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
-                return mf.Manifest{}, nil
-        }
+		log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
+		return mf.Manifest{}, nil
+	}
 
 	// add optionals to addons if any
 	optionalResources, err := readOptional(mgr)

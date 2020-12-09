@@ -13,6 +13,7 @@ type RuntimeSpec struct {
 	Version           string
 	MinorVersion      string
 	SupportedVersions string
+	Default           string
 }
 
 const (
@@ -83,15 +84,15 @@ var (
 	}
 
 	Runtimes = map[string]RuntimeSpec{
-		"s2i-dotnet-3": {Runtime: "dotnet", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[3.1,3.0]"},
+		"s2i-dotnet-3": {Runtime: "dotnet", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[3.1,3.0]", Default: "1"},
 		"s2i-go":       {Runtime: "golang"},
 		"s2i-java-8":   {Runtime: "java", SupportedVersions: "[8]"},
 		"s2i-java-11":  {Runtime: "java", SupportedVersions: "[11]"},
-		"s2i-nodejs":   {Runtime: "nodejs", Version: "$(params.MAJOR_VERSION)", SupportedVersions: "[10,12]"},
-		"s2i-perl":     {Runtime: "perl", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[5.26,5.24]"},
-		"s2i-php":      {Runtime: "php", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[7.2,7.3]"},
-		"s2i-python-3": {Runtime: "python", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[3.6,3.5]"},
-		"s2i-ruby":     {Runtime: "ruby", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[2.5,2.4,2.3]"},
+		"s2i-nodejs":   {Runtime: "nodejs", Version: "$(params.MAJOR_VERSION)", SupportedVersions: "[10,12]", Default: "12"},
+		"s2i-perl":     {Runtime: "perl", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[5.26,5.24]", Default: "26"},
+		"s2i-php":      {Runtime: "php", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[7.2,7.3]", Default: "3"},
+		"s2i-python-3": {Runtime: "python", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[3.6,3.5]", Default: "6"},
+		"s2i-ruby":     {Runtime: "ruby", MinorVersion: "$(params.MINOR_VERSION)", SupportedVersions: "[2.5,2.4,2.3]", Default: "5"},
 		"buildah":      {},
 	}
 )
