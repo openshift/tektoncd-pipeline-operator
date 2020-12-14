@@ -105,6 +105,10 @@ func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
 	if flag.SkipNonRedHatResources {
 		return mf.Manifest{}, nil
 	}
+	if runtime1.GOARCH == "ppc64le" || runtime1.GOARCH == "s390x" {
+		log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
+		return mf.Manifest{}, nil
+	}
 	//manifestival can take urls/filepaths as input
 	//more that one items can be passed as a comma separated list string
 	urls := strings.Join(flag.CommunityResourceURLs, ",")
@@ -122,10 +126,6 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	addons, err := mf.ManifestFrom(sourceBasedOnRecursion(addonsPath), mf.UseClient(mfc.NewClient(mgr.GetClient())))
 	if err != nil {
 		return mf.Manifest{}, err
-	}
-	if runtime1.GOARCH == "ppc64le" || runtime1.GOARCH == "s390x" {
-		log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
-		return mf.Manifest{}, nil
 	}
 
 	// add optionals to addons if any
