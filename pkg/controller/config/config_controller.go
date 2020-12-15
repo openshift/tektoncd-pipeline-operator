@@ -123,7 +123,7 @@ func readAddons(mgr manager.Manager) (mf.Manifest, error) {
 	if err != nil {
 		return mf.Manifest{}, err
 	}
-
+	
 	// add optionals to addons if any
 	optionalResources, err := readOptional(mgr)
 	if err != nil {
