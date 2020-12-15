@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+        goruntime "runtime"
 	"github.com/go-logr/logr"
 	mfc "github.com/manifestival/controller-runtime-client"
 	mf "github.com/manifestival/manifestival"
@@ -103,6 +103,10 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 
 func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
 	if flag.SkipNonRedHatResources {
+		return mf.Manifest{}, nil
+	}
+	if goruntime.GOARCH == "ppc64le" || goruntime.GOARCH == "s390x" {
+		log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
 		return mf.Manifest{}, nil
 	}
 	//manifestival can take urls/filepaths as input
