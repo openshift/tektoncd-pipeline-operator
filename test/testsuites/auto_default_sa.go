@@ -75,17 +75,4 @@ func ValidateClusterRole(t *testing.T) {
 	helpers.AssertNoError(t, err)
 
 	helpers.WaitForClusterRole(t, flag.PipelineAnyuid)
-
-	// Create a namespace
-	newNs := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "foobar-crole-anyuid"}}
-	ns, err := test.Global.KubeClient.CoreV1().Namespaces().Create(&newNs)
-	// cleanup
-	defer func() {
-		// lint complains about return err ignored
-		_ = test.Global.KubeClient.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
-	}()
-	if !apierrors.IsAlreadyExists(err) {
-		helpers.AssertNoError(t, err)
-	}
-	helpers.WaitForClusterRole(t, flag.PipelineAnyuid)
 }
