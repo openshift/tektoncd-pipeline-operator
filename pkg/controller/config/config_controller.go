@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
 	"path/filepath"
-	goruntime "runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -103,10 +102,6 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 
 func fetchCommuntiyResources(mgr manager.Manager) (mf.Manifest, error) {
 	if flag.SkipNonRedHatResources {
-		return mf.Manifest{}, nil
-	}
-	if goruntime.GOARCH == "ppc64le" || goruntime.GOARCH == "s390x" {
-		log.Info("skip installation of tektoncd/catalog tasks as the platform is not x86_64")
 		return mf.Manifest{}, nil
 	}
 	//manifestival can take urls/filepaths as input
